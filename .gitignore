@@ -150,3 +150,5 @@ expo-env.d.ts
 
 # gitignore files
 .gitignore
+android
+ios
