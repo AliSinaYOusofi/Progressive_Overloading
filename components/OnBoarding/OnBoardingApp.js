@@ -1,175 +1,316 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Dimensions, TouchableOpacity } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useRef, useState } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    ImageBackground,
+    TouchableOpacity,
+    Dimensions,
+} from "react-native";
 import Carousel from "react-native-reanimated-carousel";
-import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+    FadeIn,
+    FadeOut,
+    SlideInDown,
+    SlideInUp,
+    SlideInLeft,
+    SlideInRight,
+    SlideOutDown,
+    withSpring,
+    useAnimatedStyle,
+    useSharedValue,
+    interpolate,
+    Extrapolate,
+} from "react-native-reanimated";
 
-const { width: screenWidth } = Dimensions.get("window");
-const SLIDE_WIDTH = screenWidth * 0.8;
+const { width, height } = Dimensions.get("window");
+const PADDING = 20;
+const SLIDE_WIDTH = width - PADDING * 2;
+const SLIDE_HEIGHT = height * 0.75;
 
-const ProgressionOnboardingCarousel = ({ data, onDone }) => {
-    const [activeSlide, setActiveSlide] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
+const AnimatedImageBackground = Animated.createAnimatedComponent(ImageBackground);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+const slides = [
+    {
+        key: "one",
+        title: "Track Your Progress",
+        background: require("../../assets/onboarding_images/5c97b65b-fa87-45ff-abe2-bbcc7c26019e.png"),
+    },
+    {
+        key: "two",
+        title: "Set Your Goals",
+        background: require("../../assets/onboarding_images/5c97b65b-fa87-45ff-abe2-bbcc7c26019e.png"),
+    },
+    {
+        key: "three",
+        title: "Crush Your Workouts",
+        background: require("../../assets/onboarding_images/5c97b65b-fa87-45ff-abe2-bbcc7c26019e.png"),
+    },
+];
+
+const OnboardingCarousel = () => {
+    const router = useRouter();
+    const [currentIndex, setCurrentIndex] = useState(0);
     const carouselRef = useRef(null);
+    const progressValue = useSharedValue(0);
+    const buttonScale = useSharedValue(1);
 
-    useEffect(() => {
-        checkIntroFlag();
-    }, []);
-
-    const checkIntroFlag = async () => {
+    const onDoneOrSkip = async () => {
         try {
-            const hasSeenIntro = await AsyncStorage.getItem(
-                "hasSeenProgressionIntro"
-            );
-            if (hasSeenIntro === "true") {
-                onDone();
-                return;
-            }
-        } catch (error) {
-            console.error("Error checking intro flag:", error);
-        } finally {
-            setIsLoading(false);
+            await AsyncStorage.setItem("hasSeenOnboarding", "true");
+        } catch (err) {
+            // Optionally handle error
         }
+        router.replace("/");
     };
 
-    const handleGetStarted = async () => {
-        try {
-            await AsyncStorage.setItem("hasSeenProgressionIntro", "true");
-            onDone();
-        } catch (error) {
-            console.error("Error setting intro flag:", error);
-            onDone(); // Still proceed even if AsyncStorage fails
-        }
+    const buttonAnimatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ scale: withSpring(buttonScale.value) }],
+        };
+    });
+
+    const handlePressIn = () => {
+        buttonScale.value = 0.95;
     };
 
-    const handleNext = () => {
-        if (activeSlide < data.length - 1) {
-            carouselRef.current?.scrollTo({
-                index: activeSlide + 1,
-                animated: true,
-            });
-        }
+    const handlePressOut = () => {
+        buttonScale.value = 1;
     };
-
-    const renderWorkoutCard = ({ item }) => {
-        return (
-            <View className="bg-white rounded-2xl mx-2 p-6 shadow-lg shadow-black/10 h-80">
-                {/* Barbell Icon */}
-                <View className="mb-4">
-                    <Feather name="activity" size={24} color="#6B7280" />
-                </View>
-
-                {/* Exercise Name */}
-                <Text className="text-2xl font-bold text-gray-900 mb-6">
-                    {item.exerciseName}
-                </Text>
-
-                {/* Weight Information */}
-                <View className="mb-8">
-                    <Text className="text-3xl font-semibold text-green-600 mb-1">
-                        {item.weight}
-                    </Text>
-                    <Text className="text-sm text-gray-500">{item.delta}</Text>
-                </View>
-
-                {/* Last Session Date */}
-                <View className="mt-auto">
-                    <Text className="text-xs text-gray-400">
-                        Last session: {item.lastDate}
-                    </Text>
-                </View>
-            </View>
-        );
-    };
-
-    const renderPagination = () => {
-        return (
-            <View className="flex-row justify-center items-center py-5">
-                {data.map((_, index) => (
-                    <View
-                        key={index}
-                        className={`w-2 h-2 rounded-full mx-1 ${
-                            index === activeSlide
-                                ? "bg-green-600"
-                                : "bg-gray-300"
-                        }`}
-                    />
-                ))}
-            </View>
-        );
-    };
-
-    if (isLoading) {
-        return (
-            <View className="flex-1 justify-center items-center bg-gray-50">
-                <Text className="text-gray-600">Loading...</Text>
-            </View>
-        );
-    }
-
-    const isLastSlide = activeSlide === data.length - 1;
 
     return (
-        <View className="flex-1 bg-gray-50">
-            {/* Header */}
-            <View className="pt-16 pb-8 px-6">
-                <Text className="text-3xl font-bold text-gray-900 text-center mb-2">
-                    Track Your Progress
-                </Text>
-                <Text className="text-gray-600 text-center">
-                    See how your lifts improve over time
-                </Text>
-            </View>
+        <View style={styles.container}>
+            <AnimatedTouchableOpacity
+                style={styles.skipButton}
+                onPress={onDoneOrSkip}
+                hitSlop={16}
+                accessibilityLabel="Skip onboarding"
+                entering={FadeIn.delay(200)}
+            >
+                <Ionicons name="close" size={36} color="#444" />
+            </AnimatedTouchableOpacity>
 
-            {/* Carousel */}
-            <View className="flex-1 justify-center">
-                <Carousel
-                    ref={carouselRef}
-                    width={screenWidth}
-                    height={320}
-                    data={data}
-                    renderItem={renderWorkoutCard}
-                    onSnapToItem={setActiveSlide}
-                    mode="parallax"
-                    modeConfig={{
-                        parallaxScrollingScale: 0.9,
-                        parallaxScrollingOffset: 50,
-                    }}
-                    style={{
-                        width: screenWidth,
-                        justifyContent: "center",
-                    }}
-                />
+            <Carousel
+                ref={carouselRef}
+                loop={false}
+                width={width}
+                height={SLIDE_HEIGHT + 120}
+                data={slides}
+                style={styles.carousel}
+                pagingEnabled
+                onSnapToItem={(index) => {
+                    setCurrentIndex(index);
+                    progressValue.value = withSpring(index);
+                }}
+                onProgressChange={(_, absoluteProgress) => {
+                    progressValue.value = absoluteProgress;
+                }}
+                renderItem={({ item, index }) => {
+                    // Create animation style based on carousel progress
+                    const animatedStyle = useAnimatedStyle(() => {
+                        const progress = progressValue.value - index;
+                        
+                        const opacity = interpolate(
+                            Math.abs(progress),
+                            [0, 0.5, 1],
+                            [1, 0.5, 0],
+                        );
+                        
+                        const scale = interpolate(
+                            Math.abs(progress),
+                            [0, 0.5, 1],
+                            [1, 0.8, 0.7],
+                        );
+                        
+                        return {
+                            opacity,
+                            transform: [{ scale }],
+                        };
+                    });
+                    
+                    return (
+                        <View style={styles.slide}>
+                            <AnimatedImageBackground
+                                source={item.background}
+                                style={[styles.backgroundImage, animatedStyle]}
+                                imageStyle={styles.imageStyle}
+                            >
+                                <Animated.View 
+                                    style={styles.textOverlay}
+                                    entering={SlideInUp.duration(800).delay(300)}
+                                >
+                                    <Animated.Text 
+                                        style={styles.title}
+                                        entering={FadeIn.duration(800).delay(400)}
+                                    >
+                                        {item.title}
+                                    </Animated.Text>
+                                </Animated.View>
+                            </AnimatedImageBackground>
+                            
+                            <Animated.View 
+                                style={styles.bottomContainer}
+                                entering={SlideInDown.duration(800).delay(500)}
+                            >
+                                {currentIndex === slides.length - 1 && (
+                                    <AnimatedTouchableOpacity
+                                        style={[styles.button, buttonAnimatedStyle]}
+                                        onPress={onDoneOrSkip}
+                                        onPressIn={handlePressIn}
+                                        onPressOut={handlePressOut}
+                                        accessibilityLabel="Get Started"
+                                        entering={FadeIn.duration(800).delay(700)}
+                                        exiting={FadeOut.duration(300)}
+                                    >
+                                        <Text style={styles.buttonText}>
+                                            Get Started
+                                        </Text>
+                                        <Ionicons
+                                            name="arrow-forward"
+                                            size={20}
+                                            style={{ marginLeft: 8 }}
+                                        />
+                                    </AnimatedTouchableOpacity>
+                                )}
+                            </Animated.View>
+                        </View>
+                    );
+                }}
+            />
 
-                {/* Custom Pagination */}
-                {renderPagination()}
-            </View>
-
-            {/* Bottom Navigation */}
-            <View className="px-6 pb-8">
-                <TouchableOpacity
-                    onPress={isLastSlide ? handleGetStarted : handleNext}
-                    className="bg-green-600 rounded-xl py-4 px-8 shadow-lg shadow-green-600/25"
-                    activeOpacity={0.8}
-                >
-                    <Text className="text-white text-lg font-semibold text-center">
-                        {isLastSlide ? "Get Started" : "Next"}
-                    </Text>
-                </TouchableOpacity>
-
-                {/* Skip Button */}
-                {!isLastSlide && (
-                    <TouchableOpacity
-                        onPress={handleGetStarted}
-                        className="mt-4 py-2"
-                        activeOpacity={0.6}
-                    >
-                        <Text className="text-gray-500 text-center">Skip</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+            {/* Pagination Dots */}
+            <Animated.View 
+                style={styles.pagination}
+                entering={FadeIn.duration(800).delay(600)}
+            >
+                {slides.map((_, i) => {
+                    const dotAnimatedStyle = useAnimatedStyle(() => {
+                        const progress = progressValue.value - i;
+                        const scale = interpolate(
+                            Math.abs(progress),
+                            [0, 0.5, 1],
+                            [1, 0.8, 0.6],
+                        );
+                        
+                        const opacity = interpolate(
+                            Math.abs(progress),
+                            [0, 0.5, 1],
+                            [1, 0.5, 0.3],
+                        );
+                        
+                        const width = interpolate(
+                            Math.abs(progress),
+                            [0, 0.5, 1],
+                            [currentIndex === i ? 15 : 9, 11, 9],
+                            
+                        );
+                        
+                        return {
+                            width,
+                            opacity,
+                            transform: [{ scale }],
+                            backgroundColor: currentIndex === i ? "#fff" : "#bbb",
+                        };
+                    });
+                    
+                    return (
+                        <Animated.View
+                            key={i}
+                            style={[styles.dot, dotAnimatedStyle]}
+                        />
+                    );
+                })}
+            </Animated.View>
         </View>
     );
 };
 
-export default ProgressionOnboardingCarousel;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "white",
+        paddingTop: 50,
+        alignItems: "center",
+    },
+    skipButton: {
+        position: "absolute",
+        top: 60,
+        right: 30,
+        zIndex: 10,
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        width: 36,
+        height: 36,
+        alignItems: "center",
+        justifyContent: "center",
+        elevation: 2,
+    },
+    carousel: {},
+    slide: {
+        width: width,
+        alignItems: "center",
+    },
+    backgroundImage: {
+        width: SLIDE_WIDTH,
+        height: SLIDE_HEIGHT,
+        borderRadius: 20,
+        overflow: "hidden",
+        justifyContent: "flex-end",
+    },
+    imageStyle: {
+        borderRadius: 20,
+        resizeMode: "cover",
+        opacity: 0.9,
+    },
+    textOverlay: {
+        padding: 20,
+        backgroundColor: "rgba(0,0,0,0.4)",
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: "bold",
+        color: "#fff",
+        textShadowColor: "#0009",
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+        textAlign: "center",
+    },
+    bottomContainer: {
+        width: SLIDE_WIDTH,
+        paddingVertical: 20,
+        paddingHorizontal: 10,
+        alignItems: "center",
+    },
+    button: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(255,255,255,0.93)",
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 14,
+    },
+    buttonText: {
+        fontSize: 17,
+        fontWeight: "600",
+        color: "#222",
+    },
+    pagination: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 20,
+    },
+    dot: {
+        height: 9,
+        borderRadius: 5,
+        marginHorizontal: 5,
+    },
+});
+
+export default OnboardingCarousel;
