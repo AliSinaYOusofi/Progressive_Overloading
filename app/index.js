@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { markOnboardingComplete } from "../utils/onboarding/skip_onboarding";
 import { router } from "expo-router";
+import "../assets/css/global.css"
 
 export default function Home() {
     const [showCarousel, setShowCarousel] = useState(false);

@@ -11,7 +11,24 @@ import {
   ScrollView,
 } from "react-native"
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react-native"
+import { signUp } from "../../lib/auth"
+import { colors, semanticColors } from "../../constants/ui_colors"
 
+export const validateEmail = (value) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(value)) {
+      return "Enter a valid email address."
+    }
+    return ""
+  }
+
+export const validatePassword = (value) => {
+    const passwordRegex = /^[A-Za-z0-9]{6,30}$/
+    if (!passwordRegex.test(value)) {
+      return "Password must be 6-30 chars, letters or numbers only."
+    }
+    return ""
+  }
 const { width, height } = Dimensions.get("window")
 
 const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
@@ -24,20 +41,58 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  const [nameError, setNameError] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [passwordError, setPasswordError] = useState("")
+  const [confirmPasswordError, setConfirmPasswordError] = useState("")
+
   const scrollViewRef = useRef(null)
 
+  const validateName = (value) => {
+    const trimmed = value.trim()
+    if (trimmed.length < 2 || trimmed.length > 30) {
+      return "Full name must be 2-30 characters."
+    }
+    return ""
+  }
+
   const handleSignUp = async () => {
-    if (!isFormValid) return
+    const nameErr = validateName(name)
+    const emailErr = validateEmail(email)
+    const passwordErr = validatePassword(password)
+    const confirmErr = password === confirmPassword ? "" : "Passwords don't match"
+
+    setNameError(nameErr)
+    setEmailError(emailErr)
+    setPasswordError(passwordErr)
+    setConfirmPasswordError(confirmErr)
+
+    const hasErrors = Boolean(nameErr || emailErr || passwordErr || confirmErr)
+    if (hasErrors || !acceptTerms) {
+      if (nameErr) scrollToInput(200)
+      else if (emailErr) scrollToInput(280)
+      else if (passwordErr) scrollToInput(360)
+      else if (confirmErr) scrollToInput(440)
+      return
+    }
     
+    try {
+      const { data, error } = await signUp(email, password)
+      if (error) {
+        console.log(error)
+      } else {
+        console.log(data)
+      }
+    } catch (error) {
+      
+    }
     setIsLoading(true)
-    // Add your sign-up logic here
     setTimeout(() => {
       setIsLoading(false)
       if (onSignUp) onSignUp({ name, email, password })
     }, 1000)
   }
 
-  // <CHANGE> Added function to scroll to input when focused
   const scrollToInput = (inputY) => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({
@@ -47,14 +102,12 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
     }
   }
 
-  const isFormValid = 
-    name.length > 0 && 
-    email.length > 0 && 
-    password.length >= 6 && 
-    password === confirmPassword && 
+  const isFormValid =
+    !validateName(name) &&
+    !validateEmail(email) &&
+    !validatePassword(password) &&
+    password === confirmPassword &&
     acceptTerms
-
-  const passwordsMatch = password === confirmPassword || confirmPassword === ""
 
   return (
     <KeyboardAvoidingView 
@@ -79,49 +132,57 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
         <View style={styles.form}>
           {/* Name Input */}
           <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <User size={20} color="#6B7280" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, !!nameError && styles.errorInput]}>
+              <User size={20} color={colors.neutral[500]} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Full name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.neutral[400]}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(v) => { setName(v); setNameError(validateName(v)) }}
                 autoCapitalize="words"
                 autoCorrect={false}
                 onFocus={() => scrollToInput(200)}
               />
             </View>
+            {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
           </View>
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Mail size={20} color="#6B7280" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
+              <Mail size={20} color={colors.neutral[500]} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Email address"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.neutral[400]}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(v) => { setEmail(v); setEmailError(validateEmail(v)) }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 onFocus={() => scrollToInput(280)}
               />
             </View>
+            {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
           </View>
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Lock size={20} color="#6B7280" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, !!passwordError && styles.errorInput]}>
+              <Lock size={20} color={colors.neutral[500]} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 placeholder="Password (min. 6 characters)"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.neutral[400]}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => {
+                  setPassword(v)
+                  setPasswordError(validatePassword(v))
+                  if (confirmPassword.length > 0) {
+                    setConfirmPasswordError(v === confirmPassword ? "" : "Passwords don't match")
+                  }
+                }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -132,24 +193,28 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
                 style={styles.eyeIcon}
               >
                 {showPassword ? (
-                  <EyeOff size={20} color="#6B7280" />
+                  <EyeOff size={20} color={colors.neutral[500]} />
                 ) : (
-                  <Eye size={20} color="#6B7280" />
+                  <Eye size={20} color={colors.neutral[500]} />
                 )}
               </TouchableOpacity>
             </View>
+            {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
           </View>
 
           {/* Confirm Password Input */}
           <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, !passwordsMatch && styles.errorInput]}>
-              <Lock size={20} color="#6B7280" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, !!confirmPasswordError && styles.errorInput]}>
+              <Lock size={20} color={colors.neutral[500]} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 placeholder="Confirm password"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.neutral[400]}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(v) => {
+                  setConfirmPassword(v)
+                  setConfirmPasswordError(password === v ? "" : "Passwords don't match")
+                }}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -160,14 +225,14 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
                 style={styles.eyeIcon}
               >
                 {showConfirmPassword ? (
-                  <EyeOff size={20} color="#6B7280" />
+                  <EyeOff size={20} color={colors.neutral[500]} />
                 ) : (
-                  <Eye size={20} color="#6B7280" />
+                  <Eye size={20} color={colors.neutral[500]} />
                 )}
               </TouchableOpacity>
             </View>
-            {!passwordsMatch && confirmPassword.length > 0 && (
-              <Text style={styles.errorText}>Passwords don't match</Text>
+            {!!confirmPasswordError && (
+              <Text style={styles.errorText}>{confirmPasswordError}</Text>
             )}
           </View>
 
@@ -177,7 +242,7 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
             onPress={() => setAcceptTerms(!acceptTerms)}
           >
             <View style={[styles.checkbox, acceptTerms && styles.checkedBox]}>
-              {acceptTerms && <Check size={16} color="#fff" />}
+              {acceptTerms && <Check size={16} color={colors.text.white} />}
             </View>
             <Text style={styles.termsText}>
               I agree to the{" "}
@@ -191,12 +256,12 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
           <TouchableOpacity
             style={[styles.signUpButton, !isFormValid && styles.disabledButton]}
             onPress={handleSignUp}
-            disabled={!isFormValid || isLoading}
+            disabled={isLoading}
           >
             <Text style={[styles.signUpButtonText, !isFormValid && styles.disabledButtonText]}>
               {isLoading ? "Creating Account..." : "Create Account"}
             </Text>
-            {!isLoading && <ArrowRight size={20} color="#fff" />}
+            {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
           </TouchableOpacity>
         </View>
 
@@ -218,7 +283,7 @@ const SignUpScreen = ({ onSignUp, onNavigateToSignIn }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: colors.background.primary,
   },
   scrollContent: {
     flexGrow: 1,
@@ -233,12 +298,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#111827",
+    color: colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.text.secondary,
     textAlign: "center",
   },
   form: {
@@ -251,22 +316,22 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.background.card,
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    shadowColor: "#000",
+    paddingVertical: 5,
+    shadowColor: colors.shadow.light,
     shadowOffset: {
       width: 0,
       height: 1,
     },
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 2,
+    
   },
   errorInput: {
     borderWidth: 1,
-    borderColor: "#EF4444",
+    borderColor: colors.status.error,
   },
   inputIcon: {
     marginRight: 12,
@@ -274,7 +339,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#111827",
+    color: colors.text.primary,
   },
   passwordInput: {
     paddingRight: 40,
@@ -286,7 +351,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: "#EF4444",
+    color: colors.status.error,
     marginTop: 4,
     marginLeft: 4,
   },
@@ -300,34 +365,34 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
+    borderColor: colors.neutral[300],
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
     marginTop: 2,
   },
   checkedBox: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
+    backgroundColor: colors.primary[600],
+    borderColor: colors.primary[600],
   },
   termsText: {
     flex: 1,
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.text.secondary,
     lineHeight: 20,
   },
   termsLink: {
-    color: "#3B82F6",
+    color: colors.primary[600],
     fontWeight: "500",
   },
   signUpButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3B82F6",
+    backgroundColor: colors.primary[600],
     paddingVertical: 16,
     borderRadius: 12,
-    shadowColor: "#3B82F6",
+    shadowColor: colors.shadow.colored,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -337,18 +402,18 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   disabledButton: {
-    backgroundColor: "#D1D5DB",
+    backgroundColor: colors.neutral[300],
     shadowOpacity: 0,
     elevation: 0,
   },
   signUpButtonText: {
-    color: "#fff",
+    color: colors.text.white,
     fontSize: 16,
     fontWeight: "600",
     marginRight: 8,
   },
   disabledButtonText: {
-    color: "#9CA3AF",
+    color: colors.text.placeholder,
   },
   footer: {
     flexDirection: "row",
@@ -357,14 +422,13 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.text.secondary,
   },
   signInLink: {
     fontSize: 14,
-    color: "#3B82F6",
+    color: colors.primary[600],
     fontWeight: "600",
   },
-  // <CHANGE> Added bottom padding to ensure scrollable content above keyboard
   bottomPadding: {
     height: 60,
   },

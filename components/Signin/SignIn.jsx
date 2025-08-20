@@ -11,8 +11,8 @@ import {
     ScrollView,
 } from "react-native";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react-native";
-
-const { width } = Dimensions.get("window");
+import { validateEmail, validatePassword } from "../Signup/Signup";
+import { colors, semanticColors } from "../../constants/ui_colors";
 
 const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
     const [email, setEmail] = useState("");
@@ -20,8 +20,17 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Validation error states
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+
     const handleSignIn = async () => {
-        if (!email || !password) return;
+        // Validate on press as well
+        const eErr = validateEmail(email);
+        const pErr = validatePassword(password);
+        setEmailError(eErr);
+        setPasswordError(pErr);
+        if (eErr || pErr) return;
 
         setIsLoading(true);
         // Add your sign-in logic here
@@ -31,7 +40,7 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
         }, 1000);
     };
 
-    const isFormValid = email.length > 0 && password.length > 0;
+    const isFormValid = !validateEmail(email) && !validatePassword(password);
 
     return (
         <KeyboardAvoidingView
@@ -54,39 +63,40 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
                 <View style={styles.form}>
                     {/* Email Input */}
                     <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
+                        <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
                             <Mail
                                 size={20}
-                                color="#6B7280"
+                                color={colors.text.placeholder}
                                 style={styles.inputIcon}
                             />
                             <TextInput
                                 style={styles.input}
                                 placeholder="Email address"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={colors.text.placeholder}
                                 value={email}
-                                onChangeText={setEmail}
+                                onChangeText={(v) => { setEmail(v); setEmailError(validateEmail(v)); }}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoCorrect={false}
                             />
                         </View>
+                        {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
                     </View>
 
                     {/* Password Input */}
                     <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
+                        <View style={[styles.inputWrapper, !!passwordError && styles.errorInput]}>
                             <Lock
                                 size={20}
-                                color="#6B7280"
+                                color={colors.text.placeholder}
                                 style={styles.inputIcon}
                             />
                             <TextInput
                                 style={[styles.input, styles.passwordInput]}
                                 placeholder="Password"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={colors.text.placeholder}
                                 value={password}
-                                onChangeText={setPassword}
+                                onChangeText={(v) => { setPassword(v); setPasswordError(validatePassword(v)); }}
                                 secureTextEntry={!showPassword}
                                 autoCapitalize="none"
                                 autoCorrect={false}
@@ -96,12 +106,15 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
                                 style={styles.eyeIcon}
                             >
                                 {showPassword ? (
-                                    <EyeOff size={20} color="#6B7280" />
+                                    <EyeOff size={20} color={colors.text.placeholder} />
                                 ) : (
-                                    <Eye size={20} color="#6B7280" />
+                                    <Eye size={20} color={colors.text.placeholder} />
                                 )}
                             </TouchableOpacity>
                         </View>
+                        {!!passwordError && (
+                            <Text style={styles.errorText}>{passwordError}</Text>
+                        )}
                     </View>
 
                     {/* Forgot Password */}
@@ -131,7 +144,7 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
                         >
                             {isLoading ? "Signing In..." : "Sign In"}
                         </Text>
-                        {!isLoading && <ArrowRight size={20} color="#fff" />}
+                        {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
                     </TouchableOpacity>
                 </View>
 
@@ -152,7 +165,7 @@ const SignInScreen = ({ onSignIn, onNavigateToSignUp, onForgotPassword }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#EEF2FF",
+        backgroundColor: colors.background.primary,
     },
     scrollContent: {
         flexGrow: 1,
@@ -167,12 +180,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: "bold",
-        color: "#111827",
+        color: colors.text.primary,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: "#6B7280",
+        color: colors.text.secondary,
         textAlign: "center",
     },
     form: {
@@ -185,18 +198,21 @@ const styles = StyleSheet.create({
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
+        backgroundColor: colors.background.card,
         borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 16,
-        shadowColor: "#000",
+        paddingVertical: 5,
+        shadowColor: colors.shadow.light,
         shadowOffset: {
             width: 0,
             height: 1,
         },
         shadowOpacity: 0.05,
         shadowRadius: 2,
-        elevation: 2,
+    },
+    errorInput: {
+        borderWidth: 1,
+        borderColor: colors.status.error,
     },
     inputIcon: {
         marginRight: 12,
@@ -204,7 +220,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 16,
-        color: "#111827",
+        color: colors.text.primary,
     },
     passwordInput: {
         paddingRight: 40,
@@ -214,23 +230,29 @@ const styles = StyleSheet.create({
         right: 16,
         padding: 4,
     },
+    errorText: {
+        fontSize: 12,
+        color: colors.status.error,
+        marginTop: 4,
+        marginLeft: 4,
+    },
     forgotPassword: {
         alignSelf: "flex-end",
         marginBottom: 30,
     },
     forgotPasswordText: {
         fontSize: 14,
-        color: "#3B82F6",
+        color: colors.primary[600],
         fontWeight: "500",
     },
     signInButton: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#3B82F6",
+        backgroundColor: colors.primary[600],
         paddingVertical: 16,
         borderRadius: 12,
-        shadowColor: "#3B82F6",
+        shadowColor: colors.shadow.colored,
         shadowOffset: {
             width: 0,
             height: 4,
@@ -240,18 +262,18 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     disabledButton: {
-        backgroundColor: "#D1D5DB",
+        backgroundColor: colors.neutral[300],
         shadowOpacity: 0,
         elevation: 0,
     },
     signInButtonText: {
-        color: "#fff",
+        color: colors.text.white,
         fontSize: 16,
         fontWeight: "600",
         marginRight: 8,
     },
     disabledButtonText: {
-        color: "#9CA3AF",
+        color: colors.text.placeholder,
     },
     footer: {
         flexDirection: "row",
@@ -260,11 +282,11 @@ const styles = StyleSheet.create({
     },
     footerText: {
         fontSize: 14,
-        color: "#6B7280",
+        color: colors.text.secondary,
     },
     signUpLink: {
         fontSize: 14,
-        color: "#3B82F6",
+        color: colors.primary[600],
         fontWeight: "600",
     },
 });

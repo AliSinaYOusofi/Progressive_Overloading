@@ -3,6 +3,6 @@ import SignInScreen from "../components/Signin/SignIn";
 import { router } from "expo-router";
 export default function signin() {
     return (
-        <SignInScreen onNavigateToSignUp={() => router.replace("/signup")} />
+        <SignInScreen onSignIn={() => router.replace("/homescreen")} onNavigateToSignUp={() => router.navigate("/signup")} />
     );
 }
