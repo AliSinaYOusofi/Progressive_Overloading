@@ -1,9 +1,11 @@
 {
-  "scheme": "your-app-scheme",
+  "scheme": "progressive-loading",
   "expo": {
     "name": "app",
     "slug": "app",
+    "scheme": "progressive-loading",
     "version": "1.0.0",
+    "userInterfaceStyle": "automatic",
     "plugins": [
       "expo-router"
     ]

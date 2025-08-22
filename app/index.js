@@ -1,34 +1,22 @@
-import { View, Text } from "react-native";
-import ProgressionOnboardingCarousel from "../components/OnBoarding/OnBoardingApp";
-import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { markOnboardingComplete } from "../utils/onboarding/skip_onboarding";
-import { router } from "expo-router";
-import "../assets/css/global.css"
+import { View, Text, ActivityIndicator } from "react-native";
+import { colors } from "../constants/ui_colors";
 
-export default function Home() {
-    const [showCarousel, setShowCarousel] = useState(false);
-
-    useEffect(() => {
-        AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-            if (value === "true") {
-                router.replace("/signup");
-            } else {
-                setShowCarousel(true);
-            }
-        });
-    }, []);
-
+export default function Index() {
     return (
-        <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-            {showCarousel ? (
-                <ProgressionOnboardingCarousel
-                    onSkip={() => markOnboardingComplete()}
-                    onComplete={() => markOnboardingComplete()}
-                />
-            ) : null}
+        <View style={{ 
+            flex: 1, 
+            justifyContent: "center", 
+            alignItems: "center",
+            backgroundColor: colors.background.primary
+        }}>
+            <ActivityIndicator size="large" color={colors.primary[600]} />
+            <Text style={{ 
+                marginTop: 16, 
+                color: colors.text.secondary,
+                fontSize: 16
+            }}>
+                Loading...
+            </Text>
         </View>
     );
 }

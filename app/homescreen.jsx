@@ -148,6 +148,7 @@ export default function HomeScreen() {
         <ScrollView
             className="flex-1 bg-slate-50"
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
         >
             {/* Header */}
             <View className="bg-emerald-600 pt-12 pb-6 px-6 rounded-b-3xl">
