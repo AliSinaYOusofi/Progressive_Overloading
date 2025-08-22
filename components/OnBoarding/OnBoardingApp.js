@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from "react-native"
 import { ChevronLeft, ChevronRight, X } from "lucide-react-native"
+import { colors, semanticColors } from "../../constants/ui_colors"
 
 const { width, height } = Dimensions.get("window")
 
@@ -127,14 +128,14 @@ const OnboardingCarousel = ({ onComplete, onSkip }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: colors.background.primary,
     justifyContent: "center",
   },
   skipButton: {
     position: "absolute",
     top: 10,
     right: 20,
-    backgroundColor: "rgba(255,255,255,0.8)",
+    backgroundColor: colors.background.card,
     padding: 8,
     borderRadius: 50,
     zIndex: 10,
@@ -163,12 +164,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#111827",
+    color: colors.text.primary,
     textAlign: "center",
   },
   description: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.text.secondary,
     textAlign: "center",
     paddingHorizontal: 10,
   },
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     marginLeft: 4,
-    color: "#6B7280",
+    color: colors.text.secondary,
   },
   dots: {
     flexDirection: "row",
@@ -196,22 +197,22 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 50,
-    backgroundColor: "#D1D5DB",
+    backgroundColor: colors.neutral[300],
   },
   activeDot: {
     width: 20,
-    backgroundColor: "#3B82F6",
+    backgroundColor: colors.primary[600],
   },
   nextButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#3B82F6",
+    backgroundColor: colors.primary[600],
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
   },
   nextText: {
-    color: "#fff",
+    color: colors.text.white,
     fontWeight: "600",
     marginRight: 6,
   },
@@ -224,19 +225,19 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.text.secondary,
     marginHorizontal: 6,
   },
   progressBar: {
     width: 60,
     height: 4,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: colors.neutral[200],
     borderRadius: 10,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#3B82F6",
+    backgroundColor: colors.primary[600],
   },
 })
 

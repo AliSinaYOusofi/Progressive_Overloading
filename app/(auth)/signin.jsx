@@ -11,7 +11,7 @@ import {
     ScrollView,
 } from "react-native";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, X } from "lucide-react-native";
-import { validateEmail, validatePassword } from "../Signup/Signup";
+import { validateEmail, validatePassword } from "./signup";
 import { colors } from "../../constants/ui_colors";
 import { useLocalSearchParams, router } from "expo-router";
 import { signIn } from "../../lib/auth";
@@ -69,8 +69,7 @@ const SignInScreen = () => {
                 }
                 return
             }
-            // Successful sign in - the layout will automatically show tabs
-            // No need to navigate manually as the auth state change will trigger re-render
+            // Successful sign in - the auth state listener will handle the redirect automatically
         } catch (error) {
             console.log(error)
             setAuthError("An unexpected error occurred. Please try again.");

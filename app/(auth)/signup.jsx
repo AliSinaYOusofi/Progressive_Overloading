@@ -111,11 +111,11 @@ const SignUpScreen = () => {
     password === confirmPassword &&
     acceptTerms
 
-             const handleModalClose = () => {
-         setShowVerificationModal(false)
-         // After successful signup, show signin screen
-         router.replace("/(auth)/signin")
-     }
+    const handleModalClose = () => {
+        setShowVerificationModal(false)
+        // After successful signup, show signin screen
+        // The auth state listener will handle navigation automatically
+    }
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
