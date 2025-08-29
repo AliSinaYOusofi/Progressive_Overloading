@@ -14,7 +14,7 @@ import {
 } from "react-native"
 import { X, Save, User, Ruler, Weight, Calendar, Users } from "lucide-react-native"
 import { colors } from "../../constants/ui_colors"
-import { updateProfile, getCurrentUser } from "../../lib/database"
+import { upsertProfile, getCurrentUser } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
 export default function EditProfileModal({ visible, onClose, currentProfile, onProfileUpdate }) {
@@ -137,9 +137,10 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
         weight_kg: formData.weight_kg ? Number.parseFloat(formData.weight_kg) : null,
         date_of_birth: formData.date_of_birth ? formData.date_of_birth.toISOString().split("T")[0] : null,
         gender: formData.gender || null,
+        email: user.email
       }
-
-      await updateProfile(user.id, updates)
+      
+      await upsertProfile(user.id, updates)
 
       onProfileUpdate(updates)
       // insert id to profile table with the user id and the username as full_name

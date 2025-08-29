@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
 import { X, Save } from 'lucide-react-native';
 import { colors } from '../../constants/ui_colors';
-import { updateProfile, getCurrentUser } from '../../lib/database';
+import { upsertProfile, getCurrentUser } from '../../lib/database';
 
 export default function EditUsernameModal({ visible, onClose, currentUsername, onUsernameUpdate }) {
     const [newUsername, setNewUsername] = useState(currentUsername || '');
@@ -29,8 +29,8 @@ export default function EditUsernameModal({ visible, onClose, currentUsername, o
                 return;
             }
 
-            // Update profile
-            await updateProfile(user.id, { username: newUsername.trim() });
+            // Update or create profile
+            await upsertProfile(user.id, { username: newUsername.trim() });
             
             // Call the callback to update the parent component
             onUsernameUpdate(newUsername.trim());
