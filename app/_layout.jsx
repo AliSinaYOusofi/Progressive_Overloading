@@ -1,7 +1,7 @@
 import { Tabs, Stack } from "expo-router";
 import { Home, Settings, BarChart3, User, Dumbbell } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
-import { Platform } from "react-native";
+import { Platform, View, Text, ActivityIndicator } from "react-native";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import "../assets/css/global.css";
@@ -41,7 +41,23 @@ export default function RootLayout() {
     }, []);
 
     if (isLoading) {
-        return null; // Let the index handle loading
+        return (
+            <View style={{ 
+                flex: 1, 
+                justifyContent: "center", 
+                alignItems: "center",
+                backgroundColor: colors.background.primary
+            }}>
+                <ActivityIndicator size="large" color={colors.primary[600]} />
+                <Text style={{ 
+                    marginTop: 16, 
+                    color: colors.text.secondary,
+                    fontSize: 16
+                }}>
+                    Loading...
+                </Text>
+            </View>
+        );
     }
 
     // If not authenticated, show auth screens

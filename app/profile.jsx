@@ -8,6 +8,8 @@ import {
     Alert,
     ActivityIndicator,
     RefreshControl,
+    Modal,
+    Linking,
 } from "react-native";
 import {
     User,
@@ -19,6 +21,8 @@ import {
     Settings,
     LogOut,
     AlertTriangle,
+    Info,
+    ExternalLink,
 } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import { signOut, getUser } from "../lib/auth";
@@ -36,6 +40,7 @@ export default function ProfileScreen() {
     const [achievements, setAchievements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showBMIModal, setShowBMIModal] = useState(false);
     const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
@@ -239,7 +244,7 @@ export default function ProfileScreen() {
                             style={styles.editButton}
                             onPress={() => setShowEditModal(true)}
                         >
-                            <Edit size={16} color={colors.primary[600]} />
+                            <Edit size={20} color={colors.background.primary} />
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.userName}>
@@ -355,28 +360,36 @@ export default function ProfileScreen() {
                                     Number.parseFloat(bmi)
                                 );
                                 return (
-                                    <View style={styles.profileDetail}>
-                                        <Text style={styles.profileDetailLabel}>
-                                            BMI:
-                                        </Text>
-                                        <View style={styles.bmiContainer}>
-                                            <Text
-                                                style={
-                                                    styles.profileDetailValue
-                                                }
-                                            >
-                                                {bmi}
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.bmiCategory,
-                                                    { color: bmiInfo.color },
-                                                ]}
-                                            >
-                                                {bmiInfo.category}
-                                            </Text>
-                                        </View>
-                                    </View>
+                                                                         <View style={styles.profileDetail}>
+                                         <View style={styles.bmiLabelContainer}>
+                                             <Text style={styles.profileDetailLabel}>
+                                                 BMI:
+                                             </Text>
+                                             <TouchableOpacity 
+                                                 style={styles.bmiInfoButton}
+                                                 onPress={() => setShowBMIModal(true)}
+                                             >
+                                                 <Info size={14} color={colors.primary[600]} />
+                                             </TouchableOpacity>
+                                         </View>
+                                         <View style={styles.bmiContainer}>
+                                             <Text
+                                                 style={
+                                                     styles.profileDetailValue
+                                                 }
+                                             >
+                                                 {bmi}
+                                             </Text>
+                                             <Text
+                                                 style={[
+                                                     styles.bmiCategory,
+                                                     { color: bmiInfo.color },
+                                                 ]}
+                                             >
+                                                 {bmiInfo.category}
+                                             </Text>
+                                         </View>
+                                     </View>
                                 );
                             })()}
                     </View>
@@ -401,6 +414,7 @@ export default function ProfileScreen() {
                             style={styles.completeProfileButton}
                             onPress={() => setShowEditModal(true)}
                         >
+                            <Edit size={20} color={colors.background.primary} style={{ marginRight: 8 }} />
                             <Text style={styles.completeProfileButtonText}>
                                 Complete Profile
                             </Text>
@@ -472,6 +486,15 @@ export default function ProfileScreen() {
                 {/* Profile Actions */}
                 <View style={styles.actionsSection}>
                     <Text style={styles.sectionTitle}>Account</Text>
+                    <TouchableOpacity 
+                        style={styles.actionButton}
+                        onPress={() => setShowEditModal(true)}
+                    >
+                        <View style={styles.actionIcon}>
+                            <Edit size={20} color={colors.primary[600]} />
+                        </View>
+                        <Text style={styles.actionText}>Edit Profile</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
                         <View style={styles.actionIcon}>
                             <Settings size={20} color={colors.primary[600]} />
@@ -500,36 +523,88 @@ export default function ProfileScreen() {
                     <View style={styles.actionSeparator} />
 
                     {/* Delete Account Warning */}
-                    <View style={styles.deleteWarning}>
-                        <Text style={styles.deleteWarningText}>
-                            ⚠️ This action cannot be undone
-                        </Text>
-                    </View>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.actionButton,
-                            styles.deleteAccountButton,
-                        ]}
-                        onPress={handleDeleteAccount}
-                    >
-                        <View style={styles.actionIcon}>
-                            <AlertTriangle
-                                size={20}
-                                color={colors.status.error}
-                            />
+                    <View style={styles.dangerZone}>
+                        <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
+                        
+                        <View style={styles.deleteWarning}>
+                            <AlertTriangle size={16} color={colors.status.error} />
+                            <Text style={styles.deleteWarningText}>
+                                This action cannot be undone
+                            </Text>
                         </View>
-                        <Text
-                            style={[
-                                styles.actionText,
-                                styles.deleteAccountText,
-                            ]}
+
+                        <TouchableOpacity
+                            style={styles.deleteAccountButton}
+                            onPress={handleDeleteAccount}
                         >
-                            Delete Account
-                        </Text>
-                    </TouchableOpacity>
+                            <AlertTriangle size={18} color={colors.status.error} />
+                            <Text style={styles.deleteAccountText}>
+                                Delete Account
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
+
+            {/* BMI Info Modal */}
+            <Modal
+                visible={showBMIModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowBMIModal(false)}
+            >
+                <TouchableOpacity 
+                    style={styles.bmiModalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowBMIModal(false)}
+                >
+                    <View style={styles.bmiModalContainer}>
+                        <View style={styles.bmiModalHeader}>
+                            <Text style={styles.bmiModalTitle}>What is BMI?</Text>
+                            <TouchableOpacity 
+                                onPress={() => setShowBMIModal(false)}
+                                style={styles.bmiModalClose}
+                            >
+                                <Text style={styles.bmiModalCloseText}>×</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <Text style={styles.bmiModalDescription}>
+                            Body Mass Index (BMI) is a measure of body fat based on height and weight. It's calculated by dividing your weight in kilograms by your height in meters squared.
+                        </Text>
+                        
+                        <View style={styles.bmiRanges}>
+                            <Text style={styles.bmiRangesTitle}>BMI Categories:</Text>
+                            <View style={styles.bmiRange}>
+                                <Text style={styles.bmiRangeLabel}>Underweight:</Text>
+                                <Text style={styles.bmiRangeValue}>Below 18.5</Text>
+                            </View>
+                            <View style={styles.bmiRange}>
+                                <Text style={styles.bmiRangeLabel}>Normal:</Text>
+                                <Text style={styles.bmiRangeValue}>18.5 - 24.9</Text>
+                            </View>
+                            <View style={styles.bmiRange}>
+                                <Text style={styles.bmiRangeLabel}>Overweight:</Text>
+                                <Text style={styles.bmiRangeValue}>25.0 - 29.9</Text>
+                            </View>
+                            <View style={styles.bmiRange}>
+                                <Text style={styles.bmiRangeLabel}>Obese:</Text>
+                                <Text style={styles.bmiRangeValue}>30.0 and above</Text>
+                            </View>
+                        </View>
+                        
+                        <TouchableOpacity 
+                            style={styles.learnMoreButton}
+                            onPress={() => {
+                                Linking.openURL('https://www.cdc.gov/healthyweight/assessing/bmi/index.html');
+                            }}
+                        >
+                            <ExternalLink size={16} color={colors.primary[600]} />
+                            <Text style={styles.learnMoreText}>Learn More</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Profile Edit Modal */}
             <EditProfileModal
@@ -573,16 +648,21 @@ const styles = StyleSheet.create({
     },
     editButton: {
         position: "absolute",
-        bottom: 0,
-        right: 0,
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: colors.background.card,
+        bottom: -4,
+        right: -4,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.primary[600],
         alignItems: "center",
         justifyContent: "center",
-        borderWidth: 2,
-        borderColor: colors.primary[200],
+        borderWidth: 3,
+        borderColor: colors.background.primary,
+        shadowColor: colors.shadow.dark,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
     },
     userName: {
         fontSize: 24,
@@ -667,10 +747,17 @@ const styles = StyleSheet.create({
     },
     completeProfileButton: {
         backgroundColor: colors.primary[600],
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 24,
-        borderRadius: 8,
+        borderRadius: 12,
         alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "center",
+        shadowColor: colors.shadow.dark,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 4,
     },
     completeProfileButtonText: {
         color: colors.background.primary,
@@ -825,32 +912,61 @@ const styles = StyleSheet.create({
     logoutText: {
         color: colors.status.error,
     },
+    dangerZone: {
+        backgroundColor: colors.background.card,
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 24,
+        marginBottom: 50,
+        borderWidth: 1,
+        borderColor: colors.status.error + '20', // 20% opacity
+        shadowColor: colors.status.error,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    dangerZoneTitle: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: colors.status.error,
+        marginBottom: 16,
+        textAlign: "center",
+    },
+    deleteWarning: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.status.error + '10', // 10% opacity
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: colors.status.error + '30', // 30% opacity
+    },
+    deleteWarningText: {
+        fontSize: 14,
+        color: colors.status.error,
+        fontWeight: "500",
+        marginLeft: 8,
+    },
     deleteAccountButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.background.primary,
         borderWidth: 2,
         borderColor: colors.status.error,
-        backgroundColor: colors.status.errorLight,
-        marginTop: 16,
-        marginBottom: 50, // Increased from 30 to 50 to ensure button is fully visible
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        gap: 8,
     },
     deleteAccountText: {
         color: colors.status.error,
-        fontWeight: "600", // Made text bolder for better visibility
-    },
-    deleteWarning: {
-        alignItems: "center",
-        marginBottom: 20, // Increased from 16 to 20 for better spacing
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: colors.status.errorLight, // Added background color to make warning more prominent
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.status.error,
-    },
-    deleteWarningText: {
-        fontSize: 14, // Increased font size for better readability
-        color: colors.status.error,
-        fontWeight: "600", // Made text bolder
-        textAlign: "center",
+        fontSize: 16,
+        fontWeight: "600",
     },
     loadingContainer: {
         flex: 1,
@@ -910,5 +1026,106 @@ const styles = StyleSheet.create({
         color: colors.background.primary,
         fontSize: 16,
         fontWeight: "500",
+    },
+    bmiLabelContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
+    bmiInfoButton: {
+        padding: 2,
+    },
+    bmiModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    bmiModalContainer: {
+        backgroundColor: colors.background.card,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        maxHeight: '80%',
+        shadowColor: colors.shadow.dark,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    bmiModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    bmiModalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: colors.text.primary,
+    },
+    bmiModalClose: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.background.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bmiModalCloseText: {
+        fontSize: 20,
+        color: colors.text.secondary,
+        fontWeight: '300',
+    },
+    bmiModalDescription: {
+        fontSize: 16,
+        color: colors.text.secondary,
+        lineHeight: 24,
+        marginBottom: 20,
+    },
+    bmiRanges: {
+        marginBottom: 24,
+    },
+    bmiRangesTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text.primary,
+        marginBottom: 12,
+    },
+    bmiRange: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: colors.background.primary,
+        borderRadius: 8,
+        marginBottom: 6,
+    },
+    bmiRangeLabel: {
+        fontSize: 14,
+        color: colors.text.secondary,
+        fontWeight: '500',
+    },
+    bmiRangeValue: {
+        fontSize: 14,
+        color: colors.text.primary,
+        fontWeight: '600',
+    },
+    learnMoreButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primary[50],
+        borderWidth: 1,
+        borderColor: colors.primary[200],
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        gap: 8,
+    },
+    learnMoreText: {
+        fontSize: 16,
+        color: colors.primary[600],
+        fontWeight: '600',
     },
 });
