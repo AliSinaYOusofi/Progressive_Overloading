@@ -28,6 +28,7 @@ import { colors } from "../constants/ui_colors";
 import { signOut, getUser } from "../lib/auth";
 import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../lib/database";
 import EditProfileModal from "../components/HomeScreen/EditProfileModal";
+import BMIInfoModal from "../components/Profile/BMIInfoModal";
 
 export default function ProfileScreen() {
     const [userProfile, setUserProfile] = useState(null);
@@ -546,65 +547,7 @@ export default function ProfileScreen() {
                 </View>
             </ScrollView>
 
-            {/* BMI Info Modal */}
-            <Modal
-                visible={showBMIModal}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowBMIModal(false)}
-            >
-                <TouchableOpacity 
-                    style={styles.bmiModalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setShowBMIModal(false)}
-                >
-                    <View style={styles.bmiModalContainer}>
-                        <View style={styles.bmiModalHeader}>
-                            <Text style={styles.bmiModalTitle}>What is BMI?</Text>
-                            <TouchableOpacity 
-                                onPress={() => setShowBMIModal(false)}
-                                style={styles.bmiModalClose}
-                            >
-                                <Text style={styles.bmiModalCloseText}>×</Text>
-                            </TouchableOpacity>
-                        </View>
-                        
-                        <Text style={styles.bmiModalDescription}>
-                            Body Mass Index (BMI) is a measure of body fat based on height and weight. It's calculated by dividing your weight in kilograms by your height in meters squared.
-                        </Text>
-                        
-                        <View style={styles.bmiRanges}>
-                            <Text style={styles.bmiRangesTitle}>BMI Categories:</Text>
-                            <View style={styles.bmiRange}>
-                                <Text style={styles.bmiRangeLabel}>Underweight:</Text>
-                                <Text style={styles.bmiRangeValue}>Below 18.5</Text>
-                            </View>
-                            <View style={styles.bmiRange}>
-                                <Text style={styles.bmiRangeLabel}>Normal:</Text>
-                                <Text style={styles.bmiRangeValue}>18.5 - 24.9</Text>
-                            </View>
-                            <View style={styles.bmiRange}>
-                                <Text style={styles.bmiRangeLabel}>Overweight:</Text>
-                                <Text style={styles.bmiRangeValue}>25.0 - 29.9</Text>
-                            </View>
-                            <View style={styles.bmiRange}>
-                                <Text style={styles.bmiRangeLabel}>Obese:</Text>
-                                <Text style={styles.bmiRangeValue}>30.0 and above</Text>
-                            </View>
-                        </View>
-                        
-                        <TouchableOpacity 
-                            style={styles.learnMoreButton}
-                            onPress={() => {
-                                Linking.openURL('https://www.cdc.gov/healthyweight/assessing/bmi/index.html');
-                            }}
-                        >
-                            <ExternalLink size={16} color={colors.primary[600]} />
-                            <Text style={styles.learnMoreText}>Learn More</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+            <BMIInfoModal visible={showBMIModal} onClose={() => setShowBMIModal(false)} />
 
             {/* Profile Edit Modal */}
             <EditProfileModal

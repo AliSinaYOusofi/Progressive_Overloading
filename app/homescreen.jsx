@@ -7,6 +7,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
     Modal,
+    Linking,
 } from "react-native";
 import {
     Flame,
@@ -17,19 +18,28 @@ import {
     Trash2,
     CheckCircle2,
     RotateCcw,
+    Dumbbell,
+    Repeat,
+    Layers,
+    Clock,
+    Info,
+    ExternalLink,
 } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import {
     getCurrentUser,
     getProfile,
     getCurrentStreak,
-    getPersonalRecords,
     getFitnessGoals,
     createFitnessGoal,
     updateFitnessGoal,
     deleteFitnessGoal,
+    getExerciseProgressRows,
 } from "../lib/database";
 import AddGoalModal from "../components/HomeScreen/AddGoalModal";
+import LogSetModal from "../components/HomeScreen/LogSetModal";
+import EditSetModal from "../components/HomeScreen/EditSetModal";
+import RMInfoModal from "../components/HomeScreen/RMInfoModal";
 
 export default function HomeScreen() {
     const [user, setUser] = useState(null);
@@ -40,6 +50,18 @@ export default function HomeScreen() {
     const [progressByExercise, setProgressByExercise] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [isLogSetVisible, setIsLogSetVisible] = useState(false);
+    const [isLogSubmitting, setIsLogSubmitting] = useState(false);
+    const [showRMInfoModal, setShowRMInfoModal] = useState(false);
+    const [recentSets, setRecentSets] = useState([]);
+    const [isEditSetVisible, setIsEditSetVisible] = useState(false);
+    const [editingSet, setEditingSet] = useState(null);
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+    const [isEditDeleting, setIsEditDeleting] = useState(false);
+    const [isSetDetailsVisible, setIsSetDetailsVisible] = useState(false);
+    const [selectedSet, setSelectedSet] = useState(null);
+    const [deleteLoadingSetId, setDeleteLoadingSetId] = useState(null);
+    const [modalDeleteLoadingSetId, setModalDeleteLoadingSetId] = useState(null);
 
     // Goals modal
     const [isGoalModalVisible, setIsGoalModalVisible] = useState(false);
@@ -77,40 +99,15 @@ export default function HomeScreen() {
         return w * (1 + r / 30);
     };
 
-    const buildProgressFromPRs = (prs) => {
-        const byExercise = prs.reduce((acc, pr) => {
-            const key =
-                pr.exercise_id ||
-                pr.exercises?.id ||
-                pr.exercises?.name ||
-                "unknown";
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(pr);
-            return acc;
-        }, {});
-
-        const rows = Object.values(byExercise).map((list) => {
-            list.sort(
-                (a, b) => new Date(a.achieved_at) - new Date(b.achieved_at)
-            );
-            const first = list[0];
-            const best = list.reduce((m, x) => {
-                const m1 = computeOneRM(m.weight_kg, m.reps);
-                const x1 = computeOneRM(x.weight_kg, x.reps);
-                return x1 > m1 ? x : m;
-            }, list[0]);
-            const first1RM = computeOneRM(first.weight_kg, first.reps);
-            const best1RM = computeOneRM(best.weight_kg, best.reps);
-            return {
-                exerciseName: best.exercises?.name || "Exercise",
-                first1RM,
-                best1RM,
-                delta: best1RM - first1RM,
-                bestAt: best.achieved_at,
-            };
-        });
-        rows.sort((a, b) => b.delta - a.delta);
+    const loadProgressFromSets = async (userId) => {
+        const rows = await getExerciseProgressRows(userId, 1000);
         setProgressByExercise(rows);
+    };
+
+    const loadRecentSets = async (userId) => {
+        const { getExerciseSetsByUser } = await import("../lib/database");
+        const sets = await getExerciseSetsByUser(userId, 25);
+        setRecentSets(sets);
     };
 
     const loadUserData = async () => {
@@ -120,23 +117,149 @@ export default function HomeScreen() {
             if (!currentUser) return;
             setUser(currentUser);
 
-            const [profileData, streakData, prsData, goalsData] =
+            const [profileData, streakData, goalsData, progressRows] =
                 await Promise.all([
                     getProfile(currentUser.id),
                     getCurrentStreak(currentUser.id),
-                    getPersonalRecords(currentUser.id, 200),
                     getFitnessGoals(currentUser.id),
+                    getExerciseProgressRows(currentUser.id, 1000),
                 ]);
 
             setProfile(profileData || null);
             setCurrentStreak(streakData || 0);
-            setPersonalRecords(prsData || []);
             setFitnessGoals(goalsData || []);
-            buildProgressFromPRs(prsData || []);
+            setProgressByExercise(progressRows || []);
+            await loadRecentSets(currentUser.id);
         } catch (error) {
             console.error("Error loading user data:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleOpenLogSet = () => setIsLogSetVisible(true);
+    const handleCloseLogSet = () => setIsLogSetVisible(false);
+
+    const handleSubmitLogSet = async ({ exerciseName, weight, reps, sets, unit }) => {
+        try {
+            setIsLogSubmitting(true);
+            const currentUser = user || (await getCurrentUser());
+            if (!currentUser) return;
+            // Find or create exercise, then create set
+            const { findOrCreateExercise, createExerciseSet } = await import("../lib/database");
+            const exercise = await findOrCreateExercise(currentUser.id, exerciseName);
+            await createExerciseSet({
+                user_id: currentUser.id,
+                exercise_id: exercise.id,
+                weight,
+                reps,
+                sets,
+                unit,
+                performed_at: new Date().toISOString(),
+            });
+            // Refresh progress
+            await loadProgressFromSets(currentUser.id);
+            await loadRecentSets(currentUser.id);
+            handleCloseLogSet();
+        } catch (e) {
+            console.error("Error logging set:", e);
+        } finally {
+            setIsLogSubmitting(false);
+        }
+    };
+
+    const openEditSetModal = (set) => {
+        setEditingSet(set);
+        setIsEditSetVisible(true);
+    };
+
+    const closeEditSetModal = () => {
+        setIsEditSetVisible(false);
+        setEditingSet(null);
+    };
+
+    const openSetDetails = (set) => {
+        setSelectedSet(set);
+        setIsSetDetailsVisible(true);
+    };
+
+    const closeSetDetails = () => {
+        setIsSetDetailsVisible(false);
+        setSelectedSet(null);
+    };
+
+    const handleSaveEditedSet = async ({ exerciseName, weight, reps, sets, unit }) => {
+        try {
+            setIsEditSubmitting(true);
+            const currentUser = user || (await getCurrentUser());
+            if (!currentUser || !editingSet) return;
+            const { findOrCreateExercise, updateExerciseSet } = await import("../lib/database");
+            const exercise = await findOrCreateExercise(currentUser.id, exerciseName);
+            await updateExerciseSet(editingSet.id, {
+                exercise_id: exercise.id,
+                weight,
+                reps,
+                sets,
+                unit,
+            });
+            await loadProgressFromSets(currentUser.id);
+            await loadRecentSets(currentUser.id);
+            closeEditSetModal();
+        } catch (e) {
+            console.error("Error updating set:", e);
+        } finally {
+            setIsEditSubmitting(false);
+        }
+    };
+
+    const handleDeleteSet = async () => {
+        try {
+            setIsEditDeleting(true);
+            const currentUser = user || (await getCurrentUser());
+            if (!currentUser || !editingSet) return;
+            const { deleteExerciseSet } = await import("../lib/database");
+            await deleteExerciseSet(editingSet.id);
+            await loadProgressFromSets(currentUser.id);
+            await loadRecentSets(currentUser.id);
+            closeEditSetModal();
+        } catch (e) {
+            console.error("Error deleting set:", e);
+        } finally {
+            setIsEditDeleting(false);
+        }
+    };
+
+    const handleDeleteSetFromList = async (setItem) => {
+        try {
+            setDeleteLoadingSetId(setItem.id);
+            const currentUser = user || (await getCurrentUser());
+            if (!currentUser) return;
+            const { deleteExerciseSet } = await import("../lib/database");
+            await deleteExerciseSet(setItem.id);
+            await loadProgressFromSets(currentUser.id);
+            await loadRecentSets(currentUser.id);
+        } catch (e) {
+            console.error("Error deleting set:", e);
+        } finally {
+            setDeleteLoadingSetId(null);
+        }
+    };
+
+    const handleDeleteSetFromModal = async () => {
+        if (!selectedSet) return;
+        try {
+            setModalDeleteLoadingSetId(selectedSet.id);
+            const currentUser = user || (await getCurrentUser());
+            if (!currentUser) return;
+            const { deleteExerciseSet } = await import("../lib/database");
+            await deleteExerciseSet(selectedSet.id);
+            await loadProgressFromSets(currentUser.id);
+            await loadRecentSets(currentUser.id);
+            closeSetDetails();
+        } catch (e) {
+            console.error("Error deleting set:", e);
+        } finally {
+            setModalDeleteLoadingSetId(null);
         }
     };
 
@@ -312,9 +435,20 @@ export default function HomeScreen() {
             <View className="px-6 -mt-4">
                 {/* Progressive Overload Section */}
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                    <Text className="text-gray-900 text-xl font-bold mb-4">
-                        Your Progress
-                    </Text>
+                    <View className="flex-row items-center justify-between mb-4">
+                        <Text className="text-gray-900 text-xl font-bold">
+                            Your Progress
+                        </Text>
+                        <TouchableOpacity onPress={() => setShowRMInfoModal(true)} className="bg-emerald-50 p-2 rounded-full">
+                            <Info size={18} color={colors.primary[600]} />
+                        </TouchableOpacity>
+                    </View>
+                    <View className="flex-row justify-end mb-2">
+                        <TouchableOpacity onPress={handleOpenLogSet} className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full">
+                            <Plus size={18} color={colors.primary[600]} />
+                            <Text className="text-emerald-700 font-medium ml-1">Log Set</Text>
+                        </TouchableOpacity>
+                    </View>
                     {progressByExercise.length === 0 ? (
                         <View className="bg-gray-50 rounded-xl p-4 items-center">
                             <TrendingUp
@@ -560,6 +694,69 @@ export default function HomeScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Recent Sets Section */}
+                <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+                    <View className="flex-row items-center justify-between mb-4">
+                        <Text className="text-gray-900 text-xl font-bold">Recent Sets</Text>
+                        <TouchableOpacity onPress={handleOpenLogSet} className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full">
+                            <Plus size={18} color={colors.primary[600]} />
+                            <Text className="text-emerald-700 font-medium ml-1">Log Set</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {recentSets?.length > 0 ? (
+                        recentSets.map((s) => (
+                            <TouchableOpacity key={s.id} onPress={() => openSetDetails(s)} className="py-3 border-b border-gray-100 last:border-b-0">
+                                <View className="flex-row items-center">
+                                    <View className="bg-emerald-100 p-2 rounded-full mr-3">
+                                        <Dumbbell size={16} color={colors.primary[600]} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text className="text-gray-900 font-semibold">{s.exercises?.name || "Exercise"}</Text>
+                                        <View className="flex-row mt-1">
+                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
+                                                <Dumbbell size={14} color={colors.text.secondary} />
+                                                <Text className="text-gray-700 text-xs ml-1">{s.weight} {s.unit}</Text>
+                                            </View>
+                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
+                                                <Repeat size={14} color={colors.icon.accent} />
+                                                <Text className="text-gray-700 text-xs ml-1">{s.reps} reps</Text>
+                                            </View>
+                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full">
+                                                <Layers size={14} color={colors.text.secondary} />
+                                                <Text className="text-gray-700 text-xs ml-1">{s.sets} sets</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row items-center ml-3">
+                                        <TouchableOpacity
+                                            onPress={() => openEditSetModal(s)}
+                                            style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+                                        >
+                                            <Pencil size={18} color={colors.text.secondary} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => handleDeleteSetFromList(s)}
+                                            disabled={deleteLoadingSetId === s.id}
+                                            style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+                                        >
+                                            {deleteLoadingSetId === s.id ? (
+                                                <ActivityIndicator size="small" color={colors.status.error} />
+                                            ) : (
+                                                <Trash2 size={18} color={colors.status.error} />
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <View className="bg-gray-50 rounded-xl p-4 items-center">
+                            <TrendingUp size={32} color={colors.text.tertiary} />
+                            <Text className="text-gray-500 text-center mt-2">No sets logged yet. Log your first set!</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             {/* Goal Details Bottom Sheet */}
@@ -783,6 +980,101 @@ export default function HomeScreen() {
                     </View>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Log Set Modal */}
+            <LogSetModal
+                visible={isLogSetVisible}
+                onClose={handleCloseLogSet}
+                onSubmit={handleSubmitLogSet}
+                isSubmitting={isLogSubmitting}
+            />
+
+            {/* Set Details Bottom Sheet */}
+            <Modal
+                transparent
+                visible={isSetDetailsVisible}
+                animationType="slide"
+                onRequestClose={closeSetDetails}
+            >
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={closeSetDetails}
+                    style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+                >
+                    <View style={{ backgroundColor: colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+                        {selectedSet && (
+                            <View>
+                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                                    <View className="bg-emerald-100 p-2 rounded-full mr-3">
+                                        <Dumbbell size={16} color={colors.primary[600]} />
+                                    </View>
+                                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
+                                        {selectedSet.exercises?.name || "Exercise"}
+                                    </Text>
+                                </View>
+                                <View style={{ flexDirection: "row", marginBottom: 16 }}>
+                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
+                                        <Dumbbell size={14} color={colors.text.secondary} />
+                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.weight} {selectedSet.unit}</Text>
+                                    </View>
+                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
+                                        <Repeat size={14} color={colors.text.secondary} />
+                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.reps} reps</Text>
+                                    </View>
+                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full">
+                                        <Layers size={14} color={colors.text.secondary} />
+                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.sets} sets</Text>
+                                    </View>
+                                </View>
+
+                                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            closeSetDetails();
+                                            openEditSetModal(selectedSet);
+                                        }}
+                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.background.card, borderRadius: 12 }}
+                                    >
+                                        <Pencil size={18} color={colors.text.secondary} />
+                                        <Text style={{ marginLeft: 8, color: colors.text.secondary, fontWeight: "600" }}>Edit</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={handleDeleteSetFromModal}
+                                        disabled={modalDeleteLoadingSetId === (selectedSet?.id || null)}
+                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.background.card, borderRadius: 12 }}
+                                    >
+                                        {modalDeleteLoadingSetId === (selectedSet?.id || null) ? (
+                                            <ActivityIndicator size="small" color={colors.status.error} />
+                                        ) : (
+                                            <Trash2 size={18} color={colors.status.error} />
+                                        )}
+                                        <Text style={{ marginLeft: 8, color: colors.status.error, fontWeight: "600" }}>Delete</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            <RMInfoModal visible={showRMInfoModal} onClose={() => setShowRMInfoModal(false)} />
+
+            {/* Edit Set Modal */}
+            <EditSetModal
+                visible={isEditSetVisible}
+                onClose={closeEditSetModal}
+                onSubmit={handleSaveEditedSet}
+                onDelete={handleDeleteSet}
+                isSubmitting={isEditSubmitting}
+                isDeleting={isEditDeleting}
+                initialValues={editingSet ? {
+                    exerciseName: editingSet?.exercises?.name || "",
+                    weight: editingSet?.weight,
+                    reps: editingSet?.reps,
+                    sets: editingSet?.sets,
+                    unit: editingSet?.unit,
+                } : null}
+            />
 
             {/* Goal Modal */}
             <AddGoalModal
