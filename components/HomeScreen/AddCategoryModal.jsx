@@ -105,7 +105,7 @@ export default function AddCategoryModal({
             };
 
             await createWorkoutCategory(categoryData);
-            Alert.alert("Success", "Category created successfully!");
+            Alert.alert("Success", "Category created!");
             onCategoryAdded();
         } catch (error) {
             console.error("Error creating category:", error);
