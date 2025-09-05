@@ -9,8 +9,9 @@ import {
   Alert,
   ActivityIndicator 
 } from "react-native";
-import { X, Target, Calendar, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
+import { Target, Calendar, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
 import { colors } from "../../constants/ui_colors";
+import ModalCloseButton from "../ModalCloseButton";
 
 export default function AddGoalModal({
   visible,
@@ -91,14 +92,7 @@ export default function AddGoalModal({
               <Text className="text-gray-900 text-xl font-bold">
                 {isEditing ? "Edit Goal" : "Add Fitness Goal"}
               </Text>
-              <TouchableOpacity 
-                onPress={onClose} 
-                disabled={isLoading}
-                className="p-2 rounded-lg bg-gray-100"
-                style={{ opacity: isLoading ? 0.5 : 1 }}
-              >
-                <X size={18} color={colors.text.tertiary} />
-              </TouchableOpacity>
+              <ModalCloseButton onPress={onClose} disabled={isLoading} size={18} />
             </View>
 
             {/* Edit actions row (Complete/Reopen, Delete) */}
