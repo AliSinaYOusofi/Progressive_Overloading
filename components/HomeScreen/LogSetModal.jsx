@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
-import { X } from "lucide-react-native";
 import { colors } from "../../constants/ui_colors";
+import ModalCloseButton from "../ModalCloseButton";
 
 export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting }) {
     const [exerciseName, setExerciseName] = useState("");
@@ -55,9 +55,7 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting }
                 <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ backgroundColor: "white", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16 }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                         <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>Log Set</Text>
-                        <TouchableOpacity onPress={onClose} disabled={isSubmitting}>
-                            <X size={20} color={colors.text.secondary} />
-                        </TouchableOpacity>
+                        <ModalCloseButton onPress={onClose} disabled={isSubmitting} size={18} />
                     </View>
 
                     <View style={{ marginBottom: 12 }}>

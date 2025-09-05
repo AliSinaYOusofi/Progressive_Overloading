@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
-import { X, Trash2 } from "lucide-react-native";
+import { Trash2 } from "lucide-react-native";
 import { colors } from "../../constants/ui_colors";
+import ModalCloseButton from "../ModalCloseButton";
 
 export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isSubmitting, isDeleting, initialValues }) {
     const [exerciseName, setExerciseName] = useState("");
@@ -40,9 +41,7 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                 <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ backgroundColor: "white", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16 }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                         <Text style={{ fontSize: 18, fontWeight: "700", color: "#111827" }}>Edit Set</Text>
-                        <TouchableOpacity onPress={onClose} disabled={isSubmitting || isDeleting}>
-                            <X size={20} color={colors.text.secondary} />
-                        </TouchableOpacity>
+                        <ModalCloseButton onPress={onClose} disabled={isSubmitting || isDeleting} size={18} />
                     </View>
 
                     <View style={{ marginBottom: 12 }}>

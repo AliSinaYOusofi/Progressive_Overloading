@@ -1,5 +1,6 @@
 import { View, Text, Modal, TouchableOpacity, Linking } from "react-native"
-import { ExternalLink, Dumbbell, Repeat, Layers, X } from "lucide-react-native"
+import { ExternalLink, Dumbbell, Repeat, Layers } from "lucide-react-native"
+import ModalCloseButton from "../ModalCloseButton"
 
 export default function RMInfoModal({ visible, onClose }) {
   return (
@@ -17,12 +18,7 @@ export default function RMInfoModal({ visible, onClose }) {
             <View className="px-6 pb-8">
               <View className="flex-row justify-between items-center mb-6">
                 <Text className="text-2xl font-bold text-gray-900">What is Rep Max (RM)?</Text>
-                <TouchableOpacity
-                  onPress={onClose}
-                  className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center"
-                >
-                  <X size={18} color="#6B7280" />
-                </TouchableOpacity>
+                <ModalCloseButton onPress={onClose} size={18} />
               </View>
 
               <View className="mb-6">

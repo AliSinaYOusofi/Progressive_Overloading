@@ -24,6 +24,8 @@ import {
     Clock,
     Info,
     ExternalLink,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import {
@@ -40,6 +42,8 @@ import AddGoalModal from "../components/HomeScreen/AddGoalModal";
 import LogSetModal from "../components/HomeScreen/LogSetModal";
 import EditSetModal from "../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../components/HomeScreen/RMInfoModal";
+import SetDetailsModal from "../components/HomeScreen/SetDetailsModal";
+import GoalDetailsModal from "../components/HomeScreen/GoalDetailsModal";
 
 export default function HomeScreen() {
     const [user, setUser] = useState(null);
@@ -82,12 +86,18 @@ export default function HomeScreen() {
 
     // Loading states for goal actions
     const [isGoalActionLoading, setIsGoalActionLoading] = useState(false);
-    const [loadingGoalId, setLoadingGoalId] = useState(null);
-    const [modalLoadingGoalId, setModalLoadingGoalId] = useState(null);
     const [modalCompleteLoadingGoalId, setModalCompleteLoadingGoalId] = useState(null);
     const [modalDeleteLoadingGoalId, setModalDeleteLoadingGoalId] = useState(null);
     const [completeLoadingGoalId, setCompleteLoadingGoalId] = useState(null);
     const [deleteLoadingGoalId, setDeleteLoadingGoalId] = useState(null);
+
+    // Card expansion states
+    const [cardExpanded, setCardExpanded] = useState({
+        progress: true,
+        goals: true,
+        completedGoals: true,
+        recentSets: true,
+    });
 
     useEffect(() => {
         loadUserData();
@@ -310,12 +320,20 @@ export default function HomeScreen() {
                 unit: goalData.unit,
                 target_date: goalData.target_date || null,
             };
+            
+            let savedGoal;
             if (editingGoalId) {
-                await updateFitnessGoal(editingGoalId, payload);
+                savedGoal = await updateFitnessGoal(editingGoalId, payload);
+                // Update existing goal in local state
+                setFitnessGoals(prev => 
+                    prev.map(g => g.id === editingGoalId ? { ...g, ...payload } : g)
+                );
             } else {
-                await createFitnessGoal(payload);
+                savedGoal = await createFitnessGoal(payload);
+                // Add new goal to local state
+                setFitnessGoals(prev => [...prev, savedGoal]);
             }
-            await loadUserData();
+            
             setIsGoalModalVisible(false);
             setEditingGoalId(null);
         } catch (e) {
@@ -333,7 +351,10 @@ export default function HomeScreen() {
                 setDeleteLoadingGoalId(goalId);
             }
             await deleteFitnessGoal(goalId);
-            await loadUserData();
+            
+            // Update goals list locally instead of refreshing entire page
+            setFitnessGoals(prev => prev.filter(goal => goal.id !== goalId));
+            
             setIsGoalDetailsVisible(false);
             setSelectedGoal(null);
         } catch (e) {
@@ -361,7 +382,12 @@ export default function HomeScreen() {
                       completed_at: new Date().toISOString(),
                   };
             await updateFitnessGoal(goal.id, updates);
-            await loadUserData();
+            
+            // Update goals list locally instead of refreshing entire page
+            setFitnessGoals(prev => 
+                prev.map(g => g.id === goal.id ? { ...g, ...updates } : g)
+            );
+            
             setSelectedGoal((prev) =>
                 prev && prev.id === goal.id ? { ...prev, ...updates } : prev
             );
@@ -382,6 +408,13 @@ export default function HomeScreen() {
     const openGoalDetails = (goal) => {
         setSelectedGoal(goal);
         setIsGoalDetailsVisible(true);
+    };
+
+    const toggleCardExpansion = (cardType) => {
+        setCardExpanded(prev => ({
+            ...prev,
+            [cardType]: !prev[cardType]
+        }));
     };
 
     if (isLoading) {
@@ -435,20 +468,37 @@ export default function HomeScreen() {
             <View className="px-6 -mt-4">
                 {/* Progressive Overload Section */}
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                    <View className="flex-row items-center justify-between mb-4">
+                    <TouchableOpacity 
+                        onPress={() => toggleCardExpansion('progress')}
+                        className="flex-row items-center justify-between mb-4"
+                    >
                         <Text className="text-gray-900 text-xl font-bold">
                             Your Progress
                         </Text>
-                        <TouchableOpacity onPress={() => setShowRMInfoModal(true)} className="bg-emerald-50 p-2 rounded-full">
-                            <Info size={18} color={colors.primary[600]} />
-                        </TouchableOpacity>
-                    </View>
-                    <View className="flex-row justify-end mb-2">
+
+                        <View className="flex-row justify-end ">
                         <TouchableOpacity onPress={handleOpenLogSet} className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full">
                             <Plus size={18} color={colors.primary[600]} />
                             <Text className="text-emerald-700 font-medium ml-1">Log Set</Text>
                         </TouchableOpacity>
                     </View>
+                        <View className="flex-row items-center">
+                            <TouchableOpacity onPress={() => setShowRMInfoModal(true)} className="bg-emerald-50 p-2 rounded-full mr-2">
+                                <Info size={18} color={colors.primary[600]} />
+                            </TouchableOpacity>
+                            <View className="bg-emerald-50 p-2 rounded-full mr-2">
+                                {cardExpanded.progress ? (
+                                    <ChevronUp size={18} color={colors.primary[600]} />
+                                ) : (
+                                    <ChevronDown size={18} color={colors.primary[600]} />
+                                )}
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                    
+                    {cardExpanded.progress && (
+                        <>
+                            
                     {progressByExercise.length === 0 ? (
                         <View className="bg-gray-50 rounded-xl p-4 items-center">
                             <TrendingUp
@@ -484,25 +534,42 @@ export default function HomeScreen() {
                                 </View>
                             </View>
                         ))
+                            )}
+                        </>
                     )}
                 </View>
 
                 {/* Goals Section */}
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                    <View className="flex-row items-center justify-between mb-4">
+                    <TouchableOpacity 
+                        onPress={() => toggleCardExpansion('goals')}
+                        className="flex-row items-center justify-between mb-4"
+                    >
                         <Text className="text-gray-900 text-xl font-bold">
                             Goals
                         </Text>
+                        <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={openAddGoalModal}
-                            className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full"
+                                className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full mr-2"
                         >
                             <Plus size={18} color={colors.primary[600]} />
                             <Text className="text-emerald-700 font-medium ml-1">
                                 Add Goal
                             </Text>
                         </TouchableOpacity>
+                            <View className="bg-emerald-50 p-2 rounded-full">
+                                {cardExpanded.goals ? (
+                                    <ChevronUp size={18} color={colors.primary[600]} />
+                                ) : (
+                                    <ChevronDown size={18} color={colors.primary[600]} />
+                                )}
                     </View>
+                        </View>
+                    </TouchableOpacity>
+                    
+                    {cardExpanded.goals && (
+                        <>
                     {fitnessGoals?.filter(g => !g.is_completed)?.length > 0 ? (
                         fitnessGoals.filter(g => !g.is_completed).map((goal) => (
                             <View
@@ -611,16 +678,31 @@ export default function HomeScreen() {
                                 No goals set yet. Add your first goal!
                             </Text>
                         </View>
+                            )}
+                        </>
                     )}
                 </View>
 
                 {/* Completed Goals Section */}
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                    <View className="flex-row items-center justify-between mb-4">
+                    <TouchableOpacity 
+                        onPress={() => toggleCardExpansion('completedGoals')}
+                        className="flex-row items-center justify-between mb-4"
+                    >
                         <Text className="text-gray-900 text-xl font-bold">
                             Completed Goals
                         </Text>
+                        <View className="bg-emerald-50 p-2 rounded-full">
+                            {cardExpanded.completedGoals ? (
+                                <ChevronUp size={18} color={colors.primary[600]} />
+                            ) : (
+                                <ChevronDown size={18} color={colors.primary[600]} />
+                            )}
                     </View>
+                    </TouchableOpacity>
+                    
+                    {cardExpanded.completedGoals && (
+                        <>
                     {fitnessGoals?.filter(g => g.is_completed)?.length > 0 ? (
                         fitnessGoals.filter(g => g.is_completed).map((goal) => (
                             <View
@@ -692,18 +774,35 @@ export default function HomeScreen() {
                                 No completed goals yet.
                             </Text>
                         </View>
+                            )}
+                        </>
                     )}
                 </View>
 
                 {/* Recent Sets Section */}
                 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                    <View className="flex-row items-center justify-between mb-4">
+                    <TouchableOpacity 
+                        onPress={() => toggleCardExpansion('recentSets')}
+                        className="flex-row items-center justify-between mb-4"
+                    >
                         <Text className="text-gray-900 text-xl font-bold">Recent Sets</Text>
-                        <TouchableOpacity onPress={handleOpenLogSet} className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full">
+                        <View className="flex-row items-center">
+                            <TouchableOpacity onPress={handleOpenLogSet} className="flex-row items-center bg-emerald-100 px-3 py-1 rounded-full mr-2">
                             <Plus size={18} color={colors.primary[600]} />
                             <Text className="text-emerald-700 font-medium ml-1">Log Set</Text>
                         </TouchableOpacity>
+                            <View className="bg-emerald-50 p-2 rounded-full">
+                                {cardExpanded.recentSets ? (
+                                    <ChevronUp size={18} color={colors.primary[600]} />
+                                ) : (
+                                    <ChevronDown size={18} color={colors.primary[600]} />
+                                )}
                     </View>
+                        </View>
+                    </TouchableOpacity>
+                    
+                    {cardExpanded.recentSets && (
+                        <>
                     {recentSets?.length > 0 ? (
                         recentSets.map((s) => (
                             <TouchableOpacity key={s.id} onPress={() => openSetDetails(s)} className="py-3 border-b border-gray-100 last:border-b-0">
@@ -714,16 +813,16 @@ export default function HomeScreen() {
                                     <View style={{ flex: 1 }}>
                                         <Text className="text-gray-900 font-semibold">{s.exercises?.name || "Exercise"}</Text>
                                         <View className="flex-row mt-1">
-                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
-                                                <Dumbbell size={14} color={colors.text.secondary} />
+                                                    <View className="flex-row items-center bg-emerald-50 px-2 py-1 rounded-full mr-2">
+                                                <Dumbbell size={14} color={colors.icon.accent} />
                                                 <Text className="text-gray-700 text-xs ml-1">{s.weight} {s.unit}</Text>
                                             </View>
-                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
+                                                    <View className="flex-row items-center bg-emerald-50 px-2 py-1 rounded-full mr-2">
                                                 <Repeat size={14} color={colors.icon.accent} />
                                                 <Text className="text-gray-700 text-xs ml-1">{s.reps} reps</Text>
                                             </View>
-                                            <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full">
-                                                <Layers size={14} color={colors.text.secondary} />
+                                                    <View className="flex-row items-center bg-emerald-50 px-2 py-1 rounded-full">
+                                                <Layers size={14} color={colors.icon.accent} />
                                                 <Text className="text-gray-700 text-xs ml-1">{s.sets} sets</Text>
                                             </View>
                                         </View>
@@ -733,7 +832,7 @@ export default function HomeScreen() {
                                             onPress={() => openEditSetModal(s)}
                                             style={{ paddingHorizontal: 8, paddingVertical: 6 }}
                                         >
-                                            <Pencil size={18} color={colors.text.secondary} />
+                                                    <Pencil size={18} color={colors.primary[600]} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             onPress={() => handleDeleteSetFromList(s)}
@@ -755,231 +854,28 @@ export default function HomeScreen() {
                             <TrendingUp size={32} color={colors.text.tertiary} />
                             <Text className="text-gray-500 text-center mt-2">No sets logged yet. Log your first set!</Text>
                         </View>
+                            )}
+                        </>
                     )}
                 </View>
             </View>
 
-            {/* Goal Details Bottom Sheet */}
-            <Modal
-                transparent
+            {/* Goal Details Modal */}
+            <GoalDetailsModal
                 visible={isGoalDetailsVisible}
-                animationType="slide"
-                onRequestClose={() => setIsGoalDetailsVisible(false)}
-            >
-                <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={() => setIsGoalDetailsVisible(false)}
-                    style={{
-                        flex: 1,
-                        backgroundColor: "rgba(0,0,0,0.4)",
-                        justifyContent: "flex-end",
-                    }}
-                >
-                    <View
-                        style={{
-                            backgroundColor: colors.background.primary,
-                            borderTopLeftRadius: 20,
-                            borderTopRightRadius: 20,
-                            padding: 20,
-                        }}
-                    >
-                        {selectedGoal && (
-                            <View>
-                                <Text
-                                    style={{
-                                        fontSize: 18,
-                                        fontWeight: "700",
-                                        color: colors.text.primary,
-                                        marginBottom: 8,
-                                    }}
-                                >
-                                    {selectedGoal.title}
-                                </Text>
-                                {selectedGoal.description ? (
-                                    <Text
-                                        style={{
-                                            color: colors.text.secondary,
-                                            marginBottom: 8,
-                                        }}
-                                    >
-                                        {selectedGoal.description}
-                                    </Text>
-                                ) : null}
-                                <Text
-                                    style={{
-                                        color: colors.text.secondary,
-                                        marginBottom: 4,
-                                    }}
-                                >
-                                    Progress: {selectedGoal.current_value} /{" "}
-                                    {selectedGoal.target_value}{" "}
-                                    {selectedGoal.unit}
-                                </Text>
-                                {selectedGoal.target_date ? (
-                                    <Text
-                                        style={{
-                                            color: colors.text.tertiary,
-                                            marginBottom: 4,
-                                        }}
-                                    >
-                                        Target date: {selectedGoal.target_date}
-                                    </Text>
-                                ) : null}
-                                
-                                <Text
-                                    style={{
-                                        color: colors.text.tertiary,
-                                        marginBottom: 4,
-                                        fontSize: 12,
-                                    }}
-                                >
-                                    Created: {new Date(selectedGoal.created_at).toLocaleDateString()}
-                                </Text>
-                                
-                                {selectedGoal.updated_at && selectedGoal.updated_at !== selectedGoal.created_at ? (
-                                    <Text
-                                        style={{
-                                            color: colors.text.tertiary,
-                                            marginBottom: 4,
-                                            fontSize: 12,
-                                        }}
-                                    >
-                                        Last updated: {new Date(selectedGoal.updated_at).toLocaleDateString()}
-                                    </Text>
-                                ) : null}
-                                
-                                {selectedGoal.completed_at ? (
-                                    <Text
-                                        style={{
-                                            color: colors.status.success,
-                                            marginBottom: 12,
-                                            fontSize: 12,
-                                            fontWeight: '600',
-                                        }}
-                                    >
-                                        Completed: {new Date(selectedGoal.completed_at).toLocaleDateString()}
-                                    </Text>
-                                ) : null}
-
-                                <View
-                                    style={{
-                                        flexDirection: "row",
-                                        justifyContent: "space-between",
-                                        marginTop: 12,
-                                    }}
-                                >
-                                    <TouchableOpacity
-                                        onPress={() =>
-                                            handleToggleComplete(selectedGoal, true)
-                                        }
-                                        disabled={modalCompleteLoadingGoalId === selectedGoal.id}
-                                        style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            padding: 12,
-                                            backgroundColor:
-                                                colors.background.card,
-                                            borderRadius: 12,
-                                        }}
-                                    >
-                                        {modalCompleteLoadingGoalId === selectedGoal.id ? (
-                                            <ActivityIndicator
-                                                size="small"
-                                                color={colors.primary[600]}
-                                            />
-                                        ) : selectedGoal.is_completed ? (
-                                            <RotateCcw
-                                                size={18}
-                                                color={colors.primary[600]}
-                                            />
-                                        ) : (
-                                            <CheckCircle2
-                                                size={18}
-                                                color={colors.primary[600]}
-                                            />
-                                        )}
-                                        <Text
-                                            style={{
-                                                marginLeft: 8,
-                                                color: colors.primary[600],
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            {selectedGoal.is_completed
-                                                ? "Reopen"
-                                                : "Complete"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => {
+                onClose={() => setIsGoalDetailsVisible(false)}
+                selectedGoal={selectedGoal}
+                onToggleComplete={(goal) => handleToggleComplete(goal, true)}
+                onEdit={(goal) => {
                                             setIsGoalDetailsVisible(false);
-                                            openEditGoalModal(selectedGoal);
-                                        }}
-                                        disabled={modalCompleteLoadingGoalId === selectedGoal.id || modalDeleteLoadingGoalId === selectedGoal.id}
-                                        style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            padding: 12,
-                                            backgroundColor:
-                                                colors.background.card,
-                                            borderRadius: 12,
-                                        }}
-                                    >
-                                        <Pencil
-                                            size={18}
-                                            color={(modalCompleteLoadingGoalId === selectedGoal.id || modalDeleteLoadingGoalId === selectedGoal.id) ? colors.text.tertiary : colors.text.secondary}
-                                        />
-                                        <Text
-                                            style={{
-                                                marginLeft: 8,
-                                                color: (modalCompleteLoadingGoalId === selectedGoal.id || modalDeleteLoadingGoalId === selectedGoal.id) ? colors.text.tertiary : colors.text.secondary,
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Edit
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() =>
-                                            handleDeleteGoal(selectedGoal.id, true)
-                                        }
-                                        disabled={modalDeleteLoadingGoalId === selectedGoal.id}
-                                        style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            padding: 12,
-                                            backgroundColor:
-                                                colors.background.card,
-                                            borderRadius: 12,
-                                        }}
-                                    >
-                                        {modalDeleteLoadingGoalId === selectedGoal.id ? (
-                                            <ActivityIndicator
-                                                size="small"
-                                                color={colors.status.error}
-                                            />
-                                        ) : (
-                                            <Trash2
-                                                size={18}
-                                                color={colors.status.error}
-                                            />
-                                        )}
-                                        <Text
-                                            style={{
-                                                marginLeft: 8,
-                                                color: colors.status.error,
-                                                fontWeight: "600",
-                                            }}
-                                        >
-                                            Delete
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                    openEditGoalModal(goal);
+                }}
+                onDelete={(goalId) => handleDeleteGoal(goalId, true)}
+                isCompleteLoading={modalCompleteLoadingGoalId !== null}
+                isDeleteLoading={modalDeleteLoadingGoalId !== null}
+                completeLoadingId={modalCompleteLoadingGoalId}
+                deleteLoadingId={modalDeleteLoadingGoalId}
+            />
 
             {/* Log Set Modal */}
             <LogSetModal
@@ -989,73 +885,19 @@ export default function HomeScreen() {
                 isSubmitting={isLogSubmitting}
             />
 
-            {/* Set Details Bottom Sheet */}
-            <Modal
-                transparent
+            {/* Set Details Modal */}
+            <SetDetailsModal
                 visible={isSetDetailsVisible}
-                animationType="slide"
-                onRequestClose={closeSetDetails}
-            >
-                <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={closeSetDetails}
-                    style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
-                >
-                    <View style={{ backgroundColor: colors.background.primary, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-                        {selectedSet && (
-                            <View>
-                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-                                    <View className="bg-emerald-100 p-2 rounded-full mr-3">
-                                        <Dumbbell size={16} color={colors.primary[600]} />
-                                    </View>
-                                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
-                                        {selectedSet.exercises?.name || "Exercise"}
-                                    </Text>
-                                </View>
-                                <View style={{ flexDirection: "row", marginBottom: 16 }}>
-                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
-                                        <Dumbbell size={14} color={colors.text.secondary} />
-                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.weight} {selectedSet.unit}</Text>
-                                    </View>
-                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full mr-2">
-                                        <Repeat size={14} color={colors.text.secondary} />
-                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.reps} reps</Text>
-                                    </View>
-                                    <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-full">
-                                        <Layers size={14} color={colors.text.secondary} />
-                                        <Text className="text-gray-700 text-xs ml-1">{selectedSet.sets} sets</Text>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                    <TouchableOpacity
-                                        onPress={() => {
+                onClose={closeSetDetails}
+                selectedSet={selectedSet}
+                onEdit={() => {
                                             closeSetDetails();
                                             openEditSetModal(selectedSet);
                                         }}
-                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.background.card, borderRadius: 12 }}
-                                    >
-                                        <Pencil size={18} color={colors.text.secondary} />
-                                        <Text style={{ marginLeft: 8, color: colors.text.secondary, fontWeight: "600" }}>Edit</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={handleDeleteSetFromModal}
-                                        disabled={modalDeleteLoadingSetId === (selectedSet?.id || null)}
-                                        style={{ flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.background.card, borderRadius: 12 }}
-                                    >
-                                        {modalDeleteLoadingSetId === (selectedSet?.id || null) ? (
-                                            <ActivityIndicator size="small" color={colors.status.error} />
-                                        ) : (
-                                            <Trash2 size={18} color={colors.status.error} />
-                                        )}
-                                        <Text style={{ marginLeft: 8, color: colors.status.error, fontWeight: "600" }}>Delete</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                onDelete={handleDeleteSetFromModal}
+                isDeleting={modalDeleteLoadingSetId !== null}
+                deleteLoadingId={modalDeleteLoadingSetId}
+            />
 
             <RMInfoModal visible={showRMInfoModal} onClose={() => setShowRMInfoModal(false)} />
 
