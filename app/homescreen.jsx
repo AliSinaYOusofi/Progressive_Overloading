@@ -6,8 +6,6 @@ import {
     RefreshControl,
     ActivityIndicator,
     TouchableOpacity,
-    Modal,
-    Linking,
 } from "react-native";
 import {
     Flame,
@@ -21,11 +19,9 @@ import {
     Dumbbell,
     Repeat,
     Layers,
-    Clock,
-    Info,
-    ExternalLink,
     ChevronDown,
     ChevronUp,
+    Info,
 } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import {
@@ -832,7 +828,7 @@ export default function HomeScreen() {
                                             onPress={() => openEditSetModal(s)}
                                             style={{ paddingHorizontal: 8, paddingVertical: 6 }}
                                         >
-                                                    <Pencil size={18} color={colors.primary[600]} />
+                                                    <Pencil size={18} color={colors.text.tertiary} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             onPress={() => handleDeleteSetFromList(s)}

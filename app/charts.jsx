@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Dimensions } from "react-native";
 import { BarChart3, TrendingUp, Target, Calendar, Award, Dumbbell, Zap, Trophy, Activity, Filter } from "lucide-react-native";
+import { LineChart, BarChart, PieChart } from "react-native-gifted-charts";
 import { colors } from "../constants/ui_colors";
 import { 
     getCurrentUser, 
@@ -10,8 +11,13 @@ import {
     getStrengthStandards, 
     getMonthlyStats, 
     getPersonalRecords,
-    getWeeklyProgress 
+    getWeeklyProgress,
+    getRPEAnalysis,
+    getProgressiveOverloadInsights,
+    getVolumeAnalysis
 } from "../lib/database";
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function ChartsScreen() {
     const [user, setUser] = useState(null);
@@ -22,6 +28,9 @@ export default function ChartsScreen() {
     const [monthlyStats, setMonthlyStats] = useState([]);
     const [personalRecords, setPersonalRecords] = useState([]);
     const [weeklyProgress, setWeeklyProgress] = useState([]);
+    const [rpeAnalysis, setRpeAnalysis] = useState([]);
+    const [progressiveOverloadInsights, setProgressiveOverloadInsights] = useState([]);
+    const [volumeAnalysis, setVolumeAnalysis] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
@@ -47,7 +56,10 @@ export default function ChartsScreen() {
                 standards,
                 monthly,
                 records,
-                weekly
+                weekly,
+                rpe,
+                overloadInsights,
+                volumeInsights
             ] = await Promise.all([
                 getUserStats(currentUser.id),
                 getExerciseProgressionData(currentUser.id, null, selectedTimeframe),
@@ -55,7 +67,10 @@ export default function ChartsScreen() {
                 getStrengthStandards(currentUser.id),
                 getMonthlyStats(currentUser.id, 6),
                 getPersonalRecords(currentUser.id, 10),
-                getWeeklyProgress(currentUser.id)
+                getWeeklyProgress(currentUser.id),
+                getRPEAnalysis(currentUser.id, selectedTimeframe),
+                getProgressiveOverloadInsights(currentUser.id, selectedTimeframe),
+                getVolumeAnalysis(currentUser.id, selectedTimeframe)
             ]);
 
             setUserStats(stats);
@@ -65,6 +80,9 @@ export default function ChartsScreen() {
             setMonthlyStats(monthly);
             setPersonalRecords(records);
             setWeeklyProgress(weekly);
+            setRpeAnalysis(rpe);
+            setProgressiveOverloadInsights(overloadInsights);
+            setVolumeAnalysis(volumeInsights);
         } catch (error) {
             console.error("Error loading charts data:", error);
         } finally {
@@ -112,51 +130,103 @@ export default function ChartsScreen() {
         return { level: "Beginner", color: colors.status.info };
     };
 
+    // Helper function to format exercise progression data for LineChart
+    const formatExerciseDataForChart = (exerciseData, exerciseName) => {
+        if (!exerciseData || exerciseData.length === 0) return [];
+        
+        return exerciseData.map((point, index) => ({
+            value: point.oneRM,
+            label: index % 2 === 0 ? new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
+            dataPointText: point.oneRM.toFixed(1),
+            labelTextStyle: { color: colors.text.tertiary, fontSize: 9 },
+            dataPointTextStyle: { color: colors.text.primary, fontSize: 9 }
+        }));
+    };
+
+    // Helper function to format volume data for BarChart
+    const formatVolumeDataForChart = (volumeData) => {
+        if (!volumeData || volumeData.length === 0) return [];
+        
+        return volumeData.slice(-14).map((day, index) => ({
+            value: day.totalVolume,
+            label: index % 2 === 0 ? new Date(day.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
+            frontColor: colors.primary[600],
+            labelTextStyle: { color: colors.text.tertiary, fontSize: 9 }
+        }));
+    };
+
+    // Helper function to format weekly progress for BarChart
+    const formatWeeklyProgressForChart = (weeklyData) => {
+        if (!weeklyData || weeklyData.length === 0) return [];
+        
+        return weeklyData.map((day, index) => ({
+            value: day.completed ? 1 : 0,
+            label: day.day,
+            frontColor: day.completed ? colors.status.success : colors.neutral[300],
+            labelTextStyle: { color: colors.text.tertiary, fontSize: 10 }
+        }));
+    };
+
+    // Helper function to format RPE data for LineChart
+    const formatRPEDataForChart = (rpeData) => {
+        if (!rpeData || rpeData.length === 0) return [];
+        
+        return rpeData.slice(-7).map((point, index) => ({
+            value: point.rpe,
+            label: index % 2 === 0 ? new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
+            dataPointText: point.rpe.toFixed(1),
+            labelTextStyle: { color: colors.text.tertiary, fontSize: 8 },
+            dataPointTextStyle: { color: colors.text.primary, fontSize: 8 }
+        }));
+    };
+
     if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View className="flex-1 justify-center items-center bg-slate-50">
                 <ActivityIndicator size="large" color={colors.primary[600]} />
-                <Text style={styles.loadingText}>Loading your progress...</Text>
+                <Text className="mt-4 text-base text-slate-700">Loading your progress...</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-slate-50">
             <ScrollView 
-                style={styles.scrollView} 
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
                 {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Progressive Overload Analytics</Text>
-                    <Text style={styles.subtitle}>Track your strength gains and performance</Text>
+                <View className="items-center mb-8">
+                    <Text className="text-3xl font-bold text-slate-900 mb-2 text-center">Progressive Overload Analytics</Text>
+                    <Text className="text-base text-slate-700 text-center">Track your strength gains and performance</Text>
                 </View>
 
                 {/* Timeframe Filter */}
-                <View style={styles.filterContainer}>
-                    <Text style={styles.filterLabel}>Time Period:</Text>
-                    <View style={styles.filterButtons}>
+                <View className="mb-6">
+                    <Text className="text-base font-semibold text-slate-900 mb-3">Time Period:</Text>
+                    <View className="flex-row flex-wrap gap-2">
                         {getTimeframeOptions().map((option) => (
                             <TouchableOpacity
                                 key={option.value}
-                                style={[
-                                    styles.filterButton,
-                                    selectedTimeframe === option.value && styles.filterButtonActive
-                                ]}
+                                className={`px-4 py-2 rounded-full border ${
+                                    selectedTimeframe === option.value 
+                                        ? 'bg-emerald-600 border-emerald-600' 
+                                        : 'bg-white border-gray-200'
+                                }`}
                                 onPress={() => {
                                     setSelectedTimeframe(option.value);
                                     loadChartsData();
                                 }}
                             >
-                                <Text style={[
-                                    styles.filterButtonText,
-                                    selectedTimeframe === option.value && styles.filterButtonTextActive
-                                ]}>
+                                <Text className={`text-sm font-medium ${
+                                    selectedTimeframe === option.value 
+                                        ? 'text-white' 
+                                        : 'text-slate-700'
+                                }`}>
                                     {option.label}
                                 </Text>
                             </TouchableOpacity>
@@ -165,183 +235,208 @@ export default function ChartsScreen() {
                 </View>
 
                 {/* Quick Stats */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
+                <View className="flex-row flex-wrap justify-between mb-8">
+                    <View className="w-[48%] bg-white p-4 rounded-xl items-center mb-4 shadow-sm">
+                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2">
                             <TrendingUp size={24} color={colors.status.success} />
                         </View>
-                        <Text style={styles.statValue}>{userStats?.currentStreak || 0}</Text>
-                        <Text style={styles.statLabel}>Day Streak</Text>
+                        <Text className="text-2xl font-bold text-slate-900 mb-1">{userStats?.currentStreak || 0}</Text>
+                        <Text className="text-xs text-slate-600 text-center">Day Streak</Text>
                     </View>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
+                    <View className="w-[48%] bg-white p-4 rounded-xl items-center mb-4 shadow-sm">
+                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2">
                             <Target size={24} color={colors.primary[600]} />
                         </View>
-                        <Text style={styles.statValue}>{userStats?.goalProgress || 0}%</Text>
-                        <Text style={styles.statLabel}>Goal Progress</Text>
+                        <Text className="text-2xl font-bold text-slate-900 mb-1">{userStats?.goalProgress || 0}%</Text>
+                        <Text className="text-xs text-slate-600 text-center">Goal Progress</Text>
                     </View>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
+                    <View className="w-[48%] bg-white p-4 rounded-xl items-center mb-4 shadow-sm">
+                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2">
                             <Dumbbell size={24} color={colors.status.info} />
                         </View>
-                        <Text style={styles.statValue}>{userStats?.workoutCount || 0}</Text>
-                        <Text style={styles.statLabel}>Total Sets</Text>
+                        <Text className="text-2xl font-bold text-slate-900 mb-1">{userStats?.workoutCount || 0}</Text>
+                        <Text className="text-xs text-slate-600 text-center">Total Sets</Text>
                     </View>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
+                    <View className="w-[48%] bg-white p-4 rounded-xl items-center mb-4 shadow-sm">
+                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2">
                             <Trophy size={24} color={colors.status.warning} />
                         </View>
-                        <Text style={styles.statValue}>{personalRecords?.length || 0}</Text>
-                        <Text style={styles.statLabel}>Personal Records</Text>
+                        <Text className="text-2xl font-bold text-slate-900 mb-1">{personalRecords?.length || 0}</Text>
+                        <Text className="text-xs text-slate-600 text-center">Personal Records</Text>
                     </View>
                 </View>
 
                 {/* Exercise Progression Charts */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Exercise Progression</Text>
-                    <Text style={styles.sectionSubtitle}>1RM progression over time</Text>
+                <View className="mb-8">
+                    <Text className="text-xl font-semibold text-slate-900 mb-1">Exercise Progression</Text>
+                    <Text className="text-sm text-slate-700 mb-4">1RM progression over time</Text>
                     
                     {Object.keys(exerciseProgression).length > 0 ? (
-                        <View style={styles.exerciseGrid}>
-                            {getExerciseNames().map((exerciseName, index) => {
+                        <View className="gap-4">
+                            {getExerciseNames().slice(0, 3).map((exerciseName, index) => {
                                 const exerciseData = exerciseProgression[exerciseName] || [];
                                 const progressionRate = calculateProgressionRate(exerciseData);
                                 const firstRM = exerciseData[0]?.oneRM || 0;
                                 const lastRM = exerciseData[exerciseData.length - 1]?.oneRM || 0;
+                                const chartData = formatExerciseDataForChart(exerciseData, exerciseName);
                                 
                                 return (
-                                    <View key={index} style={styles.exerciseCard}>
-                                        <View style={styles.exerciseHeader}>
-                                            <Text style={styles.exerciseName}>{exerciseName}</Text>
-                                            <View style={styles.progressionBadge}>
-                                                <Text style={styles.progressionText}>
+                                    <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                                        <View className="flex-row justify-between items-center mb-3">
+                                            <Text className="text-base font-semibold text-slate-900 flex-1">{exerciseName}</Text>
+                                            <View className="bg-emerald-600 px-2 py-1 rounded-xl">
+                                                <Text className="text-xs font-semibold text-white">
                                                     +{progressionRate.toFixed(1)}%
                                                 </Text>
                                             </View>
                                         </View>
                                         
-                                        <View style={styles.exerciseStats}>
-                                            <View style={styles.statRow}>
-                                                <Text style={styles.statLabel}>First 1RM:</Text>
-                                                <Text style={styles.statValue}>{firstRM.toFixed(1)} kg</Text>
+                                        <View className="mb-3">
+                                            <View className="flex-row justify-between items-center mb-1">
+                                                <Text className="text-xs text-slate-600">First 1RM:</Text>
+                                                <Text className="text-sm font-bold text-slate-900">{firstRM.toFixed(1)} kg</Text>
                                             </View>
-                                            <View style={styles.statRow}>
-                                                <Text style={styles.statLabel}>Current 1RM:</Text>
-                                                <Text style={styles.statValue}>{lastRM.toFixed(1)} kg</Text>
+                                            <View className="flex-row justify-between items-center mb-1">
+                                                <Text className="text-xs text-slate-600">Current 1RM:</Text>
+                                                <Text className="text-sm font-bold text-slate-900">{lastRM.toFixed(1)} kg</Text>
                                             </View>
-                                            <View style={styles.statRow}>
-                                                <Text style={styles.statLabel}>Gain:</Text>
-                                                <Text style={[styles.statValue, { color: colors.status.success }]}>
+                                            <View className="flex-row justify-between items-center mb-1">
+                                                <Text className="text-xs text-slate-600">Gain:</Text>
+                                                <Text className="text-sm font-bold text-emerald-600">
                                                     +{(lastRM - firstRM).toFixed(1)} kg
                                                 </Text>
                                             </View>
                                         </View>
                                         
-                                        {/* Simple progression chart */}
-                                        <View style={styles.miniChart}>
-                                            {exerciseData.slice(-7).map((point, i) => {
-                                                const maxOneRM = Math.max(...exerciseData.map(d => d?.oneRM || 0));
-                                                return (
-                                                    <View key={i} style={styles.miniBarContainer}>
-                                                        <View 
-                                                            style={[
-                                                                styles.miniBar,
-                                                                { 
-                                                                    height: Math.max(4, maxOneRM > 0 ? (point?.oneRM / maxOneRM) * 40 : 4),
-                                                                    backgroundColor: progressionRate > 0 ? colors.status.success : colors.status.warning
-                                                                }
-                                                            ]} 
-                                                        />
-                                                    </View>
-                                                );
-                                            })}
-                                        </View>
+                                        {/* Line Chart for progression */}
+                                        {chartData.length > 1 && (
+                                            <View className="h-40 mb-2">
+                                                <LineChart
+                                                    data={chartData}
+                                                    width={screenWidth - 100}
+                                                    height={140}
+                                                    color={progressionRate > 0 ? colors.status.success : colors.status.warning}
+                                                    thickness={2}
+                                                    dataPointsColor={progressionRate > 0 ? colors.status.success : colors.status.warning}
+                                                    dataPointsRadius={4}
+                                                    hideDataPoints={false}
+                                                    startFillColor={progressionRate > 0 ? colors.status.success : colors.status.warning}
+                                                    endFillColor={progressionRate > 0 ? colors.status.success + '20' : colors.status.warning + '20'}
+                                                    startOpacity={0.3}
+                                                    endOpacity={0.1}
+                                                    areaChart
+                                                    hideRules={false}
+                                                    rulesType="solid"
+                                                    rulesColor={colors.neutral[200]}
+                                                    yAxisColor={colors.neutral[200]}
+                                                    xAxisColor={colors.neutral[200]}
+                                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                                    showVerticalLines={false}
+                                                    showHorizontalLines={true}
+                                                    spacing={25}
+                                                    initialSpacing={15}
+                                                    endSpacing={15}
+                                                    yAxisSide="left"
+                                                    xAxisSide="bottom"
+                                                />
+                                            </View>
+                                        )}
                                     </View>
                                 );
                             })}
                         </View>
                     ) : (
-                        <View style={styles.emptyState}>
+                        <View className="bg-white rounded-xl p-8 items-center shadow-sm">
                             <Dumbbell size={48} color={colors.text.tertiary} />
-                            <Text style={styles.emptyText}>No exercise data yet</Text>
-                            <Text style={styles.emptySubtext}>Start logging sets to see your progression!</Text>
+                            <Text className="text-base font-semibold text-slate-900 mt-3 mb-1">No exercise data yet</Text>
+                            <Text className="text-sm text-slate-700 text-center">Start logging sets to see your progression!</Text>
                         </View>
                     )}
                 </View>
 
                 {/* Volume Progression */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Volume Progression</Text>
-                    <Text style={styles.sectionSubtitle}>Total weight lifted per day</Text>
+                <View className="mb-8">
+                    <Text className="text-xl font-semibold text-slate-900 mb-1">Volume Progression</Text>
+                    <Text className="text-sm text-slate-700 mb-4">Total weight lifted per day</Text>
                     
                     {volumeProgression && volumeProgression.length > 0 ? (
-                        <View style={styles.chartContainer}>
-                            <View style={styles.volumeChart}>
-                                {volumeProgression.slice(-14).map((day, index) => {
-                                    const maxVolume = Math.max(...volumeProgression.map(d => d?.totalVolume || 0));
-                                    return (
-                                        <View key={index} style={styles.volumeBarContainer}>
-                                            <View 
-                                                style={[
-                                                    styles.volumeBar,
-                                                    { 
-                                                        height: Math.max(4, maxVolume > 0 ? (day?.totalVolume / maxVolume) * 80 : 4),
-                                                        backgroundColor: colors.primary[600]
-                                                    }
-                                                ]} 
-                                            />
-                                            <Text style={styles.volumeBarLabel}>
-                                                {new Date(day?.date).getDate()}
-                                            </Text>
-                                        </View>
-                                    );
-                                })}
+                        <View className="bg-white rounded-xl p-6 shadow-sm">
+                            <View className="h-48 mb-6">
+                                <BarChart
+                                    data={formatVolumeDataForChart(volumeProgression)}
+                                    width={screenWidth - 120}
+                                    height={180}
+                                    barWidth={18}
+                                    spacing={8}
+                                    roundedTop
+                                    roundedBottom
+                                    hideRules={false}
+                                    rulesType="solid"
+                                    rulesColor={colors.neutral[200]}
+                                    yAxisColor={colors.neutral[200]}
+                                    xAxisColor={colors.neutral[200]}
+                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                    showVerticalLines={false}
+                                    showHorizontalLines={true}
+                                    noOfSections={4}
+                                    maxValue={Math.max(...volumeProgression.map(d => d?.totalVolume || 0))}
+                                    showYAxisIndices={true}
+                                    yAxisIndicesColor={colors.neutral[200]}
+                                    yAxisIndicesWidth={1}
+                                    yAxisSide="left"
+                                    xAxisSide="bottom"
+                                />
                             </View>
-                            <View style={styles.volumeStats}>
-                                <View style={styles.volumeStat}>
-                                    <Text style={styles.volumeStatValue}>
+                            <View className="flex-row justify-around px-4">
+                                <View className="items-center flex-1">
+                                    <Text className="text-lg font-bold text-slate-900">
                                         {Math.max(...volumeProgression.map(d => d?.totalVolume || 0)).toFixed(0)}
                                     </Text>
-                                    <Text style={styles.volumeStatLabel}>Max Volume</Text>
+                                    <Text className="text-xs text-slate-600 text-center">Max Volume</Text>
                                 </View>
-                                <View style={styles.volumeStat}>
-                                    <Text style={styles.volumeStatValue}>
+                                <View className="items-center flex-1">
+                                    <Text className="text-lg font-bold text-slate-900">
                                         {(volumeProgression.reduce((sum, d) => sum + (d?.totalVolume || 0), 0) / volumeProgression.length).toFixed(0)}
                                     </Text>
-                                    <Text style={styles.volumeStatLabel}>Avg Volume</Text>
+                                    <Text className="text-xs text-slate-600 text-center">Avg Volume</Text>
                                 </View>
                             </View>
                         </View>
                     ) : (
-                        <View style={styles.emptyState}>
+                        <View className="bg-white rounded-xl p-8 items-center shadow-sm">
                             <Activity size={48} color={colors.text.tertiary} />
-                            <Text style={styles.emptyText}>No volume data yet</Text>
+                            <Text className="text-base font-semibold text-slate-900 mt-3 mb-1">No volume data yet</Text>
                         </View>
                     )}
                 </View>
 
                 {/* Strength Standards */}
                 {strengthStandards && strengthStandards.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Strength Standards</Text>
-                        <Text style={styles.sectionSubtitle}>Relative to bodyweight</Text>
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Strength Standards</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Relative to bodyweight</Text>
                         
-                        <View style={styles.standardsContainer}>
+                        <View className="gap-3">
                             {strengthStandards.map((standard, index) => {
                                 const strengthLevel = getStrengthLevel(standard.relativeStrength, standard.exercise);
                                 return (
-                                    <View key={index} style={styles.standardCard}>
-                                        <View style={styles.standardHeader}>
-                                            <Text style={styles.standardExercise}>{standard.exercise}</Text>
-                                            <View style={[styles.strengthBadge, { backgroundColor: strengthLevel.color }]}>
-                                                <Text style={styles.strengthLevel}>{strengthLevel.level}</Text>
+                                    <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Text className="text-base font-semibold text-slate-900">{standard.exercise}</Text>
+                                            <View 
+                                                className="px-2 py-1 rounded-xl"
+                                                style={{ backgroundColor: strengthLevel.color }}
+                                            >
+                                                <Text className="text-xs font-semibold text-white">{strengthLevel.level}</Text>
                                             </View>
                                         </View>
-                                        <View style={styles.standardStats}>
-                                            <Text style={styles.standardValue}>
+                                        <View className="flex-row justify-between items-center">
+                                            <Text className="text-lg font-bold text-slate-900">
                                                 {standard.oneRM.toFixed(1)} kg
                                             </Text>
-                                            <Text style={styles.standardRelative}>
+                                            <Text className="text-sm text-slate-700">
                                                 {standard.relativeStrength.toFixed(2)}x bodyweight
                                             </Text>
                                         </View>
@@ -349,32 +444,63 @@ export default function ChartsScreen() {
                                 );
                             })}
                         </View>
+                        
+                        {/* Strength Level Distribution Pie Chart */}
+                        {strengthStandards.length > 1 && (
+                            <View className="bg-white rounded-xl p-6 shadow-sm mt-4">
+                                <Text className="text-base font-semibold text-slate-900 mb-6 text-center">Strength Level Distribution</Text>
+                                <View className="items-center h-48 justify-center">
+                                    <PieChart
+                                        data={strengthStandards.map((standard, index) => {
+                                            const strengthLevel = getStrengthLevel(standard.relativeStrength, standard.exercise);
+                                            return {
+                                                value: 1,
+                                                color: strengthLevel.color,
+                                                text: standard.exercise,
+                                                textColor: colors.text.white,
+                                                textSize: 9
+                                            };
+                                        })}
+                                        radius={70}
+                                        innerRadius={35}
+                                        centerLabelComponent={() => (
+                                            <View className="items-center">
+                                                <Text className="text-lg font-bold text-slate-900">
+                                                    {strengthStandards.length}
+                                                </Text>
+                                                <Text className="text-xs text-slate-600">Exercises</Text>
+                                            </View>
+                                        )}
+                                    />
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
 
                 {/* Personal Records */}
                 {personalRecords && personalRecords.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Personal Records</Text>
-                        <Text style={styles.sectionSubtitle}>Your best performances</Text>
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Personal Records</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Your best performances</Text>
                         
-                        <View style={styles.recordsContainer}>
+                        <View className="gap-3">
                             {personalRecords.slice(0, 5).map((record, index) => (
-                                <View key={index} style={styles.recordCard}>
-                                    <View style={styles.recordHeader}>
-                                        <Text style={styles.recordExercise}>{record.exercise}</Text>
-                                        <Text style={styles.recordDate}>
+                                <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Text className="text-base font-semibold text-slate-900">{record.exercise}</Text>
+                                        <Text className="text-xs text-slate-600">
                                             {new Date(record.date).toLocaleDateString()}
                                         </Text>
                                     </View>
-                                    <View style={styles.recordStats}>
-                                        <Text style={styles.recordWeight}>
+                                    <View className="flex-row justify-between items-center">
+                                        <Text className="text-lg font-bold text-slate-900">
                                             {record.weight} {record.unit || 'kg'}
                                         </Text>
-                                        <Text style={styles.recordReps}>
+                                        <Text className="text-sm text-slate-700">
                                             {record.reps} reps
                                         </Text>
-                                        <Text style={styles.recordOneRM}>
+                                        <Text className="text-sm text-emerald-600 font-semibold">
                                             1RM: {record.oneRM.toFixed(1)} kg
                                         </Text>
                                     </View>
@@ -385,67 +511,258 @@ export default function ChartsScreen() {
                 )}
 
                 {/* Weekly Progress */}
-                <View style={[styles.section, styles.lastSection]}>
-                    <Text style={styles.sectionTitle}>Weekly Progress</Text>
-                    <Text style={styles.sectionSubtitle}>Sets logged this week</Text>
+                <View className="mb-8">
+                    <Text className="text-xl font-semibold text-slate-900 mb-1">Weekly Progress</Text>
+                    <Text className="text-sm text-slate-700 mb-4">Sets logged this week</Text>
                     
-                    <View style={styles.chartContainer}>
-                        <View style={styles.barChart}>
-                            {weeklyProgress.map((day, index) => (
-                                <View key={index} style={styles.barColumn}>
-                                    <View style={styles.barContainer}>
-                                        <View 
-                                            style={[
-                                                styles.bar, 
-                                                { 
-                                                    height: day.completed ? 60 : 20,
-                                                    backgroundColor: day.completed ? colors.status.success : colors.neutral[300]
-                                                }
-                                            ]} 
-                                        />
-                                    </View>
-                                    <Text style={styles.barLabel}>{day.day}</Text>
-                                </View>
-                            ))}
+                    <View className="bg-white rounded-xl p-6 shadow-sm">
+                        <View className="h-36 mb-2">
+                            <BarChart
+                                data={formatWeeklyProgressForChart(weeklyProgress)}
+                                width={screenWidth - 100}
+                                height={140}
+                                barWidth={25}
+                                spacing={12}
+                                roundedTop
+                                roundedBottom
+                                hideRules={false}
+                                rulesType="solid"
+                                rulesColor={colors.neutral[200]}
+                                yAxisColor={colors.neutral[200]}
+                                xAxisColor={colors.neutral[200]}
+                                yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9 }}
+                                showVerticalLines={false}
+                                showHorizontalLines={true}
+                                noOfSections={1}
+                                maxValue={1}
+                                showYAxisIndices={false}
+                                isAnimated={true}
+                                yAxisSide="left"
+                                xAxisSide="bottom"
+                            />
                         </View>
                     </View>
                 </View>
 
                 {/* Monthly Trends */}
                 {monthlyStats && monthlyStats.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Monthly Trends</Text>
-                        <Text style={styles.sectionSubtitle}>Sets and exercises over time</Text>
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Monthly Trends</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Sets and exercises over time</Text>
                         
-                        <View style={styles.trendCard}>
-                            <View style={styles.trendChart}>
+                        <View className="bg-white rounded-xl p-5 shadow-sm">
+                            <View className="flex-row justify-between items-end h-20 mb-4">
                                 {monthlyStats.map((month, index) => (
-                                    <View key={index} style={styles.trendBar}>
+                                    <View key={index} className="items-center flex-1">
                                         <View 
-                                            style={[
-                                                styles.trendBarFill, 
-                                                { height: Math.max(4, (month?.workouts / 30) * 100) }
-                                            ]} 
+                                            className="w-4 rounded-lg min-h-1 mb-2"
+                                            style={{ height: Math.max(4, (month?.workouts / 30) * 100) }}
                                         />
-                                        <Text style={styles.trendBarLabel}>
+                                        <Text className="text-xs text-slate-600">
                                             {new Date(month?.month + '-01').toLocaleDateString('en', { month: 'short' })}
                                         </Text>
                                     </View>
                                 ))}
                             </View>
-                            <View style={styles.trendStats}>
-                                <View style={styles.trendStat}>
-                                    <Text style={styles.trendStatValue}>
+                            <View className="flex-row justify-around">
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-900">
                                         {monthlyStats.reduce((sum, m) => sum + (m?.workouts || 0), 0)}
                                     </Text>
-                                    <Text style={styles.trendStatLabel}>Unique Exercises</Text>
+                                    <Text className="text-xs text-slate-600">Unique Exercises</Text>
                                 </View>
-                                <View style={styles.trendStat}>
-                                    <Text style={styles.trendStatValue}>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-900">
                                         {monthlyStats.reduce((sum, m) => sum + (m?.totalSets || 0), 0)}
                                     </Text>
-                                    <Text style={styles.trendStatLabel}>Total Sets</Text>
+                                    <Text className="text-xs text-slate-600">Total Sets</Text>
                                 </View>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Progressive Overload Insights */}
+                {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Progressive Overload Analysis</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Your strength progression insights</Text>
+                        
+                        <View className="gap-3">
+                            {progressiveOverloadInsights.slice(0, 5).map((insight, index) => {
+                                const getProgressionColor = (progression) => {
+                                    switch (progression) {
+                                        case 'excellent': return colors.status.success;
+                                        case 'good': return colors.primary[600];
+                                        case 'stable': return colors.status.warning;
+                                        case 'declining': return colors.status.error;
+                                        default: return colors.text.tertiary;
+                                    }
+                                };
+
+                                const getProgressionIcon = (progression) => {
+                                    switch (progression) {
+                                        case 'excellent': return '🚀';
+                                        case 'good': return '📈';
+                                        case 'stable': return '➡️';
+                                        case 'declining': return '📉';
+                                        default: return '❓';
+                                    }
+                                };
+
+                                return (
+                                    <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Text className="text-base font-semibold text-slate-900 flex-1">{insight.exercise}</Text>
+                                            <View className="flex-row items-center gap-1.5">
+                                                <Text className="text-base">
+                                                    {getProgressionIcon(insight.progression)}
+                                                </Text>
+                                                <Text 
+                                                    className="text-xs font-semibold"
+                                                    style={{ color: getProgressionColor(insight.progression) }}
+                                                >
+                                                    {insight.progression.charAt(0).toUpperCase() + insight.progression.slice(1)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        
+                                        <View className="gap-1">
+                                            <Text className="text-sm font-semibold text-slate-700">
+                                                {insight.weeklyGain > 0 ? '+' : ''}{insight.weeklyGain.toFixed(1)}% weekly gain
+                                            </Text>
+                                            <Text className="text-xs text-slate-600 italic">
+                                                {insight.recommendation}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
+                {/* RPE Analysis */}
+                {rpeAnalysis && rpeAnalysis.length > 0 && (
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Training Intensity (RPE)</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Rate of Perceived Exertion analysis</Text>
+                        
+                        <View className="gap-3">
+                            {rpeAnalysis.slice(0, 4).map((exercise, index) => {
+                                const getIntensityColor = (intensity) => {
+                                    switch (intensity) {
+                                        case 'high': return colors.status.error;
+                                        case 'moderate': return colors.status.warning;
+                                        case 'low': return colors.status.success;
+                                        default: return colors.text.tertiary;
+                                    }
+                                };
+
+                                return (
+                                    <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Text className="text-base font-semibold text-slate-900 flex-1">{exercise.exercise}</Text>
+                                            <View 
+                                                className="px-2 py-1 rounded-xl"
+                                                style={{ backgroundColor: getIntensityColor(exercise.intensity) }}
+                                            >
+                                                <Text className="text-xs font-semibold text-white">
+                                                    {exercise.intensity.toUpperCase()}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        
+                                        <View className="flex-row justify-between mb-3">
+                                            <Text className="text-sm font-semibold text-slate-700">
+                                                Avg RPE: {exercise.avgRPE.toFixed(1)}/10
+                                            </Text>
+                                            <Text className="text-xs text-slate-600">
+                                                {exercise.totalSets} sets logged
+                                            </Text>
+                                        </View>
+                                        
+                                        {/* RPE Trend Visualization */}
+                                        {exercise.rpeTrend.length > 1 && (
+                                            <View className="h-24 mb-2">
+                                                <LineChart
+                                                    data={formatRPEDataForChart(exercise.rpeTrend)}
+                                                    width={screenWidth - 100}
+                                                    height={90}
+                                                    color={getIntensityColor(exercise.intensity)}
+                                                    thickness={2}
+                                                    dataPointsColor={getIntensityColor(exercise.intensity)}
+                                                    dataPointsRadius={3}
+                                                    hideDataPoints={false}
+                                                    hideRules={false}
+                                                    rulesType="solid"
+                                                    rulesColor={colors.neutral[200]}
+                                                    yAxisColor={colors.neutral[200]}
+                                                    xAxisColor={colors.neutral[200]}
+                                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 8 }}
+                                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 8 }}
+                                                    showVerticalLines={false}
+                                                    showHorizontalLines={true}
+                                                    spacing={18}
+                                                    initialSpacing={8}
+                                                    endSpacing={8}
+                                                    maxValue={10}
+                                                    noOfSections={5}
+                                                    yAxisSide="left"
+                                                    xAxisSide="bottom"
+                                                />
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
+                {/* Volume Analysis */}
+                {volumeAnalysis && volumeAnalysis.totalVolume > 0 && (
+                    <View className="mb-8">
+                        <Text className="text-xl font-semibold text-slate-900 mb-1">Volume Analysis</Text>
+                        <Text className="text-sm text-slate-700 mb-4">Training volume insights and trends</Text>
+                        
+                        <View className="bg-white rounded-xl p-5 shadow-sm">
+                            <View className="flex-row justify-around mb-4">
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-900">
+                                        {volumeAnalysis.totalVolume.toFixed(0)}
+                                    </Text>
+                                    <Text className="text-xs text-slate-600">Total Volume (kg)</Text>
+                                </View>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-900">
+                                        {volumeAnalysis.avgDailyVolume.toFixed(0)}
+                                    </Text>
+                                    <Text className="text-xs text-slate-600">Avg Daily Volume</Text>
+                                </View>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-slate-900">
+                                        {volumeAnalysis.maxVolume.toFixed(0)}
+                                    </Text>
+                                    <Text className="text-xs text-slate-600">Peak Volume</Text>
+                                </View>
+                            </View>
+                            
+                            <View className="items-center">
+                                <Text className="text-sm text-slate-700 font-medium">
+                                    Volume Trend: 
+                                    <Text 
+                                        className="text-sm font-semibold ml-1"
+                                        style={{ 
+                                            color: volumeAnalysis.trend === 'increasing' ? colors.status.success : 
+                                                   volumeAnalysis.trend === 'decreasing' ? colors.status.error : 
+                                                   colors.status.warning
+                                        }}
+                                    >
+                                        {volumeAnalysis.trend.charAt(0).toUpperCase() + volumeAnalysis.trend.slice(1)}
+                                    </Text>
+                                </Text>
                             </View>
                         </View>
                     </View>
@@ -455,432 +772,3 @@ export default function ChartsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background.primary,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 24,
-        paddingTop: 60,
-        paddingBottom: 150,
-        flexGrow: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.background.primary,
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: colors.text.secondary,
-    },
-    header: {
-        alignItems: "center",
-        marginBottom: 30,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginBottom: 8,
-        textAlign: "center",
-    },
-    subtitle: {
-        fontSize: 16,
-        color: colors.text.secondary,
-        textAlign: "center",
-    },
-    filterContainer: {
-        marginBottom: 24,
-    },
-    filterLabel: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-        marginBottom: 12,
-    },
-    filterButtons: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 8,
-    },
-    filterButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: colors.background.card,
-        borderWidth: 1,
-        borderColor: colors.neutral[200],
-    },
-    filterButtonActive: {
-        backgroundColor: colors.primary[600],
-        borderColor: colors.primary[600],
-    },
-    filterButtonText: {
-        fontSize: 14,
-        fontWeight: "500",
-        color: colors.text.secondary,
-    },
-    filterButtonTextActive: {
-        color: colors.text.white,
-    },
-    statsGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        marginBottom: 30,
-    },
-    statCard: {
-        width: "48%",
-        backgroundColor: colors.background.card,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: "center",
-        marginBottom: 16,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    statIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.primary[50],
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 8,
-    },
-    statValue: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginBottom: 4,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-        textAlign: "center",
-    },
-    section: {
-        marginBottom: 30,
-    },
-    lastSection: {
-        marginBottom: 50,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: colors.text.primary,
-        marginBottom: 4,
-    },
-    sectionSubtitle: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        marginBottom: 16,
-    },
-    exerciseGrid: {
-        gap: 16,
-    },
-    exerciseCard: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    exerciseHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 12,
-    },
-    exerciseName: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-        flex: 1,
-    },
-    progressionBadge: {
-        backgroundColor: colors.status.success,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    progressionText: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: colors.text.white,
-    },
-    exerciseStats: {
-        marginBottom: 12,
-    },
-    statRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 4,
-    },
-    miniChart: {
-        flexDirection: "row",
-        alignItems: "flex-end",
-        height: 40,
-        gap: 2,
-    },
-    miniBarContainer: {
-        flex: 1,
-        alignItems: "center",
-    },
-    miniBar: {
-        width: 8,
-        borderRadius: 4,
-        minHeight: 4,
-    },
-    emptyState: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 32,
-        alignItems: "center",
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    emptyText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-        marginTop: 12,
-        marginBottom: 4,
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        textAlign: "center",
-    },
-    chartContainer: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 20,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    volumeChart: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        height: 100,
-        marginBottom: 16,
-    },
-    volumeBarContainer: {
-        alignItems: "center",
-        flex: 1,
-    },
-    volumeBar: {
-        width: 12,
-        borderRadius: 6,
-        minHeight: 4,
-        marginBottom: 8,
-    },
-    volumeBarLabel: {
-        fontSize: 10,
-        color: colors.text.tertiary,
-    },
-    volumeStats: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-    },
-    volumeStat: {
-        alignItems: "center",
-    },
-    volumeStatValue: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: colors.text.primary,
-    },
-    volumeStatLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-    standardsContainer: {
-        gap: 12,
-    },
-    standardCard: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    standardHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    standardExercise: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-    },
-    strengthBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    strengthLevel: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: colors.text.white,
-    },
-    standardStats: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    standardValue: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: colors.text.primary,
-    },
-    standardRelative: {
-        fontSize: 14,
-        color: colors.text.secondary,
-    },
-    recordsContainer: {
-        gap: 12,
-    },
-    recordCard: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    recordHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    recordExercise: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-    },
-    recordDate: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-    recordStats: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    recordWeight: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: colors.text.primary,
-    },
-    recordReps: {
-        fontSize: 14,
-        color: colors.text.secondary,
-    },
-    recordOneRM: {
-        fontSize: 14,
-        color: colors.status.success,
-        fontWeight: "600",
-    },
-    barChart: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        height: 100,
-    },
-    barColumn: {
-        alignItems: "center",
-        flex: 1,
-    },
-    barContainer: {
-        height: 80,
-        justifyContent: "flex-end",
-        marginBottom: 8,
-    },
-    bar: {
-        width: 20,
-        borderRadius: 10,
-        minHeight: 4,
-    },
-    barLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-    trendCard: {
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        padding: 20,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    trendChart: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        height: 80,
-        marginBottom: 16,
-    },
-    trendBar: {
-        alignItems: "center",
-        flex: 1,
-    },
-    trendBarFill: {
-        width: 16,
-        backgroundColor: colors.primary[600],
-        borderRadius: 8,
-        minHeight: 4,
-        marginBottom: 8,
-    },
-    trendBarLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-    trendStats: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-    },
-    trendStat: {
-        alignItems: "center",
-    },
-    trendStatValue: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: colors.text.primary,
-    },
-    trendStatLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-});
