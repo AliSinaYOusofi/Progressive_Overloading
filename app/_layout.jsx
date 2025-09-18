@@ -1,160 +1,192 @@
-import { Tabs, Stack } from "expo-router";
-import { Home, Settings, BarChart3, User, Dumbbell } from "lucide-react-native";
-import { colors } from "../constants/ui_colors";
-import { Platform, View, Text, ActivityIndicator } from "react-native";
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import "../assets/css/global.css";
+import { Tabs, Stack } from "expo-router"
+import { Home, Settings, BarChart3, User, Dumbbell } from "lucide-react-native"
+import { colors } from '../constants/ui_colors'
+import { Platform, View, Text, ActivityIndicator } from "react-native"
+import { useEffect, useState } from "react"
+import { supabase } from "../lib/supabase"
+import "../assets/css/global.css"
 
 export default function RootLayout() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-    useEffect(() => {
-        const getInitialSession = async () => {
-            try {
-                const {
-                    data: { session },
-                } = await supabase.auth.getSession();
-                setIsAuthenticated(!!session);
-            } catch (error) {
-                console.log("Initial auth check error:", error);
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        getInitialSession();
-
-        // Listen for auth state changes
+  useEffect(() => {
+    const getInitialSession = async () => {
+      try {
         const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("Auth state changed:", event, !!session);
-            setIsAuthenticated(!!session);
-            setIsLoading(false);
-        });
-
-        // Cleanup subscription
-        return () => subscription.unsubscribe();
-    }, []);
-
-    if (isLoading) {
-        return (
-            <View style={{ 
-                flex: 1, 
-                justifyContent: "center", 
-                alignItems: "center",
-                backgroundColor: colors.background.primary
-            }}>
-                <ActivityIndicator size="large" color={colors.primary[600]} />
-                <Text style={{ 
-                    marginTop: 16, 
-                    color: colors.text.secondary,
-                    fontSize: 16
-                }}>
-                    Loading...
-                </Text>
-            </View>
-        );
+          data: { session },
+        } = await supabase.auth.getSession()
+        setIsAuthenticated(!!session)
+      } catch (error) {
+        console.log("Initial auth check error:", error)
+        setIsAuthenticated(false)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    // If not authenticated, show auth screens
-    if (!isAuthenticated) {
-        return (
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(auth)" />
-            </Stack>
-        );
-    }
+    getInitialSession()
 
-    // If authenticated, show main app with tabs
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, !!session)
+      setIsAuthenticated(!!session)
+      setIsLoading(false)
+    })
+
+    // Cleanup subscription
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (isLoading) {
     return (
-        <Tabs
-            screenOptions={{
-                tabBarActiveTintColor: colors.primary[600],
-                tabBarInactiveTintColor: colors.text.tertiary,
-                headerShown: false,
-                tabBarStyle: {
-                    backgroundColor: colors.background.card,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.border.light,
-                    paddingBottom: Platform.OS === "ios" ? 8 : 20, // Extra padding for Android
-                    height: Platform.OS === "ios" ? 60 : 100, // Taller for Android to avoid navigation buttons
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    elevation: 8, // Android shadow
-                    shadowColor: colors.shadow.dark,
-                    shadowOffset: { width: 0, height: -2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                },
-                tabBarActiveTintColor: colors.primary[600],
-                tabBarInactiveTintColor: colors.text.tertiary,
-                tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: "500",
-                    
-                },
-                
-            }}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background.primary,
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.primary[50],
+            padding: 32,
+            borderRadius: 24,
+            alignItems: "center",
+            shadowColor: colors.primary[500],
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 16,
+            elevation: 12,
+          }}
         >
-            <Tabs.Screen
-                name="homescreen"
-                options={{
-                    title: "Home",
-                    tabBarIcon: ({ color, size }) => (
-                        <Home size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="workouts"
-                options={{
-                    title: "Workouts",
-                    tabBarIcon: ({ color, size }) => (
-                        <Dumbbell size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="charts"
-                options={{
-                    title: "Charts",
-                    tabBarIcon: ({ color, size }) => (
-                        <BarChart3 size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: "Profile",
-                    tabBarIcon: ({ color, size }) => (
-                        <User size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="settings"
-                options={{
-                    title: "Settings",
-                    tabBarIcon: ({ color, size }) => (
-                        <Settings size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="(auth)"
-                options={{ href: null }}
-            />
-            <Tabs.Screen
-                name="index"
-                options={{ href: null }}
-            />
-        </Tabs>
-    );
+          <ActivityIndicator size="large" color={colors.primary[600]} />
+          <Text
+            style={{
+              marginTop: 20,
+              color: colors.primary[700],
+              fontSize: 18,
+              fontWeight: "600",
+              letterSpacing: 0.5,
+            }}
+          >
+            Loading...
+          </Text>
+          <Text
+            style={{
+              marginTop: 8,
+              color: colors.neutral[600],
+              fontSize: 14,
+              textAlign: "center",
+            }}
+          >
+            Preparing your fitness journey
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
+  // If not authenticated, show auth screens
+  if (!isAuthenticated) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+      </Stack>
+    )
+  }
+
+  // If authenticated, show main app with tabs
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.background.card,
+          borderTopWidth: 0, // Remove default border
+          paddingBottom: Platform.OS === "ios" ? 12 : 24,
+          paddingTop: 12,
+          height: Platform.OS === "ios" ? 88 : 100,
+          position: "absolute",
+          bottom: 0,
+          left: 8,
+          right: 8,
+          marginBottom: Platform.OS === "ios" ? 0 : 0,
+          borderRadius: 24,
+          elevation: 20,
+          shadowColor: colors.neutral[900],
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.15,
+          shadowRadius: 20,
+          borderWidth: 1,
+          borderColor: colors.neutral[200],
+        },
+        tabBarActiveTintColor: colors.primary[600],
+        tabBarInactiveTintColor: colors.neutral[500],
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          marginTop: 4,
+          letterSpacing: 0.3,
+        },
+        tabBarIconStyle: {
+          marginBottom: -2,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="homescreen"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Home size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="workouts"
+        options={{
+          title: "Workouts",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Dumbbell size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="charts"
+        options={{
+          title: "Charts",
+          tabBarIcon: ({ color, size, focused }) => (
+            <BarChart3 size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size, focused }) => (
+            <User size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Settings size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen name="(auth)" options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ href: null }} />
+    </Tabs>
+  )
 }

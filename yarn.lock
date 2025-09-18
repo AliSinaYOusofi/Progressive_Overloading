@@ -2909,6 +2909,11 @@ getenv@^2.0.0:
   resolved "https://registry.npmjs.org/getenv/-/getenv-2.0.0.tgz"
   integrity sha512-VilgtJj/ALgGY77fiLam5iD336eSWi96Q15JSAG1zi8NRBysm3LXKdGnHb4m5cuyxvOLQQKWpBZAT6ni4FI2iQ==
 
+gifted-charts-core@0.1.66:
+  version "0.1.66"
+  resolved "https://registry.npmjs.org/gifted-charts-core/-/gifted-charts-core-0.1.66.tgz"
+  integrity sha512-qbfgxjrInrWpnomvrjVARF76uPj3JllKySxMgslQRKIe0ehIuD58mRY5qP3iFzD96ngPcxsTy5M0cFbXqykJdA==
+
 glob-parent@^5.1.2, glob-parent@~5.1.2:
   version "5.1.2"
   resolved "https://registry.npmjs.org/glob-parent/-/glob-parent-5.1.2.tgz"
@@ -4327,6 +4332,13 @@ react-native-get-random-values@~1.11.0:
   dependencies:
     fast-base64-decode "^1.0.0"
 
+react-native-gifted-charts@^1.4.64:
+  version "1.4.64"
+  resolved "https://registry.npmjs.org/react-native-gifted-charts/-/react-native-gifted-charts-1.4.64.tgz"
+  integrity sha512-jbr6RZ/61skhC7z5BKAu4e5jsWgVnmjU5UoVW3DO9rcqDpeqdIQzNoqmazjuHa7NvDjfKNey6FdblFTkvnBHdQ==
+  dependencies:
+    gifted-charts-core "0.1.66"
+
 react-native-is-edge-to-edge@^1.1.6, react-native-is-edge-to-edge@^1.1.7:
   version "1.2.1"
   resolved "https://registry.npmjs.org/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.2.1.tgz"
@@ -4374,7 +4386,7 @@ react-native-screens@*, "react-native-screens@>= 4.0.0", react-native-screens@~4
     react-native-is-edge-to-edge "^1.1.7"
     warn-once "^0.1.0"
 
-"react-native-svg@^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0", react-native-svg@^15.12.1:
+react-native-svg@*, "react-native-svg@^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0", react-native-svg@^15.12.1:
   version "15.12.1"
   resolved "https://registry.npmjs.org/react-native-svg/-/react-native-svg-15.12.1.tgz"
   integrity sha512-vCuZJDf8a5aNC2dlMovEv4Z0jjEUET53lm/iILFnFewa15b4atjVxU6Wirm6O9y6dEsdjDZVD7Q3QM4T1wlI8g==
