@@ -47,48 +47,66 @@ export default function MonthlyTrends({ monthlyStats }) {
   const totalSets = monthlyStats.reduce((sum, m) => sum + (m?.totalSets || 0), 0)
 
   const buildPieData = () => {
-    const total = monthlyStats.reduce((s, m) => s + (m?.workouts || 0), 0)
-    if (total <= 0) return []
-    const variants = [colors.primary[600], colors.primary[500], colors.primary[700] || colors.primary[600], colors.status.success, colors.status.warning]
-    return monthlyStats.map((m, idx) => ({
-      value: m?.workouts || 0,
-      color: variants[idx % variants.length],
-      text: total ? Math.round(((m?.workouts || 0) / total) * 100) + '%' : '',
-      textColor: colors.text.white,
-      textSize: 10,
-      label: new Date((m?.month || '') + "-01").toLocaleDateString("en", { month: "short" })
-    })).filter(s => s.value > 0)
+    try {
+      const total = monthlyStats.reduce((s, m) => s + (m?.workouts || 0), 0)
+      if (total <= 0) return []
+      const variants = [
+        colors.primary?.[600] || '#10b981', 
+        colors.primary?.[500] || '#10b981', 
+        colors.primary?.[700] || '#10b981', 
+        colors.status?.success || '#10b981', 
+        colors.status?.warning || '#f59e0b'
+      ]
+      return monthlyStats
+        .filter(m => m && m.month && typeof m.month === 'string') // Filter out invalid entries
+        .map((m, idx) => {
+          try {
+            const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
+            const date = new Date(dateStr);
+            const label = date.toLocaleDateString("en", { month: "short" });
+            return {
+              value: m?.workouts || 0,
+              color: variants[idx % variants.length],
+              text: total ? Math.round(((m?.workouts || 0) / total) * 100) + '%' : '',
+              textColor: colors.text?.white || 'white',
+              textSize: 10,
+              label: label
+            };
+          } catch (err) {
+            console.error('Error formatting month data:', m, err);
+            return null;
+          }
+        })
+        .filter(s => s && s.value > 0)
+    } catch (error) {
+      console.error('Error building pie data:', error);
+      return [];
+    }
   }
 
   return (
-    <View className="mb-10">
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center">
-          <Ionicons name="trending-up" size={24} color={colors.primary[600]} />
-          <Text className="text-xl font-bold ml-2" style={{ color: colors.neutral[900] }}>
-            Monthly Trends
-          </Text>
-        </View>
+    <View>
+      <View className="flex-row items-center justify-between mb-4">
         <View className="flex-row items-center">
           <Ionicons
             name={workoutTrend === "up" ? "trending-up" : workoutTrend === "down" ? "trending-down" : "remove"}
             size={16}
             color={
               workoutTrend === "up"
-                ? colors.success[600]
+                ? colors.status.success
                 : workoutTrend === "down"
-                  ? colors.error[600]
+                  ? colors.status.error
                   : colors.neutral[500]
             }
           />
           <Text
-            className="text-sm font-medium ml-1"
+            className="text-sm font-medium ml-2"
             style={{
               color:
                 workoutTrend === "up"
-                  ? colors.success[600]
+                  ? colors.status.success
                   : workoutTrend === "down"
-                    ? colors.error[600]
+                    ? colors.status.error
                     : colors.neutral[500],
             }}
           >
@@ -97,29 +115,34 @@ export default function MonthlyTrends({ monthlyStats }) {
         </View>
       </View>
 
-      <Text className="text-sm mb-4" style={{ color: colors.neutral[600] }}>
-        Track your workout consistency over time
-      </Text>
-
       <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: colors.neutral[50] }}>
         {/* Pie Chart */}
         <View className="items-center justify-center mb-4" style={{ height: 220 }}>
-          <PieChart
-            data={buildPieData()}
-            radius={80}
-            innerRadius={40}
-            showText
-            textColor={colors.text.white}
-            textSize={10}
-            centerLabelComponent={() => (
-              <View className="items-center">
-                <Text className="text-lg font-bold" style={{ color: colors.neutral[900] }}>
-                  {totalExercises}
-                </Text>
-                <Text className="text-xs" style={{ color: colors.neutral[600] }}>Workouts</Text>
-              </View>
-            )}
-          />
+          {buildPieData().length > 0 ? (
+            <PieChart
+              data={buildPieData()}
+              radius={80}
+              innerRadius={40}
+              showText
+              textColor={colors.text?.white || 'white'}
+              textSize={10}
+              centerLabelComponent={() => (
+                <View className="items-center">
+                  <Text className="text-lg font-bold" style={{ color: colors.neutral?.[900] || '#000' }}>
+                    {totalExercises}
+                  </Text>
+                  <Text className="text-xs" style={{ color: colors.neutral?.[600] || '#666' }}>Workouts</Text>
+                </View>
+              )}
+            />
+          ) : (
+            <View className="items-center justify-center" style={{ height: 180 }}>
+              <Ionicons name="pie-chart-outline" size={48} color={colors.neutral?.[400] || '#999'} />
+              <Text className="text-sm mt-3" style={{ color: colors.neutral?.[600] || '#666' }}>
+                No data to display
+              </Text>
+            </View>
+          )}
         </View>
         {/* Legend */}
         <View className="flex-row flex-wrap justify-center mb-6">

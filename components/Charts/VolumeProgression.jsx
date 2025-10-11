@@ -15,12 +15,15 @@ export default function VolumeProgression({ volumeProgression }) {
   const formatVolumeDataForChart = (volumeData) => {
     if (!volumeData || volumeData.length === 0) return []
 
-    return volumeData.slice(-14).map((day, index) => ({
-      value: day.totalVolume,
-      label: index % 2 === 0 ? new Date(day.date).toLocaleDateString("en", { month: "short", day: "numeric" }) : "",
-      frontColor: colors.primary[600],
-      labelTextStyle: { color: colors.text.tertiary, fontSize: 10 },
-    }))
+    return volumeData
+      .slice(-14)
+      .filter((day) => day && day.date) // Filter out invalid entries
+      .map((day, index) => ({
+        value: day.totalVolume || 0,
+        label: index % 2 === 0 ? new Date(day.date).toLocaleDateString("en", { month: "short", day: "numeric" }) : "",
+        frontColor: colors.primary[600],
+        labelTextStyle: { color: colors.text.tertiary, fontSize: 10 },
+      }))
   }
 
   // Helper for PieChart (distribution of volume over the last 14 days)
@@ -33,6 +36,7 @@ export default function VolumeProgression({ volumeProgression }) {
 
     // Show only days with non-zero volume and cap slices to keep readability
     const slices = recent
+      .filter((day) => day && day.date) // Filter out invalid entries
       .map((day) => ({
         value: day?.totalVolume || 0,
         label: new Date(day.date).toLocaleDateString("en", { month: "short", day: "numeric" }),
@@ -67,26 +71,25 @@ export default function VolumeProgression({ volumeProgression }) {
   const trend = calculateTrend()
 
   return (
-    <View style={{ marginBottom: 32 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Ionicons name="bar-chart" size={24} color={colors.primary[600]} style={{ marginRight: 8 }} />
-          <Text style={{ fontSize: 20, fontWeight: "600", color: colors.text.primary }}>Volume Progression</Text>
-          <TouchableOpacity
-            onPress={() => setShowInfoModal(true)}
-            style={{
-              marginLeft: 8,
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              backgroundColor: colors.primary[100],
-              alignItems: "center",
-              justifyContent: "center"
-            }}
-          >
-            <Ionicons name="information-circle" size={16} color={colors.primary[600]} />
-          </TouchableOpacity>
-        </View>
+    <View>
+      {/* Controls Row */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        {/* Info Button */}
+        <TouchableOpacity
+          onPress={() => setShowInfoModal(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 6,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            backgroundColor: colors.primary[100],
+          }}
+        >
+          <Ionicons name="information-circle" size={16} color={colors.primary[600]} style={{ marginRight: 6 }} />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary[700] }}>How it's calculated</Text>
+        </TouchableOpacity>
+
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {/* Chart type toggle */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, backgroundColor: colors.neutral[100], borderRadius: 12 }}>
@@ -139,16 +142,12 @@ export default function VolumeProgression({ volumeProgression }) {
                       : colors.text.tertiary,
               }}
             >
-              {trend === "up" ? "Trending Up" : trend === "down" ? "Declining" : "Stable"}
+              {trend === "up" ? "Up" : trend === "down" ? "Down" : "Stable"}
             </Text>
           </View>
           )}
         </View>
       </View>
-
-      <Text style={{ fontSize: 14, color: colors.text.secondary, marginBottom: 16 }}>
-        Total weight lifted per day over the last 2 weeks
-      </Text>
 
       {volumeProgression && volumeProgression.length > 0 ? (
         <View

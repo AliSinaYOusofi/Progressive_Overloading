@@ -70,17 +70,7 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
   }
 
   return (
-    <View className="mb-8">
-      <View className="flex-row items-center mb-6">
-        <View className="w-10 h-10 bg-emerald-100 rounded-xl items-center justify-center mr-3">
-          <Ionicons name="analytics" size={20} color={colors.primary[600]} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-xl font-bold text-slate-900">Progressive Overload Analysis</Text>
-          <Text className="text-sm text-slate-600 mt-0.5">Track your strength progression trends</Text>
-        </View>
-      </View>
-
+    <View>
       <View className="gap-4">
         {progressiveOverloadInsights.slice(0, 5).map((insight, index) => (
           <View

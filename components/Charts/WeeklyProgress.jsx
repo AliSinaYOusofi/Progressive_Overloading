@@ -9,7 +9,7 @@ export default function WeeklyProgress({ weeklyProgress }) {
     // Build pie data: completed vs missed days in the week
     const buildPieData = () => {
         if (!weeklyProgress || weeklyProgress.length === 0) return [];
-        const completed = weeklyProgress.filter(d => d.completed).length;
+        const completed = weeklyProgress.filter(d => d && d.completed).length;
         const missed = weeklyProgress.length - completed;
         const slices = [];
         if (completed > 0) slices.push({ value: completed, color: colors.status.success, text: String(completed), textColor: colors.text.white, textSize: 10, label: 'Completed' });
@@ -17,11 +17,16 @@ export default function WeeklyProgress({ weeklyProgress }) {
         return slices;
     };
 
+    if (!weeklyProgress || weeklyProgress.length === 0) {
+        return (
+            <View className="bg-white rounded-xl p-6 items-center shadow-sm">
+                <Text className="text-slate-600">No weekly progress data available</Text>
+            </View>
+        );
+    }
+
     return (
-        <View className="mb-8">
-            <Text className="text-xl font-semibold text-slate-900 mb-1">Weekly Progress</Text>
-            <Text className="text-sm text-slate-700 mb-4">Sets logged this week</Text>
-            
+        <View>
             <View className="bg-white rounded-xl p-6 shadow-sm">
                 <View className="items-center justify-center" style={{ height: 160 }}>
                     <PieChart
@@ -34,7 +39,7 @@ export default function WeeklyProgress({ weeklyProgress }) {
                         centerLabelComponent={() => (
                             <View className="items-center">
                                 <Text className="text-lg font-bold" style={{ color: colors.neutral[900] }}>
-                                    {weeklyProgress.filter(d => d.completed).length}/
+                                    {weeklyProgress.filter(d => d && d.completed).length}/
                                     {weeklyProgress.length}
                                 </Text>
                                 <Text className="text-xs" style={{ color: colors.neutral[600] }}>Days</Text>
