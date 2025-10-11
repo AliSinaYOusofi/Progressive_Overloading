@@ -23,46 +23,48 @@ export default function RPEAnalysis({ rpeAnalysis }) {
     const formatRPEDataForChart = (rpeData) => {
         if (!rpeData || rpeData.length === 0) return [];
         
-        return rpeData.slice(-7).map((point, index) => ({
-            value: point.rpe,
-            label: index % 2 === 0 ? new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
-            dataPointText: point.rpe.toFixed(1),
-            labelTextStyle: { color: colors.text.tertiary, fontSize: 8 },
-            dataPointTextStyle: { color: colors.text.primary, fontSize: 8 }
-        }));
+        return rpeData
+            .slice(-7)
+            .filter(point => point && point.date && point.rpe !== undefined)
+            .map((point, index) => ({
+                value: point.rpe,
+                label: index % 2 === 0 ? new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
+                dataPointText: point.rpe.toFixed(1),
+                labelTextStyle: { color: colors.text.tertiary, fontSize: 8 },
+                dataPointTextStyle: { color: colors.text.primary, fontSize: 8 }
+            }));
     };
 
     return (
-        <View className="mb-8">
-            <Text className="text-xl font-semibold text-slate-900 mb-1">Training Intensity (RPE)</Text>
-            <Text className="text-sm text-slate-700 mb-4">Rate of Perceived Exertion analysis</Text>
-            
+        <View>
             <View className="gap-3">
-                {rpeAnalysis.slice(0, 4).map((exercise, index) => (
-                    <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
-                        <View className="flex-row justify-between items-center mb-2">
-                            <Text className="text-base font-semibold text-slate-900 flex-1">{exercise.exercise}</Text>
-                            <View 
-                                className="px-2 py-1 rounded-xl"
-                                style={{ backgroundColor: getIntensityColor(exercise.intensity) }}
-                            >
-                                <Text className="text-xs font-semibold text-white">
-                                    {exercise.intensity.toUpperCase()}
+                {rpeAnalysis.slice(0, 4).map((exercise, index) => {
+                    if (!exercise || !exercise.exercise) return null;
+                    return (
+                        <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-base font-semibold text-slate-900 flex-1">{exercise.exercise}</Text>
+                                <View 
+                                    className="px-2 py-1 rounded-xl"
+                                    style={{ backgroundColor: getIntensityColor(exercise.intensity) }}
+                                >
+                                    <Text className="text-xs font-semibold text-white">
+                                        {(exercise.intensity || 'low').toUpperCase()}
+                                    </Text>
+                                </View>
+                            </View>
+                            
+                            <View className="flex-row justify-between mb-3">
+                                <Text className="text-sm font-semibold text-slate-700">
+                                    Avg RPE: {(exercise.avgRPE || 0).toFixed(1)}/10
+                                </Text>
+                                <Text className="text-xs text-slate-600">
+                                    {exercise.totalSets || 0} sets logged
                                 </Text>
                             </View>
-                        </View>
-                        
-                        <View className="flex-row justify-between mb-3">
-                            <Text className="text-sm font-semibold text-slate-700">
-                                Avg RPE: {exercise.avgRPE.toFixed(1)}/10
-                            </Text>
-                            <Text className="text-xs text-slate-600">
-                                {exercise.totalSets} sets logged
-                            </Text>
-                        </View>
-                        
-                        {/* RPE Trend Visualization */}
-                        {exercise.rpeTrend.length > 1 && (
+                            
+                            {/* RPE Trend Visualization */}
+                            {exercise.rpeTrend && exercise.rpeTrend.length > 1 && (
                             <View className="h-24 mb-2">
                                 <LineChart
                                     data={formatRPEDataForChart(exercise.rpeTrend)}
@@ -91,9 +93,10 @@ export default function RPEAnalysis({ rpeAnalysis }) {
                                     xAxisSide="bottom"
                                 />
                             </View>
-                        )}
-                    </View>
-                ))}
+                            )}
+                        </View>
+                    );
+                })}
             </View>
         </View>
     );

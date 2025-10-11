@@ -1,5 +1,5 @@
 import { Tabs, Stack } from "expo-router"
-import { Home, Settings, BarChart3, User, Dumbbell } from "lucide-react-native"
+import { Home, Settings, BarChart3, User } from "lucide-react-native"
 import { colors } from '../constants/ui_colors'
 import { Platform, View, Text, ActivityIndicator } from "react-native"
 import { useEffect, useState } from "react"
@@ -146,15 +146,6 @@ export default function RootLayout() {
           title: "Home",
           tabBarIcon: ({ color, size, focused }) => (
             <Home size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="workouts"
-        options={{
-          title: "Workouts",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Dumbbell size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
           ),
         }}
       />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
+import { TrendingUp, BarChart3, Award, Trophy, Calendar, Target, Activity, Zap } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import { 
     getCurrentUser, 
@@ -18,6 +19,7 @@ import {
 // Import chart components
 import QuickStats from "../components/Charts/QuickStats";
 import TimeframeFilter from "../components/Charts/TimeframeFilter";
+import CollapsibleSection from "../components/Charts/CollapsibleSection";
 import ExerciseProgression from "../components/Charts/ExerciseProgression";
 import VolumeProgression from "../components/Charts/VolumeProgression";
 import StrengthStandards from "../components/Charts/StrengthStandards";
@@ -59,6 +61,9 @@ export default function ChartsScreen() {
             
             setUser(currentUser);
 
+            // For "All Time", use a very large number or null to get all data
+            const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe; // 100 years for all time
+
             const [
                 stats,
                 progression,
@@ -72,15 +77,15 @@ export default function ChartsScreen() {
                 volumeInsights
             ] = await Promise.all([
                 getUserStats(currentUser.id),
-                getExerciseProgressionData(currentUser.id, null, selectedTimeframe),
-                getVolumeProgressionData(currentUser.id, selectedTimeframe),
+                getExerciseProgressionData(currentUser.id, null, timeframeValue),
+                getVolumeProgressionData(currentUser.id, timeframeValue),
                 getStrengthStandards(currentUser.id),
-                getMonthlyStats(currentUser.id, 6),
-                getPersonalRecords(currentUser.id, 10),
+                getMonthlyStats(currentUser.id, selectedTimeframe === 'all' ? 120 : 6), // 10 years of months for all time
+                getPersonalRecords(currentUser.id, selectedTimeframe === 'all' ? 100 : 10), // More records for all time
                 getWeeklyProgress(currentUser.id),
-                getRPEAnalysis(currentUser.id, selectedTimeframe),
-                getProgressiveOverloadInsights(currentUser.id, selectedTimeframe),
-                getVolumeAnalysis(currentUser.id, selectedTimeframe)
+                getRPEAnalysis(currentUser.id, timeframeValue),
+                getProgressiveOverloadInsights(currentUser.id, timeframeValue),
+                getVolumeAnalysis(currentUser.id, timeframeValue)
             ]);
 
             setUserStats(stats);
@@ -108,6 +113,15 @@ export default function ChartsScreen() {
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
+        loadChartsData();
+    };
+
+    const handleCustomDateRange = (startDate, endDate) => {
+        // Calculate days difference
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        setSelectedTimeframe('custom');
+        // You can pass the custom date range to loadChartsData if needed
+        // For now, we'll use the daysDiff as the timeframe
         loadChartsData();
     };
 
@@ -140,40 +154,116 @@ export default function ChartsScreen() {
                 <TimeframeFilter 
                     selectedTimeframe={selectedTimeframe}
                     onTimeframeChange={handleTimeframeChange}
+                    onCustomDateRange={handleCustomDateRange}
                 />
 
-                {/* Quick Stats */}
+                {/* Quick Stats - Always Visible */}
                 <QuickStats 
                     userStats={userStats}
                     personalRecords={personalRecords}
                 />
 
                 {/* Exercise Progression Charts */}
-                <ExerciseProgression exerciseProgression={exerciseProgression} />
+                <CollapsibleSection
+                    title="Exercise Progression"
+                    subtitle="1RM progression over time"
+                    icon={TrendingUp}
+                    defaultExpanded={true}
+                >
+                    <ExerciseProgression exerciseProgression={exerciseProgression} />
+                </CollapsibleSection>
 
                 {/* Volume Progression */}
-                <VolumeProgression volumeProgression={volumeProgression} />
+                <CollapsibleSection
+                    title="Volume Progression"
+                    subtitle="Total weight lifted per day"
+                    icon={BarChart3}
+                    defaultExpanded={false}
+                >
+                    <VolumeProgression volumeProgression={volumeProgression} />
+                </CollapsibleSection>
 
                 {/* Strength Standards */}
-                <StrengthStandards strengthStandards={strengthStandards} />
+                {strengthStandards && strengthStandards.length > 0 && (
+                    <CollapsibleSection
+                        title="Strength Standards"
+                        subtitle="Relative to bodyweight"
+                        icon={Award}
+                        defaultExpanded={false}
+                    >
+                        <StrengthStandards strengthStandards={strengthStandards} />
+                    </CollapsibleSection>
+                )}
 
                 {/* Personal Records */}
-                <PersonalRecords personalRecords={personalRecords} />
+                {personalRecords && personalRecords.length > 0 && (
+                    <CollapsibleSection
+                        title="Personal Records"
+                        subtitle="Your best performances"
+                        icon={Trophy}
+                        defaultExpanded={false}
+                    >
+                        <PersonalRecords personalRecords={personalRecords} />
+                    </CollapsibleSection>
+                )}
 
                 {/* Weekly Progress */}
-                <WeeklyProgress weeklyProgress={weeklyProgress} />
+                <CollapsibleSection
+                    title="Weekly Progress"
+                    subtitle="Sets logged this week"
+                    icon={Calendar}
+                    defaultExpanded={false}
+                >
+                    <WeeklyProgress weeklyProgress={weeklyProgress} />
+                </CollapsibleSection>
 
                 {/* Monthly Trends */}
-                <MonthlyTrends monthlyStats={monthlyStats} />
+                {monthlyStats && monthlyStats.length > 0 && (
+                    <CollapsibleSection
+                        title="Monthly Trends"
+                        subtitle="Sets and exercises over time"
+                        icon={Calendar}
+                        defaultExpanded={false}
+                    >
+                        <MonthlyTrends monthlyStats={monthlyStats} />
+                    </CollapsibleSection>
+                )}
 
                 {/* Progressive Overload Insights */}
-                <ProgressiveOverloadInsights progressiveOverloadInsights={progressiveOverloadInsights} />
+                {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
+                    <CollapsibleSection
+                        title="Progressive Overload Analysis"
+                        subtitle="Your strength progression insights"
+                        icon={Target}
+                        defaultExpanded={false}
+                    >
+                        <ProgressiveOverloadInsights progressiveOverloadInsights={progressiveOverloadInsights} />
+                    </CollapsibleSection>
+                )}
 
                 {/* RPE Analysis */}
-                <RPEAnalysis rpeAnalysis={rpeAnalysis} />
+                {rpeAnalysis && rpeAnalysis.length > 0 && (
+                    <CollapsibleSection
+                        title="Training Intensity (RPE)"
+                        subtitle="Rate of Perceived Exertion analysis"
+                        icon={Zap}
+                        defaultExpanded={false}
+                    >
+                        <RPEAnalysis rpeAnalysis={rpeAnalysis} />
+                    </CollapsibleSection>
+                )}
 
                 {/* Volume Analysis */}
-                <VolumeAnalysis volumeAnalysis={volumeAnalysis} />
+                {volumeAnalysis && volumeAnalysis.totalVolume > 0 && (
+                    <CollapsibleSection
+                        title="Volume Analysis"
+                        subtitle="Training volume insights and trends"
+                        icon={Activity}
+                        defaultExpanded={false}
+                    >
+                        <VolumeAnalysis volumeAnalysis={volumeAnalysis} />
+                    </CollapsibleSection>
+                )}
             </ScrollView>
         </View>
     );

@@ -7,8 +7,12 @@ import { colors } from "../../constants/ui_colors";
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function ExerciseProgression({ exerciseProgression }) {
+    if (!exerciseProgression) {
+        return null;
+    }
+
     const getExerciseNames = () => {
-        return Object.keys(exerciseProgression).slice(0, 5);
+        return Object.keys(exerciseProgression || {}).slice(0, 5);
     };
 
     const calculateProgressionRate = (exerciseData) => {
@@ -22,7 +26,13 @@ export default function ExerciseProgression({ exerciseProgression }) {
     const buildPieData = () => {
         const exerciseNames = getExerciseNames();
         const slices = [];
-        const colorVariants = [colors.primary[600], colors.primary[500], colors.primary[700] || colors.primary[600], colors.status.success, colors.status.warning];
+        const colorVariants = [
+            colors.primary?.[600] || '#10b981', 
+            colors.primary?.[500] || '#10b981', 
+            colors.primary?.[700] || '#10b981', 
+            colors.status?.success || '#10b981', 
+            colors.status?.warning || '#f59e0b'
+        ];
         exerciseNames.forEach((name, idx) => {
             const data = exerciseProgression[name] || [];
             if (!data.length) return;
@@ -31,7 +41,7 @@ export default function ExerciseProgression({ exerciseProgression }) {
                 value: Math.max(0, last),
                 color: colorVariants[idx % colorVariants.length],
                 text: last > 0 ? String(Math.round(last)) : '',
-                textColor: colors.text.white,
+                textColor: colors.text?.white || 'white',
                 textSize: 10,
                 label: name,
             });
@@ -42,45 +52,46 @@ export default function ExerciseProgression({ exerciseProgression }) {
     };
 
     return (
-        <View className="mb-8">
-            <View className="flex-row items-center justify-between mb-1">
-                <Text className="text-xl font-semibold text-slate-900">Exercise Progression</Text>
-            </View>
-            <Text className="text-sm text-slate-700 mb-4">Current 1RM distribution (top exercises)</Text>
-            
+        <View>
             {Object.keys(exerciseProgression).length > 0 ? (
                 <View className="bg-white rounded-xl p-6 shadow-sm">
                     <View className="items-center h-56 justify-center">
-                        <PieChart
-                            data={buildPieData()}
-                            radius={80}
-                            innerRadius={40}
-                            showText
-                            textColor={colors.text.white}
-                            textSize={10}
-                            centerLabelComponent={() => (
-                                <View className="items-center">
-                                    <Text className="text-lg font-bold text-slate-900">
-                                        {getExerciseNames().length}
-                                    </Text>
-                                    <Text className="text-xs text-slate-600">Exercises</Text>
-                                </View>
-                            )}
-                        />
+                        {buildPieData().length > 0 ? (
+                            <PieChart
+                                data={buildPieData()}
+                                radius={80}
+                                innerRadius={40}
+                                showText
+                                textColor={colors.text?.white || 'white'}
+                                textSize={10}
+                                centerLabelComponent={() => (
+                                    <View className="items-center">
+                                        <Text className="text-lg font-bold text-slate-900">
+                                            {getExerciseNames().length}
+                                        </Text>
+                                        <Text className="text-xs text-slate-600">Exercises</Text>
+                                    </View>
+                                )}
+                            />
+                        ) : (
+                            <Text className="text-slate-600">No progression data</Text>
+                        )}
                     </View>
                     {/* Legend */}
-                    <View className="flex-row flex-wrap justify-center mt-4">
-                        {buildPieData().map((slice, idx) => (
-                            <View key={idx} className="flex-row items-center mx-2 my-1">
-                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: slice.color, marginRight: 6 }} />
-                                <Text className="text-xs" style={{ color: colors.text.secondary }}>{slice.label}</Text>
-                            </View>
-                        ))}
-                    </View>
+                    {buildPieData().length > 0 && (
+                        <View className="flex-row flex-wrap justify-center mt-4">
+                            {buildPieData().map((slice, idx) => (
+                                <View key={idx} className="flex-row items-center mx-2 my-1">
+                                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: slice.color, marginRight: 6 }} />
+                                    <Text className="text-xs" style={{ color: colors.text?.secondary || '#666' }}>{slice.label}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </View>
             ) : (
                 <View className="bg-white rounded-xl p-8 items-center shadow-sm">
-                    <Dumbbell size={48} color={colors.text.tertiary} />
+                    <Dumbbell size={48} color={colors.text?.tertiary || '#999'} />
                     <Text className="text-base font-semibold text-slate-900 mt-3 mb-1">No exercise data yet</Text>
                     <Text className="text-sm text-slate-700 text-center">Start logging sets to see your progression!</Text>
                 </View>

@@ -5,17 +5,7 @@ import colors from "../../constants/ui_colors"
 export default function PersonalRecords({ personalRecords }) {
   if (!personalRecords || personalRecords.length === 0) {
     return (
-      <View className="mb-10">
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="trophy" size={24} color={colors.primary[600]} />
-          <Text className="text-xl font-bold ml-2" style={{ color: colors.neutral[900] }}>
-            Personal Records
-          </Text>
-        </View>
-        <Text className="text-sm mb-6" style={{ color: colors.neutral[600] }}>
-          Your best performances
-        </Text>
-
+      <View>
         <View className="rounded-2xl p-8 items-center" style={{ backgroundColor: colors.neutral[50] }}>
           <Ionicons name="medal-outline" size={48} color={colors.neutral[400]} />
           <Text className="text-lg font-semibold mt-4 mb-2" style={{ color: colors.neutral[700] }}>
@@ -53,17 +43,7 @@ export default function PersonalRecords({ personalRecords }) {
   }
 
   return (
-    <View className="mb-10">
-      <View className="flex-row items-center mb-2">
-        <Ionicons name="trophy" size={24} color={colors.primary[600]} />
-        <Text className="text-xl font-bold ml-2" style={{ color: colors.neutral[900] }}>
-          Personal Records
-        </Text>
-      </View>
-      <Text className="text-sm mb-6" style={{ color: colors.neutral[600] }}>
-        Your best performances
-      </Text>
-
+    <View>
       <View className="gap-4">
         {personalRecords.slice(0, 5).map((record, index) => {
           const rankIcon = getRankIcon(index)

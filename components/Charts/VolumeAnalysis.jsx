@@ -46,13 +46,7 @@ export default function VolumeAnalysis({ volumeAnalysis }) {
   }
 
   return (
-    <View className="mb-10">
-      <View className="flex-row items-center mb-3">
-        <Ionicons name="bar-chart" size={24} color={colors.primary[600]} />
-        <Text className="text-xl font-bold text-slate-900 ml-2">Volume Analysis</Text>
-      </View>
-      <Text className="text-slate-600 mb-6 leading-5">Training volume insights and performance trends</Text>
-
+    <View>
       <View className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 mb-4">
         <View className="flex-row justify-between mb-6">
           <View className="flex-1 items-center bg-slate-50 rounded-xl p-4 mr-2">

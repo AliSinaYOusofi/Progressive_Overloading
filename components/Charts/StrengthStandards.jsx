@@ -25,10 +25,7 @@ export default function StrengthStandards({ strengthStandards }) {
     }
 
     return (
-        <View className="mb-8">
-            <Text className="text-xl font-semibold text-slate-900 mb-1">Strength Standards</Text>
-            <Text className="text-sm text-slate-700 mb-4">Relative to bodyweight</Text>
-            
+        <View>
             <View className="gap-3">
                 {strengthStandards.map((standard, index) => {
                     const strengthLevel = getStrengthLevel(standard.relativeStrength, standard.exercise);
