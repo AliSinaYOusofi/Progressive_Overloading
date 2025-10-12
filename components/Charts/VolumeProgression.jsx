@@ -1,30 +1,12 @@
-import { View, Text, Dimensions, TouchableOpacity } from "react-native"
+import { View, Text, TouchableOpacity } from "react-native"
 import { useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
-import { BarChart, PieChart } from "react-native-gifted-charts"
+import { PieChart } from "react-native-gifted-charts"
 import { colors } from "../../constants/ui_colors"
 import VolumeCalculationInfoModal from "./VolumeCalculationInfoModal"
 
-const { width: screenWidth } = Dimensions.get("window")
-
 export default function VolumeProgression({ volumeProgression }) {
   const [showInfoModal, setShowInfoModal] = useState(false)
-  const [chartType, setChartType] = useState('pie') // 'bar' | 'pie'
-
-  // Helper function to format volume data for BarChart
-  const formatVolumeDataForChart = (volumeData) => {
-    if (!volumeData || volumeData.length === 0) return []
-
-    return volumeData
-      .slice(-14)
-      .filter((day) => day && day.date) // Filter out invalid entries
-      .map((day, index) => ({
-        value: day.totalVolume || 0,
-        label: index % 2 === 0 ? new Date(day.date).toLocaleDateString("en", { month: "short", day: "numeric" }) : "",
-        frontColor: colors.primary[600],
-        labelTextStyle: { color: colors.text.tertiary, fontSize: 10 },
-      }))
-  }
 
   // Helper for PieChart (distribution of volume over the last 14 days)
   const formatVolumeDataForPie = (volumeData) => {
@@ -90,23 +72,7 @@ export default function VolumeProgression({ volumeProgression }) {
           <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary[700] }}>How it's calculated</Text>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {/* Chart type toggle */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8, backgroundColor: colors.neutral[100], borderRadius: 12 }}>
-            <TouchableOpacity
-              onPress={() => setChartType('bar')}
-              style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: chartType === 'bar' ? colors.primary[100] : 'transparent' }}
-            >
-              <Ionicons name="bar-chart" size={16} color={chartType === 'bar' ? colors.primary[700] : colors.text.secondary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setChartType('pie')}
-              style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12, backgroundColor: chartType === 'pie' ? colors.primary[100] : 'transparent' }}
-            >
-              <Ionicons name="pie-chart" size={16} color={chartType === 'pie' ? colors.primary[700] : colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-          {trend && (
+        {trend && (
           <View
             style={{
               flexDirection: "row",
@@ -145,8 +111,7 @@ export default function VolumeProgression({ volumeProgression }) {
               {trend === "up" ? "Up" : trend === "down" ? "Down" : "Stable"}
             </Text>
           </View>
-          )}
-        </View>
+        )}
       </View>
 
       {volumeProgression && volumeProgression.length > 0 ? (
@@ -162,81 +127,43 @@ export default function VolumeProgression({ volumeProgression }) {
             elevation: 3,
           }}
         >
-          {chartType === 'bar' ? (
-            <View
-              style={{
-                height: 200,
-                marginBottom: 20,
-                backgroundColor: colors.neutral[50],
-                borderRadius: 12,
-                padding: 12,
-              }}
-            >
-              <BarChart
-                data={formatVolumeDataForChart(volumeProgression)}
-                width={screenWidth - 140}
-                height={176}
-                barWidth={20}
-                spacing={10}
-                roundedTop
-                roundedBottom
-                hideRules={false}
-                rulesType="solid"
-                rulesColor={colors.border.light}
-                yAxisColor={colors.border.medium}
-                xAxisColor={colors.border.medium}
-                yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10 }}
-                showVerticalLines={false}
-                showHorizontalLines={true}
-                noOfSections={4}
-                maxValue={Math.max(...volumeProgression.map((d) => d?.totalVolume || 0)) * 1.1}
-                showYAxisIndices={true}
-                yAxisIndicesColor={colors.border.light}
-                yAxisIndicesWidth={1}
-                yAxisSide="left"
-                xAxisSide="bottom"
-              />
+          <View
+            style={{
+              height: 220,
+              marginBottom: 20,
+              backgroundColor: colors.neutral[50],
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <PieChart
+              data={formatVolumeDataForPie(volumeProgression)}
+              radius={80}
+              innerRadius={40}
+              showText
+              textColor={colors.text.white}
+              textSize={10}
+              centerLabelComponent={() => (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text.primary }}>
+                    {volumeProgression.slice(-14).reduce((s, d) => s + (d?.totalVolume || 0), 0).toFixed(0)}
+                  </Text>
+                  <Text style={{ fontSize: 10, color: colors.text.tertiary }}>Last 14d</Text>
+                </View>
+              )}
+            />
+            {/* Legend */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12, paddingHorizontal: 8 }}>
+              {formatVolumeDataForPie(volumeProgression).slice(0,6).map((s, idx) => (
+                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color, marginRight: 6 }} />
+                  <Text style={{ fontSize: 10, color: colors.text.secondary }}>{s.label}</Text>
+                </View>
+              ))}
             </View>
-          ) : (
-            <View
-              style={{
-                height: 220,
-                marginBottom: 20,
-                backgroundColor: colors.neutral[50],
-                borderRadius: 12,
-                paddingVertical: 12,
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <PieChart
-                data={formatVolumeDataForPie(volumeProgression)}
-                radius={80}
-                innerRadius={40}
-                showText
-                textColor={colors.text.white}
-                textSize={10}
-                centerLabelComponent={() => (
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text.primary }}>
-                      {volumeProgression.slice(-14).reduce((s, d) => s + (d?.totalVolume || 0), 0).toFixed(0)}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: colors.text.tertiary }}>Last 14d</Text>
-                  </View>
-                )}
-              />
-              {/* Legend */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12, paddingHorizontal: 8 }}>
-                {formatVolumeDataForPie(volumeProgression).slice(0,6).map((s, idx) => (
-                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 6, marginVertical: 4 }}>
-                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color, marginRight: 6 }} />
-                    <Text style={{ fontSize: 10, color: colors.text.secondary }}>{s.label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
+          </View>
 
           <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
             <View
