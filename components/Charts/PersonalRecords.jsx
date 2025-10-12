@@ -1,8 +1,31 @@
-import { View, Text } from "react-native"
+import { View, Text, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { useState, useEffect } from "react"
 import colors from "../../constants/ui_colors"
+import { getCurrentUser } from "../../lib/database"
+import ExerciseDetailModal from "./ExerciseDetailModal"
 
 export default function PersonalRecords({ personalRecords }) {
+  const [selectedExercise, setSelectedExercise] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [userId, setUserId] = useState(null)
+
+  useEffect(() => {
+    loadUser()
+  }, [])
+
+  const loadUser = async () => {
+    const user = await getCurrentUser()
+    if (user) {
+      setUserId(user.id)
+    }
+  }
+
+  const handleExercisePress = (exerciseName) => {
+    setSelectedExercise(exerciseName)
+    setShowDetailModal(true)
+  }
+
   if (!personalRecords || personalRecords.length === 0) {
     return (
       <View>
@@ -65,8 +88,12 @@ export default function PersonalRecords({ personalRecords }) {
                   >
                     <Ionicons name={getExerciseIcon(record.exercise)} size={20} color={colors.primary[600]} />
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-base font-bold" style={{ color: colors.neutral[900] }}>
+                  <TouchableOpacity 
+                    className="flex-1" 
+                    onPress={() => handleExercisePress(record.exercise)}
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-base font-bold" style={{ color: colors.neutral[900], textDecorationLine: 'underline' }}>
                       {record.exercise}
                     </Text>
                     <Text className="text-xs" style={{ color: colors.neutral[500] }}>
@@ -76,7 +103,7 @@ export default function PersonalRecords({ personalRecords }) {
                         year: "numeric",
                       })}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
                 <View className="items-center">
@@ -133,6 +160,16 @@ export default function PersonalRecords({ personalRecords }) {
           )
         })}
       </View>
+
+      {/* Exercise Detail Modal */}
+      {selectedExercise && userId && (
+        <ExerciseDetailModal
+          visible={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          exerciseName={selectedExercise}
+          userId={userId}
+        />
+      )}
     </View>
   )
 }

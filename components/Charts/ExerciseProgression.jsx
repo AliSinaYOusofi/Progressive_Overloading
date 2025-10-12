@@ -1,12 +1,34 @@
-import React from "react";
-import { View, Text, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Dimensions, TouchableOpacity } from "react-native";
 import { Dumbbell } from "lucide-react-native";
 import { PieChart } from "react-native-gifted-charts";
 import { colors } from "../../constants/ui_colors";
+import { getCurrentUser } from "../../lib/database";
+import ExerciseDetailModal from "./ExerciseDetailModal";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function ExerciseProgression({ exerciseProgression }) {
+    const [selectedExercise, setSelectedExercise] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [userId, setUserId] = useState(null);
+
+    useEffect(() => {
+        loadUser();
+    }, []);
+
+    const loadUser = async () => {
+        const user = await getCurrentUser();
+        if (user) {
+            setUserId(user.id);
+        }
+    };
+
+    const handleExercisePress = (exerciseName) => {
+        setSelectedExercise(exerciseName);
+        setShowDetailModal(true);
+    };
+
     if (!exerciseProgression) {
         return null;
     }
@@ -81,10 +103,17 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     {buildPieData().length > 0 && (
                         <View className="flex-row flex-wrap justify-center mt-4">
                             {buildPieData().map((slice, idx) => (
-                                <View key={idx} className="flex-row items-center mx-2 my-1">
+                                <TouchableOpacity 
+                                    key={idx} 
+                                    className="flex-row items-center mx-2 my-1"
+                                    onPress={() => handleExercisePress(slice.label)}
+                                    activeOpacity={0.7}
+                                >
                                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: slice.color, marginRight: 6 }} />
-                                    <Text className="text-xs" style={{ color: colors.text?.secondary || '#666' }}>{slice.label}</Text>
-                                </View>
+                                    <Text className="text-xs" style={{ color: colors.text?.secondary || '#666', textDecorationLine: 'underline' }}>
+                                        {slice.label}
+                                    </Text>
+                                </TouchableOpacity>
                             ))}
                         </View>
                     )}
@@ -95,6 +124,16 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     <Text className="text-base font-semibold text-slate-900 mt-3 mb-1">No exercise data yet</Text>
                     <Text className="text-sm text-slate-700 text-center">Start logging sets to see your progression!</Text>
                 </View>
+            )}
+
+            {/* Exercise Detail Modal */}
+            {selectedExercise && userId && (
+                <ExerciseDetailModal
+                    visible={showDetailModal}
+                    onClose={() => setShowDetailModal(false)}
+                    exerciseName={selectedExercise}
+                    userId={userId}
+                />
             )}
         </View>
     );

@@ -1,8 +1,31 @@
-import { View, Text } from "react-native"
+import { View, Text, TouchableOpacity } from "react-native"
+import { useState, useEffect } from "react"
 import { colors } from "../../constants/ui_colors"
 import { Ionicons } from "@expo/vector-icons"
+import { getCurrentUser } from "../../lib/database"
+import ExerciseDetailModal from "./ExerciseDetailModal"
 
 export default function ProgressiveOverloadInsights({ progressiveOverloadInsights }) {
+  const [selectedExercise, setSelectedExercise] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [userId, setUserId] = useState(null)
+
+  useEffect(() => {
+    loadUser()
+  }, [])
+
+  const loadUser = async () => {
+    const user = await getCurrentUser()
+    if (user) {
+      setUserId(user.id)
+    }
+  }
+
+  const handleExercisePress = (exerciseName) => {
+    setSelectedExercise(exerciseName)
+    setShowDetailModal(true)
+  }
+
   if (!progressiveOverloadInsights || progressiveOverloadInsights.length === 0) {
     return (
       <View className="mb-8">
@@ -78,8 +101,14 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
             className={`${getProgressionBg(insight.progression)} rounded-2xl p-5 shadow-sm border border-slate-100`}
           >
             <View className="flex-row justify-between items-start mb-4">
-              <View className="flex-1 mr-4">
-                <Text className="text-lg font-bold text-slate-900 mb-1">{insight.exercise}</Text>
+              <TouchableOpacity 
+                className="flex-1 mr-4"
+                onPress={() => handleExercisePress(insight.exercise)}
+                activeOpacity={0.7}
+              >
+                <Text className="text-lg font-bold text-slate-900 mb-1" style={{ textDecorationLine: 'underline' }}>
+                  {insight.exercise}
+                </Text>
                 <View className="flex-row items-center">
                   <Text className="text-2xl font-bold mr-1" style={{ color: getProgressionColor(insight.progression) }}>
                     {insight.weeklyGain > 0 ? "+" : ""}
@@ -87,7 +116,7 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
                   </Text>
                   <Text className="text-sm text-slate-600 font-medium">weekly</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               <View className="items-center">
                 <View
@@ -137,6 +166,16 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
             Showing top 5 exercises • {progressiveOverloadInsights.length - 5} more available
           </Text>
         </View>
+      )}
+
+      {/* Exercise Detail Modal */}
+      {selectedExercise && userId && (
+        <ExerciseDetailModal
+          visible={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          exerciseName={selectedExercise}
+          userId={userId}
+        />
       )}
     </View>
   )
