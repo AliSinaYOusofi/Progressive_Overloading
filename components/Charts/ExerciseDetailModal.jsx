@@ -8,11 +8,15 @@ import {
   Dimensions,
   ActivityIndicator 
 } from "react-native"
-import { Dumbbell, TrendingUp, TrendingDown, Activity, Calendar, Target } from "lucide-react-native"
+import { Dumbbell, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { LineChart } from "react-native-gifted-charts"
 import { colors } from '../../constants/ui_colors'
 import { getExerciseDetailedAnalytics } from "../../lib/database"
+import TrendInfoModal from "./TrendInfoModal"
+import ExerciseMetricCard from "./ExerciseMetricCard"
+import TrendCard from "./TrendCard"
+import AllTimeStatsSection from "./AllTimeStatsSection"
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
@@ -22,6 +26,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
   const [allTimeData, setAllTimeData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCustomPicker, setShowCustomPicker] = useState(false)
+  const [showTrendInfoModal, setShowTrendInfoModal] = useState(false)
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -85,39 +90,6 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
     }))
 
     return { weightData, repsData, setsData }
-  }
-
-  const getTrendIcon = (trend) => {
-    switch (trend) {
-      case "up":
-        return <TrendingUp size={16} color={colors.status.success} />
-      case "down":
-        return <TrendingDown size={16} color={colors.status.error} />
-      default:
-        return <Activity size={16} color={colors.status.warning} />
-    }
-  }
-
-  const getTrendColor = (trend) => {
-    switch (trend) {
-      case "up":
-        return colors.status.success
-      case "down":
-        return colors.status.error
-      default:
-        return colors.status.warning
-    }
-  }
-
-  const getTrendBgColor = (trend) => {
-    switch (trend) {
-      case "up":
-        return colors.status.successLight
-      case "down":
-        return colors.status.errorLight
-      default:
-        return colors.status.warningLight
-    }
   }
 
   const { weightData, repsData, setsData } = formatChartData()
@@ -237,81 +209,34 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
               {/* Key Metrics Cards */}
               <View style={{ paddingHorizontal: 24, marginBottom: 20 }}>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-                  {/* Peak Weight */}
-                  <View 
-                    style={{ 
-                      flex: 1, 
-                      minWidth: "45%",
-                      backgroundColor: colors.primary[50], 
-                      padding: 16, 
-                      borderRadius: 12 
-                    }}
-                  >
-                    <Ionicons name="barbell" size={24} color={colors.primary[600]} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.neutral[900] }}>
-                      {analyticsData.peakWeight.toFixed(1)}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                      Peak Weight (kg)
-                    </Text>
-                  </View>
-
-                  {/* Peak Reps */}
-                  <View 
-                    style={{ 
-                      flex: 1, 
-                      minWidth: "45%",
-                      backgroundColor: colors.neutral[50], 
-                      padding: 16, 
-                      borderRadius: 12 
-                    }}
-                  >
-                    <Ionicons name="repeat" size={24} color={colors.neutral[600]} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.neutral[900] }}>
-                      {analyticsData.peakReps}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                      Peak Reps
-                    </Text>
-                  </View>
-
-                  {/* Total Volume */}
-                  <View 
-                    style={{ 
-                      flex: 1, 
-                      minWidth: "45%",
-                      backgroundColor: colors.status.infoLight, 
-                      padding: 16, 
-                      borderRadius: 12 
-                    }}
-                  >
-                    <Ionicons name="stats-chart" size={24} color={colors.status.info} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.neutral[900] }}>
-                      {analyticsData.totalVolume.toFixed(0)}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                      Total Volume (kg)
-                    </Text>
-                  </View>
-
-                  {/* Avg Sets per Workout */}
-                  <View 
-                    style={{ 
-                      flex: 1, 
-                      minWidth: "45%",
-                      backgroundColor: colors.status.warningLight, 
-                      padding: 16, 
-                      borderRadius: 12 
-                    }}
-                  >
-                    <Ionicons name="layers" size={24} color={colors.status.warning} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.neutral[900] }}>
-                      {analyticsData.avgSetsPerWorkout.toFixed(1)}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                      Avg Sets/Workout
-                    </Text>
-                  </View>
+                  <ExerciseMetricCard
+                    icon="barbell"
+                    iconColor={colors.primary[600]}
+                    value={analyticsData.peakWeight.toFixed(1)}
+                    label="Peak Weight (kg)"
+                    backgroundColor={colors.primary[50]}
+                  />
+                  <ExerciseMetricCard
+                    icon="repeat"
+                    iconColor={colors.neutral[600]}
+                    value={analyticsData.peakReps}
+                    label="Peak Reps"
+                    backgroundColor={colors.neutral[50]}
+                  />
+                  <ExerciseMetricCard
+                    icon="stats-chart"
+                    iconColor={colors.status.info}
+                    value={analyticsData.totalVolume.toFixed(0)}
+                    label="Total Volume (kg)"
+                    backgroundColor={colors.status.infoLight}
+                  />
+                  <ExerciseMetricCard
+                    icon="layers"
+                    iconColor={colors.status.warning}
+                    value={analyticsData.avgSetsPerWorkout.toFixed(1)}
+                    label="Avg Sets/Workout"
+                    backgroundColor={colors.status.warningLight}
+                  />
                 </View>
               </View>
 
@@ -386,105 +311,42 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
               {/* Trend Insights */}
               <View style={{ paddingHorizontal: 24, marginBottom: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12, color: colors.neutral[900] }}>
-                  Performance Trends
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.neutral[900] }}>
+                    Performance Trends
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setShowTrendInfoModal(true)}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: colors.primary[100],
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    <Ionicons name="information" size={16} color={colors.primary[600]} />
+                  </TouchableOpacity>
+                </View>
                 
-                {/* Weight Trend */}
-                <View 
-                  style={{ 
-                    backgroundColor: getTrendBgColor(analyticsData.weightTrend),
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 12,
-                    borderWidth: 1,
-                    borderColor: getTrendColor(analyticsData.weightTrend) + "40"
-                  }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: colors.background.card,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginRight: 12
-                        }}
-                      >
-                        {getTrendIcon(analyticsData.weightTrend)}
-                      </View>
-                      <View className="flex-1">
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.neutral[900] }}>
-                          Weight
-                        </Text>
-                        <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                          {analyticsData.weightTrend === "up" ? "Increasing" : analyticsData.weightTrend === "down" ? "Decreasing" : "Stable"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text 
-                      style={{ 
-                        fontSize: 24, 
-                        fontWeight: "bold", 
-                        color: getTrendColor(analyticsData.weightTrend) 
-                      }}
-                    >
-                      {analyticsData.weightTrend === "up" ? "+" : analyticsData.weightTrend === "down" ? "-" : ""}
-                      {analyticsData.weightTrendPercent.toFixed(1)}%
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Reps Trend */}
-                <View 
-                  style={{ 
-                    backgroundColor: getTrendBgColor(analyticsData.repsTrend),
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 12,
-                    borderWidth: 1,
-                    borderColor: getTrendColor(analyticsData.repsTrend) + "40"
-                  }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: colors.background.card,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginRight: 12
-                        }}
-                      >
-                        {getTrendIcon(analyticsData.repsTrend)}
-                      </View>
-                      <View className="flex-1">
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.neutral[900] }}>
-                          Reps
-                        </Text>
-                        <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-                          {analyticsData.repsTrend === "up" ? "Increasing" : analyticsData.repsTrend === "down" ? "Decreasing" : "Stable"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text 
-                      style={{ 
-                        fontSize: 24, 
-                        fontWeight: "bold", 
-                        color: getTrendColor(analyticsData.repsTrend) 
-                      }}
-                    >
-                      {analyticsData.repsTrend === "up" ? "+" : analyticsData.repsTrend === "down" ? "-" : ""}
-                      {analyticsData.repsTrendPercent.toFixed(1)}%
-                    </Text>
-                  </View>
-                </View>
+                <TrendCard
+                  label="Weight"
+                  trend={analyticsData.weightTrend}
+                  trendPercent={analyticsData.weightTrendPercent}
+                />
+                
+                <TrendCard
+                  label="Reps"
+                  trend={analyticsData.repsTrend}
+                  trendPercent={analyticsData.repsTrendPercent}
+                />
+                
+                <TrendCard
+                  label="Sets"
+                  trend={analyticsData.setsTrend}
+                  trendPercent={analyticsData.setsTrendPercent}
+                />
 
                 {/* Consistency */}
                 <View 
@@ -534,51 +396,21 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
               </View>
 
               {/* All-Time Stats */}
-              {allTimeData && selectedTimeframe !== null && (
-                <View style={{ paddingHorizontal: 24, marginBottom: 20 }}>
-                  <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12, color: colors.neutral[900] }}>
-                    All-Time Stats
-                  </Text>
-                  <View 
-                    style={{ 
-                      backgroundColor: colors.neutral[50], 
-                      borderRadius: 12, 
-                      padding: 16,
-                      borderWidth: 2,
-                      borderColor: colors.primary[200]
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-                      <Text style={{ fontSize: 14, color: colors.neutral[600] }}>Peak Weight</Text>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.neutral[900] }}>
-                        {allTimeData.peakWeight.toFixed(1)} kg
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-                      <Text style={{ fontSize: 14, color: colors.neutral[600] }}>Peak Reps</Text>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.neutral[900] }}>
-                        {allTimeData.peakReps}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-                      <Text style={{ fontSize: 14, color: colors.neutral[600] }}>Total Volume</Text>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.neutral[900] }}>
-                        {allTimeData.totalVolume.toFixed(0)} kg
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <Text style={{ fontSize: 14, color: colors.neutral[600] }}>Total Workouts</Text>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.neutral[900] }}>
-                        {allTimeData.timeSeriesData.length}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
+              <AllTimeStatsSection
+                allTimeData={allTimeData}
+                analyticsData={analyticsData}
+                selectedTimeframe={selectedTimeframe}
+              />
             </ScrollView>
           )}
         </View>
       </View>
+
+      {/* Trend Info Modal */}
+      <TrendInfoModal
+        visible={showTrendInfoModal}
+        onClose={() => setShowTrendInfoModal(false)}
+      />
     </Modal>
   )
 }
