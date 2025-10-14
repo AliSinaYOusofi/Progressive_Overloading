@@ -2,17 +2,33 @@ import { View, Text, TouchableOpacity } from "react-native"
 import { useState, useEffect } from "react"
 import { colors } from "../../constants/ui_colors"
 import { Ionicons } from "@expo/vector-icons"
-import { getCurrentUser } from "../../lib/database"
+import { getCurrentUser, getProgressiveOverloadInsights } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
 
-export default function ProgressiveOverloadInsights({ progressiveOverloadInsights }) {
+export default function ProgressiveOverloadInsights({ progressiveOverloadInsights: initialData }) {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [userId, setUserId] = useState(null)
+  const [selectedTimeframe, setSelectedTimeframe] = useState(30)
+  const [insights, setInsights] = useState(initialData || [])
+  const [loading, setLoading] = useState(false)
+
+  const timeframes = [
+    { label: "7D", value: 7 },
+    { label: "30D", value: 30 },
+    { label: "90D", value: 90 },
+    { label: "All", value: 36500 }, // 100 years for all time
+  ]
 
   useEffect(() => {
     loadUser()
   }, [])
+
+  useEffect(() => {
+    if (userId) {
+      loadInsights()
+    }
+  }, [userId, selectedTimeframe])
 
   const loadUser = async () => {
     const user = await getCurrentUser()
@@ -21,14 +37,79 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
     }
   }
 
+  const loadInsights = async () => {
+    try {
+      setLoading(true)
+      const data = await getProgressiveOverloadInsights(userId, selectedTimeframe)
+      setInsights(data || [])
+    } catch (error) {
+      console.error("Error loading progressive overload insights:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleExercisePress = (exerciseName) => {
     setSelectedExercise(exerciseName)
     setShowDetailModal(true)
   }
 
-  if (!progressiveOverloadInsights || progressiveOverloadInsights.length === 0) {
+  if (loading && insights.length === 0) {
     return (
       <View className="mb-8">
+        <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <View className="items-center py-8">
+            <Ionicons name="analytics-outline" size={28} color={colors.primary[600]} />
+            <Text className="text-base font-medium text-slate-600 text-center mt-4">Loading insights...</Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
+  if (!insights || insights.length === 0) {
+    return (
+      <View className="mb-8">
+        {/* Timeframe Filter */}
+        <View style={{ marginBottom: 16 }}>
+          <View 
+            style={{ 
+              flexDirection: "row", 
+              backgroundColor: colors.neutral[100], 
+              borderRadius: 12, 
+              padding: 4 
+            }}
+          >
+            {timeframes.map((timeframe) => (
+              <TouchableOpacity
+                key={timeframe.label}
+                onPress={() => setSelectedTimeframe(timeframe.value)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  backgroundColor: selectedTimeframe === timeframe.value 
+                    ? colors.primary[600] 
+                    : "transparent",
+                }}
+              >
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontWeight: "600",
+                    fontSize: 14,
+                    color: selectedTimeframe === timeframe.value 
+                      ? colors.text.white 
+                      : colors.neutral[600],
+                  }}
+                >
+                  {timeframe.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <View className="items-center py-8">
             <View className="w-16 h-16 bg-slate-100 rounded-full items-center justify-center mb-4">
@@ -87,15 +168,55 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
     }
   }
 
-  const getProgressBarWidth = (weeklyGain) => {
-    const maxGain = Math.max(...progressiveOverloadInsights.map((i) => Math.abs(i.weeklyGain)))
-    return Math.min((Math.abs(weeklyGain) / maxGain) * 100, 100)
+  const getProgressBarWidth = (totalGain) => {
+    const maxGain = Math.max(...insights.map((i) => Math.abs(i.totalGain || 0)), 1)
+    return Math.min((Math.abs(totalGain || 0) / maxGain) * 100, 100)
   }
 
   return (
     <View>
+      {/* Timeframe Filter */}
+      <View style={{ marginBottom: 16 }}>
+        <View 
+          style={{ 
+            flexDirection: "row", 
+            backgroundColor: colors.neutral[100], 
+            borderRadius: 12, 
+            padding: 4 
+          }}
+        >
+          {timeframes.map((timeframe) => (
+            <TouchableOpacity
+              key={timeframe.label}
+              onPress={() => setSelectedTimeframe(timeframe.value)}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 8,
+                backgroundColor: selectedTimeframe === timeframe.value 
+                  ? colors.primary[600] 
+                  : "transparent",
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontWeight: "600",
+                  fontSize: 14,
+                  color: selectedTimeframe === timeframe.value 
+                    ? colors.text.white 
+                    : colors.neutral[600],
+                }}
+              >
+                {timeframe.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       <View className="gap-4">
-        {progressiveOverloadInsights.slice(0, 5).map((insight, index) => (
+        {insights.slice(0, 5).map((insight, index) => (
           <View
             key={index}
             className={`${getProgressionBg(insight.progression)} rounded-2xl p-5 shadow-sm border border-slate-100`}
@@ -109,13 +230,18 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
                 <Text className="text-lg font-bold text-slate-900 mb-1" style={{ textDecorationLine: 'underline' }}>
                   {insight.exercise}
                 </Text>
-                <View className="flex-row items-center">
+                <View className="flex-row items-center mb-1">
                   <Text className="text-2xl font-bold mr-1" style={{ color: getProgressionColor(insight.progression) }}>
-                    {insight.weeklyGain > 0 ? "+" : ""}
-                    {insight.weeklyGain.toFixed(1)}%
+                    {insight.totalGain > 0 ? "+" : ""}
+                    {(insight.totalGain || 0).toFixed(1)}%
                   </Text>
-                  <Text className="text-sm text-slate-600 font-medium">weekly</Text>
+                  <Text className="text-sm text-slate-600 font-medium">total gain</Text>
                 </View>
+                <Text className="text-xs text-slate-500">
+                  {insight.weeklyGain > 0 ? "+" : ""}
+                  {(insight.weeklyGain || 0).toFixed(2)}% per week
+                  {insight.timeSpanWeeks ? ` • ${insight.timeSpanWeeks.toFixed(1)} weeks` : ''}
+                </Text>
               </TouchableOpacity>
 
               <View className="items-center">
@@ -143,7 +269,7 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
                 <View
                   className="h-full rounded-full"
                   style={{
-                    width: `${getProgressBarWidth(insight.weeklyGain)}%`,
+                    width: `${getProgressBarWidth(insight.totalGain)}%`,
                     backgroundColor: getProgressionColor(insight.progression),
                   }}
                 />
@@ -160,11 +286,17 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
         ))}
       </View>
 
-      {progressiveOverloadInsights.length > 5 && (
+      {insights.length > 5 && (
         <View className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
           <Text className="text-sm text-slate-600 text-center font-medium">
-            Showing top 5 exercises • {progressiveOverloadInsights.length - 5} more available
+            Showing top 5 exercises • {insights.length - 5} more available
           </Text>
+        </View>
+      )}
+
+      {loading && (
+        <View className="absolute inset-0 items-center justify-center bg-white/50">
+          <Ionicons name="refresh" size={24} color={colors.primary[600]} />
         </View>
       )}
 
