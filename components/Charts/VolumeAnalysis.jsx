@@ -3,12 +3,14 @@ import { useState, useEffect } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { colors } from "../../constants/ui_colors"
 import { getCurrentUser, getVolumeAnalysis } from "../../lib/database"
+import VolumeAnalysisInfoModal from "./VolumeAnalysisInfoModal"
 
 export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState(30)
   const [volumeData, setVolumeData] = useState(initialData || {})
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
+  const [showInfoModal, setShowInfoModal] = useState(false)
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -184,6 +186,26 @@ export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
 
   return (
     <View>
+      {/* Header with Info Icon */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.neutral[900] }}>
+          Volume Analysis
+        </Text>
+        <TouchableOpacity
+          onPress={() => setShowInfoModal(true)}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: colors.primary[100],
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <Ionicons name="information" size={18} color={colors.primary[600]} />
+        </TouchableOpacity>
+      </View>
+
       {/* Timeframe Filter */}
       <View style={{ marginBottom: 16 }}>
         <View 
@@ -291,6 +313,12 @@ export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
           </Text>
         </View>
       </View>
+
+      {/* Info Modal */}
+      <VolumeAnalysisInfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+      />
     </View>
   )
 }

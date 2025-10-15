@@ -40,6 +40,7 @@ import EditSetModal from "../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../components/HomeScreen/RMInfoModal";
 import SetDetailsModal from "../components/HomeScreen/SetDetailsModal";
 import GoalDetailsModal from "../components/HomeScreen/GoalDetailsModal";
+import StreakInfoModal from "../components/HomeScreen/StreakInfoModal";
 
 export default function HomeScreen() {
     const [user, setUser] = useState(null);
@@ -53,6 +54,7 @@ export default function HomeScreen() {
     const [isLogSetVisible, setIsLogSetVisible] = useState(false);
     const [isLogSubmitting, setIsLogSubmitting] = useState(false);
     const [showRMInfoModal, setShowRMInfoModal] = useState(false);
+    const [showStreakModal, setShowStreakModal] = useState(false);
     const [recentSets, setRecentSets] = useState([]);
     const [isEditSetVisible, setIsEditSetVisible] = useState(false);
     const [editingSet, setEditingSet] = useState(null);
@@ -446,7 +448,11 @@ export default function HomeScreen() {
                                 "Athlete"}
                         </Text>
                     </View>
-                    <View className="flex-row items-center bg-emerald-500 px-3 py-2 rounded-full">
+                    <TouchableOpacity 
+                        onPress={() => setShowStreakModal(true)}
+                        className="flex-row items-center bg-emerald-500 px-3 py-2 rounded-full"
+                        activeOpacity={0.7}
+                    >
                         <Flame size={20} color={colors.text.white} />
                         <Text className="text-white font-bold ml-1">
                             {currentStreak}
@@ -454,7 +460,7 @@ export default function HomeScreen() {
                         <Text className="text-emerald-100 text-sm ml-1">
                             day streak
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
                 <Text className="text-emerald-100 text-base">
                     Progressive Overload Tracker
@@ -896,6 +902,13 @@ export default function HomeScreen() {
             />
 
             <RMInfoModal visible={showRMInfoModal} onClose={() => setShowRMInfoModal(false)} />
+
+            {/* Streak Info Modal */}
+            <StreakInfoModal 
+                visible={showStreakModal} 
+                onClose={() => setShowStreakModal(false)}
+                userId={user?.id}
+            />
 
             {/* Edit Set Modal */}
             <EditSetModal

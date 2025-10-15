@@ -4,6 +4,7 @@ import { colors } from "../../constants/ui_colors"
 import { Ionicons } from "@expo/vector-icons"
 import { getCurrentUser, getProgressiveOverloadInsights } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
+import ProgressiveOverloadInfoModal from "./ProgressiveOverloadInfoModal"
 
 export default function ProgressiveOverloadInsights({ progressiveOverloadInsights: initialData }) {
   const [selectedExercise, setSelectedExercise] = useState(null)
@@ -12,6 +13,7 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
   const [selectedTimeframe, setSelectedTimeframe] = useState(30)
   const [insights, setInsights] = useState(initialData || [])
   const [loading, setLoading] = useState(false)
+  const [showInfoModal, setShowInfoModal] = useState(false)
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -175,6 +177,26 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
 
   return (
     <View>
+      {/* Header with Info Icon */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.neutral[900] }}>
+          Progressive Overload Insights
+        </Text>
+        <TouchableOpacity
+          onPress={() => setShowInfoModal(true)}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: colors.primary[100],
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <Ionicons name="information" size={18} color={colors.primary[600]} />
+        </TouchableOpacity>
+      </View>
+
       {/* Timeframe Filter */}
       <View style={{ marginBottom: 16 }}>
         <View 
@@ -309,6 +331,12 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
           userId={userId}
         />
       )}
+
+      {/* Info Modal */}
+      <ProgressiveOverloadInfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+      />
     </View>
   )
 }
