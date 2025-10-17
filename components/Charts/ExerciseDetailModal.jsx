@@ -176,15 +176,26 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={onClose}
-              className="w-8 h-8 rounded-full items-center justify-center"
-              style={{ backgroundColor: colors.neutral[100] }}
-            >
-              <Text className="text-xl font-medium" style={{ color: colors.neutral[500] }}>
-                ×
-              </Text>
-            </TouchableOpacity>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={loadAnalytics}
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: colors.primary[100] }}
+              >
+                <Text className="text-base font-medium" style={{ color: colors.primary[600] }}>
+                  ↻
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={onClose}
+                className="w-8 h-8 rounded-full items-center justify-center"
+                style={{ backgroundColor: colors.neutral[100] }}
+              >
+                <Text className="text-xl font-medium" style={{ color: colors.neutral[500] }}>
+                  ×
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Timeframe Selector */}
