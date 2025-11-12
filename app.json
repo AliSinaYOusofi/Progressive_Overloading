@@ -1,5 +1,6 @@
 {
   "scheme": "progressive-loading",
+  "icon": "./assets/app_icon.png",
   "expo": {
     "name": "app",
     "slug": "app",
@@ -7,7 +8,17 @@
     "version": "1.0.0",
     "userInterfaceStyle": "automatic",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-splash-screen",
+        {
+          "backgroundColor": "#059669",
+          "image": "./assets/images/app_splash_screen_light.png",
+          "dark": {
+            "image": "./assets/images/splash-icon-dark.png",
+            "backgroundColor": "#F8FAFC"
+          },
+          "imageWidth": 200
+        }
     ]
   }
 }
