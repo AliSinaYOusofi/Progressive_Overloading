@@ -1,24 +1,19 @@
 {
-  "scheme": "progressive-loading",
-  "icon": "./assets/app_icon.png",
   "expo": {
+    "scheme": "progressive-loading",
+    "icon": "./assets/app_icon.png",
     "name": "app",
     "slug": "app",
-    "scheme": "progressive-loading",
     "version": "1.0.0",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#FFFFFF",
+      "image": "./assets/images/app_splash_screen_light.png",
+      "resizeMode": "contain"
+    },
     "plugins": [
       "expo-router",
-      "expo-splash-screen",
-        {
-          "backgroundColor": "#059669",
-          "image": "./assets/images/app_splash_screen_light.png",
-          "dark": {
-            "image": "./assets/images/splash-icon-dark.png",
-            "backgroundColor": "#F8FAFC"
-          },
-          "imageWidth": 200
-        }
+      "expo-splash-screen"
     ]
   }
 }
