@@ -1,4 +1,4 @@
-import { Tabs, Stack } from "expo-router"
+import { Tabs, Slot, useRouter, useSegments } from "expo-router"
 import { Home, Settings, BarChart3, User } from "lucide-react-native"
 import { colors } from '../constants/ui_colors'
 import { Platform, View, Text, ActivityIndicator } from "react-native"
@@ -9,6 +9,9 @@ import "../assets/css/global.css"
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const segments = useSegments()
+  const firstSegment = segments?.[0]
 
   useEffect(() => {
     const getInitialSession = async () => {
@@ -39,6 +42,18 @@ export default function RootLayout() {
     // Cleanup subscription
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (isLoading) return
+
+    const inAuthGroup = firstSegment === "(auth)"
+
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace("/(auth)/signin")
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace("/homescreen")
+    }
+  }, [firstSegment, isAuthenticated, isLoading, router])
 
   if (isLoading) {
     return (
@@ -92,11 +107,7 @@ export default function RootLayout() {
 
   // If not authenticated, show auth screens
   if (!isAuthenticated) {
-    return (
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-      </Stack>
-    )
+    return <Slot />
   }
 
   // If authenticated, show main app with tabs
