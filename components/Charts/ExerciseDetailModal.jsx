@@ -20,8 +20,8 @@ import AllTimeStatsSection from "./AllTimeStatsSection"
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
-export default function ExerciseDetailModal({ visible, onClose, exerciseName, userId }) {
-  const [selectedTimeframe, setSelectedTimeframe] = useState(30)
+export default function ExerciseDetailModal({ visible, onClose, exerciseName, userId, initialTimeframe = 30 }) {
+  const [selectedTimeframe, setSelectedTimeframe] = useState(initialTimeframe)
   const [analyticsData, setAnalyticsData] = useState(null)
   const [allTimeData, setAllTimeData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -34,6 +34,15 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
     { label: "90D", value: 90 },
     { label: "All", value: null },
   ]
+
+  // Sync with initialTimeframe when modal opens or when it changes
+  useEffect(() => {
+    if (visible && initialTimeframe !== undefined) {
+      // Convert 36500 (All from ProgressiveOverloadInsights) to null (All in this modal)
+      const convertedTimeframe = initialTimeframe === 36500 ? null : initialTimeframe
+      setSelectedTimeframe(convertedTimeframe)
+    }
+  }, [visible, initialTimeframe])
 
   useEffect(() => {
     if (visible && exerciseName && userId) {

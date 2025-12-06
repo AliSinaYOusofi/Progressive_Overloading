@@ -50,12 +50,22 @@ export default function MonthlyTrends({ monthlyStats }) {
     try {
       const total = monthlyStats.reduce((s, m) => s + (m?.workouts || 0), 0)
       if (total <= 0) return []
-      const variants = [
-        colors.primary?.[600] || '#10b981', 
-        colors.primary?.[500] || '#10b981', 
-        colors.primary?.[700] || '#10b981', 
-        colors.status?.success || '#10b981', 
-        colors.status?.warning || '#f59e0b'
+      // Distinct color palette for better visibility
+      const colorPalette = [
+        '#10b981', // emerald-500
+        '#3b82f6', // blue-500
+        '#8b5cf6', // violet-500
+        '#f59e0b', // amber-500
+        '#ef4444', // red-500
+        '#06b6d4', // cyan-500
+        '#ec4899', // pink-500
+        '#84cc16', // lime-500
+        '#f97316', // orange-500
+        '#6366f1', // indigo-500
+        '#14b8a6', // teal-500
+        '#a855f7', // purple-500
+        '#22c55e', // green-500
+        '#0ea5e9', // sky-500
       ]
       return monthlyStats
         .filter(m => m && m.month && typeof m.month === 'string') // Filter out invalid entries
@@ -66,7 +76,7 @@ export default function MonthlyTrends({ monthlyStats }) {
             const label = date.toLocaleDateString("en", { month: "short" });
             return {
               value: m?.workouts || 0,
-              color: variants[idx % variants.length],
+              color: colorPalette[idx % colorPalette.length],
               text: total ? Math.round(((m?.workouts || 0) / total) * 100) + '%' : '',
               textColor: colors.text?.white || 'white',
               textSize: 10,

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, Modal, TextInput, Platform } from "react-native";
+import { View, Text, TouchableOpacity, Modal, TextInput, Platform, ScrollView } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, X } from "lucide-react-native";
+import { Calendar, X, ChevronDown, Check } from "lucide-react-native";
 import { colors } from "../../constants/ui_colors";
 
 export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, onCustomDateRange }) {
+    const [showDropdown, setShowDropdown] = useState(false);
     const [showCustomModal, setShowCustomModal] = useState(false);
     const [startDate, setStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
     const [endDate, setEndDate] = useState(new Date());
@@ -12,7 +13,7 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
     const [showEndPicker, setShowEndPicker] = useState(false);
     const [dateError, setDateError] = useState('');
 
-    const getTimeframeOptions = () => [
+    const timeframeItems = [
         { label: "7 Days", value: 7 },
         { label: "1 Month", value: 30 },
         { label: "3 Months", value: 90 },
@@ -20,6 +21,21 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
         { label: "All Time", value: 'all' },
         { label: "Custom", value: 'custom' }
     ];
+
+    const getSelectedLabel = () => {
+        const option = timeframeItems.find(opt => opt.value === selectedTimeframe);
+        return option ? option.label : "Select time period";
+    };
+
+    const handleOptionSelect = (option) => {
+        if (option.value === 'custom') {
+            setShowDropdown(false);
+            setShowCustomModal(true);
+        } else {
+            onTimeframeChange(option.value);
+            setShowDropdown(false);
+        }
+    };
 
     const formatDate = (date) => {
         return date.toLocaleDateString('en-US', { 
@@ -58,40 +74,106 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
         }
     };
 
-    const handleOptionPress = (option) => {
-        if (option.value === 'custom') {
-            setShowCustomModal(true);
-        } else {
-            onTimeframeChange(option.value);
-        }
-    };
 
     return (
         <>
             <View className="mb-6">
-                <Text className="text-base font-semibold text-slate-900 mb-3">Time Period:</Text>
-                <View className="flex-row flex-wrap gap-2">
-                    {getTimeframeOptions().map((option) => (
-                        <TouchableOpacity
-                            key={option.value}
-                            className={`px-4 py-2 rounded-full border ${
-                                selectedTimeframe === option.value 
-                                    ? 'bg-emerald-600 border-emerald-600' 
-                                    : 'bg-white border-gray-200'
-                            }`}
-                            onPress={() => handleOptionPress(option)}
-                        >
-                            <Text className={`text-sm font-medium ${
-                                selectedTimeframe === option.value 
-                                    ? 'text-white' 
-                                    : 'text-slate-700'
-                            }`}>
-                                {option.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <Text className="text-base font-semibold text-slate-900 mb-3">Time Period</Text>
+                
+                {/* Dropdown Button */}
+                <TouchableOpacity
+                    onPress={() => setShowDropdown(true)}
+                    style={{
+                        backgroundColor: colors.background.card || "white",
+                        borderWidth: 1,
+                        borderColor: showDropdown ? colors.primary[600] : "#E5E7EB",
+                        borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 14,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4,
+                        elevation: 2,
+                    }}
+                >
+                    <Text style={{ 
+                        fontSize: 16, 
+                        color: colors.text.primary, 
+                        fontWeight: "500",
+                        flex: 1,
+                    }}>
+                        {getSelectedLabel()}
+                    </Text>
+                    <ChevronDown size={20} color={colors.text.secondary} />
+                </TouchableOpacity>
             </View>
+
+            {/* Dropdown Modal */}
+            <Modal
+                transparent
+                visible={showDropdown}
+                animationType="fade"
+                onRequestClose={() => setShowDropdown(false)}
+            >
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={() => setShowDropdown(false)}
+                    style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
+                >
+                    <View style={{ 
+                        backgroundColor: colors.background.card || "white", 
+                        borderRadius: 20, 
+                        width: "100%", 
+                        maxWidth: 400,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 12,
+                        elevation: 8,
+                    }}>
+                        <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}>
+                            <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: "700" }}>Select Time Period</Text>
+                        </View>
+                        <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                            {timeframeItems.map((option, index) => (
+                                <TouchableOpacity
+                                    key={option.value}
+                                    onPress={() => handleOptionSelect(option)}
+                                    style={{
+                                        paddingHorizontal: 20,
+                                        paddingVertical: 16,
+                                        borderBottomWidth: index < timeframeItems.length - 1 ? 1 : 0,
+                                        borderBottomColor: "#F3F4F6",
+                                        backgroundColor: selectedTimeframe === option.value ? "#F0F9FF" : "transparent",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            fontSize: 16,
+                                            color: selectedTimeframe === option.value 
+                                                ? colors.primary[600] 
+                                                : colors.text.primary,
+                                            fontWeight: selectedTimeframe === option.value ? "600" : "400",
+                                        }}
+                                    >
+                                        {option.label}
+                                    </Text>
+                                    {selectedTimeframe === option.value && (
+                                        <Check size={18} color={colors.primary[600]} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Custom Date Range Modal */}
             <Modal
