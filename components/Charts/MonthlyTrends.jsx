@@ -94,6 +94,7 @@ export default function MonthlyTrends({ monthlyStats }) {
     }
   }
 
+
   return (
     <View>
       <View className="flex-row items-center justify-between mb-4">
@@ -154,14 +155,51 @@ export default function MonthlyTrends({ monthlyStats }) {
             </View>
           )}
         </View>
-        {/* Legend */}
-        <View className="flex-row flex-wrap justify-center mb-6">
-          {buildPieData().map((s, idx) => (
-            <View key={idx} className="flex-row items-center mx-2 my-1">
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color, marginRight: 6 }} />
-              <Text className="text-xs" style={{ color: colors.neutral[600] }}>{s.label}</Text>
-            </View>
-          ))}
+        {/* Legend - Grouped by Year */}
+        <View className="mb-6">
+          {(() => {
+            // Group months by year
+            const groupedByYear = {};
+            monthlyStats
+              .filter(m => m && m.month && typeof m.month === 'string')
+              .forEach(m => {
+                try {
+                  const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
+                  const date = new Date(dateStr);
+                  const year = date.getFullYear();
+                  const monthLabel = date.toLocaleDateString("en", { month: "short" });
+                  
+                  if (!groupedByYear[year]) {
+                    groupedByYear[year] = [];
+                  }
+                  groupedByYear[year].push({
+                    label: monthLabel,
+                    totalSets: m?.totalSets || 0,
+                    month: m.month
+                  });
+                } catch (err) {
+                  console.error('Error formatting month data:', m, err);
+                }
+              });
+
+            // Sort years descending
+            const sortedYears = Object.keys(groupedByYear).sort((a, b) => parseInt(b) - parseInt(a));
+
+            return sortedYears.map(year => (
+              <View key={year} className="mb-3">
+                <Text className="text-sm font-semibold mb-2" style={{ color: colors.neutral[700] }}>
+                  {year}:
+                </Text>
+                <View className="flex-row flex-wrap">
+                  {groupedByYear[year].map((monthData, idx) => (
+                    <Text key={idx} className="text-xs mx-2 my-1" style={{ color: colors.neutral[600] }}>
+                      {monthData.label}({monthData.totalSets})
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            ));
+          })()}
         </View>
 
         {/* Stats Summary */}
