@@ -7,9 +7,11 @@ import {
   TextInput, 
   ScrollView,
   Alert,
-  ActivityIndicator 
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
-import { Target, Calendar, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
+import { Target, Calendar, CheckCircle2, RotateCcw, Trash2, ChevronDown } from "lucide-react-native";
 import { colors } from "../../constants/ui_colors";
 import ModalCloseButton from "../ModalCloseButton";
 
@@ -35,10 +37,24 @@ export default function AddGoalModal({
   deleteLoading = false
 }) {
   const [formState, setFormState] = useState(initialValues);
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+
+  // Common weight units for global use
+  const weightUnits = [
+    { label: "lb", value: "lb" },
+    { label: "kg", value: "kg" },
+    { label: "reps", value: "reps" },
+    { label: "miles", value: "miles" },
+    { label: "km", value: "km" },
+    { label: "oz", value: "oz" },
+    { label: "g", value: "g" },
+  ];
 
   useEffect(() => {
     if (visible) {
-      setFormState(initialValues);
+      // Set default unit to "lb" if not provided or empty
+      const defaultUnit = initialValues.unit && initialValues.unit.trim() !== "" ? initialValues.unit : "lb";
+      setFormState({ ...initialValues, unit: defaultUnit });
     }
   }, [visible, initialValues]);
 
@@ -76,7 +92,8 @@ export default function AddGoalModal({
       target_value: parseFloat(formState.target_value) || 0,
       current_value: formState.current_value !== undefined && formState.current_value !== null && `${formState.current_value}`.trim() !== "" 
         ? parseFloat(formState.current_value) || 0 
-        : 0
+        : 0,
+      unit: formState.unit || "lb" // Default to "lb" if no unit is selected
     };
 
     onSubmit(goalData);
@@ -84,9 +101,22 @@ export default function AddGoalModal({
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={isLoading ? undefined : onClose}>
-      <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-3xl max-h-[80%]">
-          <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={onClose} 
+          className="flex-1 bg-black/50 justify-end"
+        >
+          <View className="bg-white rounded-t-3xl max-h-[80%]">
+            <ScrollView 
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ padding: 24 }}
+            >
             {/* Header */}
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-gray-900 text-xl font-bold">
@@ -194,14 +224,17 @@ export default function AddGoalModal({
               </View>
               <View className="flex-1 ml-2">
                 <Text className="text-gray-700 mb-2 font-medium">Unit</Text>
-                <TextInput
-                  placeholder="lbs, kg, reps, etc."
-                  value={formState.unit}
-                  onChangeText={text => setFormState(prev => ({ ...prev, unit: text }))}
-                  className="border border-gray-200 rounded-xl px-4 py-3 text-gray-900"
-                  placeholderTextColor={colors.text.tertiary}
-                  editable={!isLoading}
-                />
+                <TouchableOpacity
+                  onPress={() => !isLoading && setShowUnitDropdown(true)}
+                  disabled={isLoading}
+                  className="border border-gray-200 rounded-xl px-4 py-3 flex-row items-center justify-between"
+                  style={{ opacity: isLoading ? 0.6 : 1 }}
+                >
+                  <Text className="text-gray-900" style={{ color: formState.unit ? colors.text.primary : colors.text.tertiary }}>
+                    {formState.unit || "Select unit"}
+                  </Text>
+                  <ChevronDown size={18} color={colors.text.tertiary} />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -246,9 +279,55 @@ export default function AddGoalModal({
                 )}
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        </View>
-      </View>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+
+      {/* Unit Dropdown Modal */}
+      <Modal
+        transparent
+        visible={showUnitDropdown}
+        animationType="fade"
+        onRequestClose={() => setShowUnitDropdown(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowUnitDropdown(false)}
+          className="flex-1 bg-black/50 justify-center items-center px-6"
+        >
+          <View className="bg-white rounded-2xl w-full max-w-sm">
+            <View className="p-4 border-b border-gray-200">
+              <Text className="text-gray-900 text-lg font-bold">Select Unit</Text>
+            </View>
+            <ScrollView className="max-h-64">
+              {weightUnits.map((unit) => (
+                <TouchableOpacity
+                  key={unit.value}
+                  onPress={() => {
+                    setFormState(prev => ({ ...prev, unit: unit.value }));
+                    setShowUnitDropdown(false);
+                  }}
+                  className="px-4 py-3 border-b border-gray-100"
+                  style={{
+                    backgroundColor: formState.unit === unit.value ? "#F0F9FF" : "white",
+                  }}
+                >
+                  <Text
+                    className="text-base"
+                    style={{
+                      color: formState.unit === unit.value ? colors.primary[600] : colors.text.primary,
+                      fontWeight: formState.unit === unit.value ? "600" : "400",
+                    }}
+                  >
+                    {unit.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </Modal>
   );
 }

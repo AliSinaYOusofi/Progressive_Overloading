@@ -1,19 +1,43 @@
+import React, { useState, useEffect } from "react"
 import { View, Text, TouchableOpacity } from "react-native"
-import { useState, useEffect } from "react"
 import { colors } from "../../constants/ui_colors"
 import { Ionicons } from "@expo/vector-icons"
 import { getCurrentUser, getProgressiveOverloadInsights } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
 import ProgressiveOverloadInfoModal from "./ProgressiveOverloadInfoModal"
 
-export default function ProgressiveOverloadInsights({ progressiveOverloadInsights: initialData }) {
+export default function ProgressiveOverloadInsights({ 
+  progressiveOverloadInsights: initialData,
+  parentTimeframe = 30 
+}) {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [userId, setUserId] = useState(null)
-  const [selectedTimeframe, setSelectedTimeframe] = useState(30)
+  const [hasUserChangedFilter, setHasUserChangedFilter] = useState(false)
+  
+  // Convert parent timeframe to component's format
+  const convertParentTimeframe = (timeframe) => {
+    if (timeframe === 'all') return 36500
+    if (typeof timeframe === 'number') return timeframe
+    return 30
+  }
+  
+  const [selectedTimeframe, setSelectedTimeframe] = useState(() => convertParentTimeframe(parentTimeframe))
   const [insights, setInsights] = useState(initialData || [])
   const [loading, setLoading] = useState(false)
   const [showInfoModal, setShowInfoModal] = useState(false)
+  
+  // Sync with parent timeframe when it changes (only if user hasn't manually changed it)
+  useEffect(() => {
+    if (!hasUserChangedFilter) {
+      const newTimeframe = convertParentTimeframe(parentTimeframe)
+      setSelectedTimeframe(newTimeframe)
+    }
+    // Reset the flag when parent changes to 'all' to allow syncing
+    if (parentTimeframe === 'all') {
+      setHasUserChangedFilter(false)
+    }
+  }, [parentTimeframe])
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -58,11 +82,28 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
 
   if (loading && insights.length === 0) {
     return (
-      <View className="mb-8">
-        <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <View className="items-center py-8">
+      <View style={{ marginBottom: 32 }}>
+        <View style={{ 
+          backgroundColor: "white", 
+          borderRadius: 16, 
+          padding: 24, 
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: "#F1F5F9"
+        }}>
+          <View style={{ alignItems: "center", paddingVertical: 32 }}>
             <Ionicons name="analytics-outline" size={28} color={colors.primary[600]} />
-            <Text className="text-base font-medium text-slate-600 text-center mt-4">Loading insights...</Text>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: "500", 
+              color: colors.neutral[600], 
+              textAlign: "center", 
+              marginTop: 16 
+            }}>Loading insights...</Text>
           </View>
         </View>
       </View>
@@ -71,7 +112,7 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
 
   if (!insights || insights.length === 0) {
     return (
-      <View className="mb-8">
+      <View style={{ marginBottom: 32 }}>
         {/* Timeframe Filter */}
         <View style={{ marginBottom: 16 }}>
           <View 
@@ -85,7 +126,10 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
             {timeframes.map((timeframe) => (
               <TouchableOpacity
                 key={timeframe.label}
-                onPress={() => setSelectedTimeframe(timeframe.value)}
+                onPress={() => {
+                  setSelectedTimeframe(timeframe.value)
+                  setHasUserChangedFilter(true)
+                }}
                 style={{
                   flex: 1,
                   paddingVertical: 8,
@@ -112,13 +156,42 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
           </View>
         </View>
 
-        <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <View className="items-center py-8">
-            <View className="w-16 h-16 bg-slate-100 rounded-full items-center justify-center mb-4">
+        <View style={{ 
+          backgroundColor: "white", 
+          borderRadius: 16, 
+          padding: 24, 
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: "#F1F5F9"
+        }}>
+          <View style={{ alignItems: "center", paddingVertical: 32 }}>
+            <View style={{ 
+              width: 64, 
+              height: 64, 
+              backgroundColor: "#F1F5F9", 
+              borderRadius: 32, 
+              alignItems: "center", 
+              justifyContent: "center", 
+              marginBottom: 16 
+            }}>
               <Ionicons name="analytics-outline" size={28} color={colors.text.tertiary} />
             </View>
-            <Text className="text-base font-medium text-slate-600 text-center">No progression data available yet</Text>
-            <Text className="text-sm text-slate-500 text-center mt-1">Complete more workouts to see insights</Text>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: "500", 
+              color: colors.neutral[600], 
+              textAlign: "center" 
+            }}>No progression data available yet</Text>
+            <Text style={{ 
+              fontSize: 14, 
+              color: colors.neutral[500], 
+              textAlign: "center", 
+              marginTop: 4 
+            }}>Complete more workouts to see insights</Text>
           </View>
         </View>
       </View>
@@ -237,106 +310,199 @@ export default function ProgressiveOverloadInsights({ progressiveOverloadInsight
         </View>
       </View>
 
-      <View className="gap-4">
-        {insights.slice(0, 5).map((insight, index) => (
-          <View
-            key={index}
-            className={`${getProgressionBg(insight.progression)} rounded-2xl p-5 shadow-sm border border-slate-100`}
-          >
-            <View className="flex-row justify-between items-start mb-4">
-              <TouchableOpacity 
-                className="flex-1 mr-4"
-                onPress={() => handleExercisePress(insight.exercise)}
-                activeOpacity={0.7}
-              >
-                <Text className="text-lg font-bold text-slate-900 mb-1" style={{ textDecorationLine: 'underline' }}>
-                  {insight.exercise}
-                </Text>
-                <View className="flex-row items-center mb-1">
-                  <Text className="text-2xl font-bold mr-1" style={{ color: getProgressionColor(insight.progression) }}>
-                    {insight.totalGain > 0 ? "+" : ""}
-                    {(insight.totalGain || 0).toFixed(1)}%
-                  </Text>
-                  <Text className="text-sm text-slate-600 font-medium">total gain</Text>
-                </View>
-                <Text className="text-xs text-slate-500">
-                  {insight.weeklyGain > 0 ? "+" : ""}
-                  {(insight.weeklyGain || 0).toFixed(2)}% per week
-                  {insight.timeSpanWeeks ? ` • ${insight.timeSpanWeeks.toFixed(1)} weeks` : ''}
-                </Text>
-              </TouchableOpacity>
-
-              <View className="items-center">
-                <View
-                  className="w-12 h-12 rounded-full items-center justify-center mb-2"
-                  style={{ backgroundColor: getProgressionColor(insight.progression) + "20" }}
+      <View>
+        {insights.slice(0, 5).map((insight, index) => {
+          const bgColor = getProgressionBg(insight.progression)
+          const bgColorMap = {
+            "bg-green-50": "#F0FDF4",
+            "bg-emerald-50": "#ECFDF5",
+            "bg-yellow-50": "#FEFCE8",
+            "bg-red-50": "#FEF2F2",
+            "bg-slate-50": "#F8FAFC"
+          }
+          return (
+            <View
+              key={index}
+              style={{
+                backgroundColor: bgColorMap[bgColor] || "#F8FAFC",
+                borderRadius: 16,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 2,
+                borderWidth: 1,
+                borderColor: "#F1F5F9",
+                marginBottom: index < insights.slice(0, 5).length - 1 ? 16 : 0
+              }}
+            >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <TouchableOpacity 
+                  style={{ flex: 1, marginRight: 16 }}
+                  onPress={() => handleExercisePress(insight.exercise)}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={getProgressionIcon(insight.progression)}
-                    size={20}
-                    color={getProgressionColor(insight.progression)}
+                  <Text style={{ 
+                    fontSize: 18, 
+                    fontWeight: "700", 
+                    color: colors.neutral[900], 
+                    marginBottom: 4,
+                    textDecorationLine: 'underline' 
+                  }}>
+                    {insight.exercise}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                    <Text style={{ 
+                      fontSize: 24, 
+                      fontWeight: "700", 
+                      marginRight: 4,
+                      color: getProgressionColor(insight.progression) 
+                    }}>
+                      {insight.totalGain > 0 ? "+" : ""}
+                      {(insight.totalGain || 0).toFixed(1)}%
+                    </Text>
+                    <Text style={{ fontSize: 14, color: colors.neutral[600], fontWeight: "500" }}>total gain</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.neutral[500] }}>
+                    {insight.weeklyGain > 0 ? "+" : ""}
+                    {(insight.weeklyGain || 0).toFixed(2)}% per week
+                    {insight.timeSpanWeeks ? ` • ${insight.timeSpanWeeks.toFixed(1)} weeks` : ''}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={{ alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 8,
+                      backgroundColor: getProgressionColor(insight.progression) + "20"
+                    }}
+                  >
+                    <Ionicons
+                      name={getProgressionIcon(insight.progression)}
+                      size={20}
+                      color={getProgressionColor(insight.progression)}
+                    />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      color: getProgressionColor(insight.progression)
+                    }}
+                  >
+                    {insight.progression}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <View style={{ 
+                  height: 8, 
+                  backgroundColor: "#E2E8F0", 
+                  borderRadius: 4, 
+                  overflow: "hidden" 
+                }}>
+                  <View
+                    style={{
+                      height: "100%",
+                      borderRadius: 4,
+                      width: `${getProgressBarWidth(insight.totalGain)}%`,
+                      backgroundColor: getProgressionColor(insight.progression),
+                    }}
                   />
                 </View>
-                <Text
-                  className="text-xs font-bold uppercase tracking-wide"
-                  style={{ color: getProgressionColor(insight.progression) }}
-                >
-                  {insight.progression}
-                </Text>
               </View>
-            </View>
 
-            <View className="mb-4">
-              <View className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <View
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${getProgressBarWidth(insight.totalGain)}%`,
-                    backgroundColor: getProgressionColor(insight.progression),
-                  }}
-                />
+              <View style={{ 
+                backgroundColor: "rgba(255, 255, 255, 0.7)", 
+                borderRadius: 12, 
+                padding: 12 
+              }}>
+                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                  <Ionicons 
+                    name="bulb-outline" 
+                    size={16} 
+                    color={colors.primary[600]} 
+                    style={{ marginRight: 8, marginTop: 2 }} 
+                  />
+                  <Text style={{ 
+                    fontSize: 14, 
+                    color: colors.neutral[700], 
+                    fontWeight: "500", 
+                    flex: 1, 
+                    lineHeight: 20 
+                  }}>{insight.recommendation}</Text>
+                </View>
               </View>
             </View>
-
-            <View className="bg-white/70 rounded-xl p-3">
-              <View className="flex-row items-start">
-                <Ionicons name="bulb-outline" size={16} color={colors.primary[600]} className="mr-2 mt-0.5" />
-                <Text className="text-sm text-slate-700 font-medium flex-1 leading-5">{insight.recommendation}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
+          )
+        })}
       </View>
 
       {insights.length > 5 && (
-        <View className="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
-          <Text className="text-sm text-slate-600 text-center font-medium">
+        <View style={{ 
+          marginTop: 16, 
+          backgroundColor: "#F8FAFC", 
+          borderRadius: 12, 
+          padding: 16, 
+          borderWidth: 1, 
+          borderColor: "#F1F5F9" 
+        }}>
+          <Text style={{ 
+            fontSize: 14, 
+            color: colors.neutral[600], 
+            textAlign: "center", 
+            fontWeight: "500" 
+          }}>
             Showing top 5 exercises • {insights.length - 5} more available
           </Text>
         </View>
       )}
 
       {loading && (
-        <View className="absolute inset-0 items-center justify-center bg-white/50">
+        <View style={{ 
+          position: "absolute", 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          alignItems: "center", 
+          justifyContent: "center", 
+          backgroundColor: "rgba(255, 255, 255, 0.5)" 
+        }}>
           <Ionicons name="refresh" size={24} color={colors.primary[600]} />
         </View>
       )}
 
-      {/* Exercise Detail Modal */}
-      {selectedExercise && userId && (
+      {/* Exercise Detail Modal - Only render when actually needed */}
+      {showDetailModal && selectedExercise && userId && (
         <ExerciseDetailModal
           visible={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
+          onClose={() => {
+            setShowDetailModal(false)
+            setSelectedExercise(null)
+          }}
           exerciseName={selectedExercise}
           userId={userId}
+          initialTimeframe={selectedTimeframe === 36500 ? null : selectedTimeframe}
         />
       )}
 
-      {/* Info Modal */}
-      <ProgressiveOverloadInfoModal
-        visible={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
-      />
+      {/* Info Modal - Only render when actually needed */}
+      {showInfoModal && (
+        <ProgressiveOverloadInfoModal
+          visible={showInfoModal}
+          onClose={() => setShowInfoModal(false)}
+        />
+      )}
     </View>
   )
 }

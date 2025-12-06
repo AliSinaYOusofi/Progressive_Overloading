@@ -5,12 +5,36 @@ import { colors } from "../../constants/ui_colors"
 import { getCurrentUser, getVolumeAnalysis } from "../../lib/database"
 import VolumeAnalysisInfoModal from "./VolumeAnalysisInfoModal"
 
-export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
-  const [selectedTimeframe, setSelectedTimeframe] = useState(30)
+export default function VolumeAnalysis({ 
+  volumeAnalysis: initialData,
+  parentTimeframe = 30 
+}) {
+  const [hasUserChangedFilter, setHasUserChangedFilter] = useState(false)
+  
+  // Convert parent timeframe to component's format
+  const convertParentTimeframe = (timeframe) => {
+    if (timeframe === 'all') return 36500
+    if (typeof timeframe === 'number') return timeframe
+    return 30
+  }
+  
+  const [selectedTimeframe, setSelectedTimeframe] = useState(() => convertParentTimeframe(parentTimeframe))
   const [volumeData, setVolumeData] = useState(initialData || {})
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
+  
+  // Sync with parent timeframe when it changes (only if user hasn't manually changed it)
+  useEffect(() => {
+    if (!hasUserChangedFilter) {
+      const newTimeframe = convertParentTimeframe(parentTimeframe)
+      setSelectedTimeframe(newTimeframe)
+    }
+    // Reset the flag when parent changes to 'all' to allow syncing
+    if (parentTimeframe === 'all') {
+      setHasUserChangedFilter(false)
+    }
+  }, [parentTimeframe])
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -69,7 +93,10 @@ export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
             {timeframes.map((timeframe) => (
               <TouchableOpacity
                 key={timeframe.label}
-                onPress={() => setSelectedTimeframe(timeframe.value)}
+                onPress={() => {
+                  setSelectedTimeframe(timeframe.value)
+                  setHasUserChangedFilter(true)
+                }}
                 style={{
                   flex: 1,
                   paddingVertical: 8,
@@ -122,7 +149,10 @@ export default function VolumeAnalysis({ volumeAnalysis: initialData }) {
             {timeframes.map((timeframe) => (
               <TouchableOpacity
                 key={timeframe.label}
-                onPress={() => setSelectedTimeframe(timeframe.value)}
+                onPress={() => {
+                  setSelectedTimeframe(timeframe.value)
+                  setHasUserChangedFilter(true)
+                }}
                 style={{
                   flex: 1,
                   paddingVertical: 8,

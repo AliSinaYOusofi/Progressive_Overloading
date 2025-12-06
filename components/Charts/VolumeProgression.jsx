@@ -25,12 +25,27 @@ export default function VolumeProgression({ volumeProgression }) {
       }))
       .filter((s) => s.value > 0)
 
-    // Assign colors with slight variations
-    const base = colors.primary[600]
-    const alt = colors.primary[500]
+    // Assign distinct colors for better visibility
+    const colorPalette = [
+      '#10b981', // emerald-500
+      '#3b82f6', // blue-500
+      '#8b5cf6', // violet-500
+      '#f59e0b', // amber-500
+      '#ef4444', // red-500
+      '#06b6d4', // cyan-500
+      '#ec4899', // pink-500
+      '#84cc16', // lime-500
+      '#f97316', // orange-500
+      '#6366f1', // indigo-500
+      '#14b8a6', // teal-500
+      '#a855f7', // purple-500
+      '#22c55e', // green-500
+      '#0ea5e9', // sky-500
+    ]
+    
     return slices.map((s, idx) => ({
       value: s.value,
-      color: idx % 2 === 0 ? base : alt,
+      color: colorPalette[idx % colorPalette.length],
       text: Math.round((s.value / total) * 100) + '%',
       textColor: colors.text.white,
       textSize: 10,

@@ -257,7 +257,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background.card,
         borderRadius: 12,
         paddingHorizontal: 16,
-        paddingVertical: 5,
+        paddingVertical: Platform.OS === "ios" ? 14 : 5,
+        minHeight: Platform.OS === "ios" ? 50 : undefined,
         shadowColor: colors.shadow.light,
         shadowOffset: {
             width: 0,

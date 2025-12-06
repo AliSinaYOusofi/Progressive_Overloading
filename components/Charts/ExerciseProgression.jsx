@@ -48,12 +48,18 @@ export default function ExerciseProgression({ exerciseProgression }) {
     const buildPieData = () => {
         const exerciseNames = getExerciseNames();
         const slices = [];
-        const colorVariants = [
-            colors.primary?.[600] || '#10b981', 
-            colors.primary?.[500] || '#10b981', 
-            colors.primary?.[700] || '#10b981', 
-            colors.status?.success || '#10b981', 
-            colors.status?.warning || '#f59e0b'
+        // Distinct color palette for better visibility
+        const colorPalette = [
+            '#10b981', // emerald-500
+            '#3b82f6', // blue-500
+            '#8b5cf6', // violet-500
+            '#f59e0b', // amber-500
+            '#ef4444', // red-500
+            '#06b6d4', // cyan-500
+            '#ec4899', // pink-500
+            '#84cc16', // lime-500
+            '#f97316', // orange-500
+            '#6366f1', // indigo-500
         ];
         exerciseNames.forEach((name, idx) => {
             const data = exerciseProgression[name] || [];
@@ -61,7 +67,7 @@ export default function ExerciseProgression({ exerciseProgression }) {
             const last = data[data.length - 1]?.oneRM || 0;
             slices.push({
                 value: Math.max(0, last),
-                color: colorVariants[idx % colorVariants.length],
+                color: colorPalette[idx % colorPalette.length],
                 text: last > 0 ? String(Math.round(last)) : '',
                 textColor: colors.text?.white || 'white',
                 textSize: 10,

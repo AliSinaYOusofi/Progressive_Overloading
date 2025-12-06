@@ -52,7 +52,7 @@ export default function ChartsScreen() {
         loadChartsData();
     }, []);
 
-    const loadChartsData = async (isRefresh = false) => {
+    const loadChartsData = async (isRefresh = false, timeframe = selectedTimeframe) => {
         try {
             if (!isRefresh) setIsLoading(true);
             
@@ -62,7 +62,7 @@ export default function ChartsScreen() {
             setUser(currentUser);
 
             // For "All Time", use a very large number or null to get all data
-            const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe; // 100 years for all time
+            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
 
             const [
                 stats,
@@ -80,8 +80,8 @@ export default function ChartsScreen() {
                 getExerciseProgressionData(currentUser.id, null, timeframeValue),
                 getVolumeProgressionData(currentUser.id, timeframeValue),
                 getStrengthStandards(currentUser.id),
-                getMonthlyStats(currentUser.id, selectedTimeframe === 'all' ? 120 : 6), // 10 years of months for all time
-                getPersonalRecords(currentUser.id, selectedTimeframe === 'all' ? 100 : 10), // More records for all time
+                getMonthlyStats(currentUser.id, timeframe === 'all' ? 120 : 6), // 10 years of months for all time
+                getPersonalRecords(currentUser.id, timeframe === 'all' ? 100 : 10), // More records for all time
                 getWeeklyProgress(currentUser.id),
                 getRPEAnalysis(currentUser.id, timeframeValue),
                 getProgressiveOverloadInsights(currentUser.id, timeframeValue),
@@ -113,7 +113,7 @@ export default function ChartsScreen() {
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        loadChartsData();
+        loadChartsData(false, newTimeframe);
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
@@ -237,7 +237,10 @@ export default function ChartsScreen() {
                         icon={Target}
                         defaultExpanded={false}
                     >
-                        <ProgressiveOverloadInsights progressiveOverloadInsights={progressiveOverloadInsights} />
+                        <ProgressiveOverloadInsights 
+                          progressiveOverloadInsights={progressiveOverloadInsights}
+                          parentTimeframe={selectedTimeframe}
+                        />
                     </CollapsibleSection>
                 )}
 
@@ -261,7 +264,10 @@ export default function ChartsScreen() {
                         icon={Activity}
                         defaultExpanded={false}
                     >
-                        <VolumeAnalysis volumeAnalysis={volumeAnalysis} />
+                        <VolumeAnalysis 
+                          volumeAnalysis={volumeAnalysis}
+                          parentTimeframe={selectedTimeframe}
+                        />
                     </CollapsibleSection>
                 )}
             </ScrollView>
