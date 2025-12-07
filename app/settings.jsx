@@ -19,6 +19,9 @@ import {
 } from "lucide-react-native";
 import { colors } from "../constants/ui_colors";
 import { signOut } from "../lib/auth";
+import PrivacySettingsModal from "../components/Profile/PrivacySettingsModal";
+import DataSharingModal from "../components/Profile/DataSharingModal";
+import AppVersionModal from "../components/Profile/AppVersionModal";
 
 export default function SettingsScreen() {
     const [notifications, setNotifications] = useState(true);
@@ -26,6 +29,9 @@ export default function SettingsScreen() {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [biometricAuth, setBiometricAuth] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+    const [showDataSharingModal, setShowDataSharingModal] = useState(false);
+    const [showAppVersionModal, setShowAppVersionModal] = useState(false);
 
     const handleLogout = async () => {
         setLoggingOut(true);
@@ -56,14 +62,14 @@ export default function SettingsScreen() {
         {
             title: "Preferences",
             items: [
-                {
-                    icon: Bell,
-                    title: "Push Notifications",
-                    subtitle: "Get notified about workouts and achievements",
-                    type: "switch",
-                    value: notifications,
-                    onValueChange: setNotifications,
-                },
+                // {
+                //     icon: Bell,
+                //     title: "Push Notifications",
+                //     subtitle: "Get notified about workouts and achievements",
+                //     type: "switch",
+                //     value: notifications,
+                //     onValueChange: setNotifications,
+                // },
                 {
                     icon: Moon,
                     title: "Dark Mode",
@@ -72,27 +78,27 @@ export default function SettingsScreen() {
                     value: darkMode,
                     onValueChange: setDarkMode,
                 },
-                {
-                    icon: Volume2,
-                    title: "Sound Effects",
-                    subtitle: "Play sounds for app interactions",
-                    type: "switch",
-                    value: soundEnabled,
-                    onValueChange: setSoundEnabled,
-                },
+                // {
+                //     icon: Volume2,
+                //     title: "Sound Effects",
+                //     subtitle: "Play sounds for app interactions",
+                //     type: "switch",
+                //     value: soundEnabled,
+                //     onValueChange: setSoundEnabled,
+                // },
             ],
         },
         {
             title: "Security & Privacy",
             items: [
-                {
-                    icon: Lock,
-                    title: "Biometric Authentication",
-                    subtitle: "Use fingerprint or face ID to sign in",
-                    type: "switch",
-                    value: biometricAuth,
-                    onValueChange: setBiometricAuth,
-                },
+                // {
+                //     icon: Lock,
+                //     title: "Biometric Authentication",
+                //     subtitle: "Use fingerprint or face ID to sign in",
+                //     type: "switch",
+                //     value: biometricAuth,
+                //     onValueChange: setBiometricAuth,
+                // },
                 {
                     icon: Shield,
                     title: "Privacy Settings",
@@ -107,29 +113,29 @@ export default function SettingsScreen() {
                 },
             ],
         },
-        {
-            title: "App Settings",
-            items: [
-                {
-                    icon: Palette,
-                    title: "Appearance",
-                    subtitle: "Customize colors and themes",
-                    type: "navigate",
-                },
-                {
-                    icon: Globe,
-                    title: "Language",
-                    subtitle: "English (US)",
-                    type: "navigate",
-                },
-                {
-                    icon: Smartphone,
-                    title: "Device Settings",
-                    subtitle: "Manage device-specific options",
-                    type: "navigate",
-                },
-            ],
-        },
+        // {
+        //     title: "App Settings",
+        //     items: [
+        //         {
+        //             icon: Palette,
+        //             title: "Appearance",
+        //             subtitle: "Customize colors and themes",
+        //             type: "navigate",
+        //         },
+        //         {
+        //             icon: Globe,
+        //             title: "Language",
+        //             subtitle: "English (US)",
+        //             type: "navigate",
+        //         },
+        //         {
+        //             icon: Smartphone,
+        //             title: "Device Settings",
+        //             subtitle: "Manage device-specific options",
+        //             type: "navigate",
+        //         },
+        //     ],
+        // },
         {
             title: "Support",
             items: [
@@ -164,30 +170,24 @@ export default function SettingsScreen() {
         const handlePress = () => {
             if (item.type === "logout") {
                 handleLogout();
+            } else if (item.title === "Privacy Settings") {
+                setShowPrivacyModal(true);
+            } else if (item.title === "Data Sharing") {
+                setShowDataSharingModal(true);
+            } else if (item.title === "About") {
+                setShowAppVersionModal(true);
             }
             // Add other navigation handlers here if needed
         };
 
         return (
-            <TouchableOpacity key={index} style={[
-                styles.settingItem,
-                item.type === "logout" && styles.logoutItem
-            ]} onPress={handlePress}>
-                <View style={[
-                    styles.settingIcon,
-                    item.type === "logout" && styles.logoutIcon
-                ]}>
-                    <item.icon size={20} color={item.type === "logout" ? colors.status.error : colors.primary[600]} />
+            <TouchableOpacity key={index} style={styles.settingItem} onPress={handlePress}>
+                <View style={styles.settingIcon}>
+                    <item.icon size={20} color={colors.primary[600]} />
                 </View>
                 <View style={styles.settingContent}>
-                    <Text style={[
-                        styles.settingTitle,
-                        item.type === "logout" && styles.logoutTitle
-                    ]}>{item.title}</Text>
-                    <Text style={[
-                        styles.settingSubtitle,
-                        item.type === "logout" && styles.logoutSubtitle
-                    ]}>{item.subtitle}</Text>
+                    <Text style={styles.settingTitle}>{item.title}</Text>
+                    <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
                 </View>
                 {item.type === "switch" ? (
                     <Switch
@@ -196,8 +196,6 @@ export default function SettingsScreen() {
                         trackColor={{ false: colors.neutral[300], true: colors.primary[200] }}
                         thumbColor={item.value ? colors.primary[600] : colors.neutral[400]}
                     />
-                ) : item.type === "logout" ? (
-                    <LogOut size={20} color={colors.status.error} />
                 ) : (
                     <ChevronRight size={20} color={colors.text.tertiary} />
                 )}
@@ -236,6 +234,19 @@ export default function SettingsScreen() {
                 </View>
             </ScrollView>
             
+            {/* Modals */}
+            <PrivacySettingsModal 
+                visible={showPrivacyModal} 
+                onClose={() => setShowPrivacyModal(false)} 
+            />
+            <DataSharingModal 
+                visible={showDataSharingModal} 
+                onClose={() => setShowDataSharingModal(false)} 
+            />
+            <AppVersionModal 
+                visible={showAppVersionModal} 
+                onClose={() => setShowAppVersionModal(false)} 
+            />
         </View>
     );
 }
@@ -249,7 +260,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 24,
         paddingTop: 60,
-        paddingBottom: 100, // Add bottom padding to avoid tab bar
+        paddingBottom: 150, // Add bottom padding to avoid tab bar
     },
     header: {
         alignItems: "center",
@@ -330,7 +341,7 @@ const styles = StyleSheet.create({
     versionContainer: {
         alignItems: "center",
         marginTop: 20,
-        marginBottom: 40,
+        marginBottom: 100,
         paddingVertical: 20,
     },
     versionText: {
@@ -342,19 +353,5 @@ const styles = StyleSheet.create({
     buildText: {
         fontSize: 14,
         color: colors.text.tertiary,
-    },
-    logoutItem: {
-        backgroundColor: colors.status.errorLight,
-        borderBottomColor: colors.status.error,
-    },
-    logoutIcon: {
-        backgroundColor: colors.status.errorLight,
-        borderColor: colors.status.error,
-    },
-    logoutTitle: {
-        color: colors.status.error,
-    },
-    logoutSubtitle: {
-        color: colors.status.error,
     },
 });
