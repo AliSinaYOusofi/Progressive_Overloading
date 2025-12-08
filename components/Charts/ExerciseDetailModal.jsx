@@ -11,7 +11,7 @@ import {
 import { Dumbbell, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { BarChart } from "react-native-gifted-charts"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 import { getExerciseDetailedAnalytics } from "../../lib/database"
 import TrendInfoModal from "./TrendInfoModal"
 import ExerciseMetricCard from "./ExerciseMetricCard"
@@ -21,6 +21,7 @@ import AllTimeStatsSection from "./AllTimeStatsSection"
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
 export default function ExerciseDetailModal({ visible, onClose, exerciseName, userId, initialTimeframe = 30 }) {
+  const colors = useThemedColors();
   const [selectedTimeframe, setSelectedTimeframe] = useState(initialTimeframe)
   const [analyticsData, setAnalyticsData] = useState(null)
   const [allTimeData, setAllTimeData] = useState(null)
@@ -93,7 +94,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
         value: item.avgWeight,
         label: formattedDate,
         labelTextStyle: { 
-          color: colors.neutral[600], 
+          color: colors.text.tertiary, 
           fontSize: 9,
           fontWeight: '500',
         },
@@ -104,7 +105,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
         topLabelComponent: () => (
           <Text style={{ 
             fontSize: 9, 
-            color: colors.neutral[700], 
+            color: colors.text.secondary, 
             fontWeight: '600',
             marginBottom: 2 
           }}>
@@ -138,7 +139,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
       topLabelComponent: () => (
         <Text style={{ 
           fontSize: 9, 
-          color: colors.neutral[700], 
+          color: colors.text.secondary, 
           fontWeight: '600',
           marginBottom: 2 
         }}>
@@ -154,53 +155,82 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
         <TouchableOpacity 
           activeOpacity={1} 
           onPress={onClose}
-          className="flex-1"
+          style={{ flex: 1 }}
         />
         <View 
-          className="bg-white rounded-t-3xl shadow-2xl"
-          style={{ maxHeight: screenHeight * 0.9, minHeight: screenHeight * 0.75 }}
+          style={{ 
+            backgroundColor: colors.background.card,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 10,
+            maxHeight: screenHeight * 0.9, 
+            minHeight: screenHeight * 0.75 
+          }}
         >
           {/* Drag Handle */}
-          <View className="w-12 h-1 bg-gray-300 rounded-full self-center mt-3 mb-4" />
+          <View style={{ width: 48, height: 4, backgroundColor: colors.border.light, borderRadius: 2, alignSelf: "center", marginTop: 12, marginBottom: 16 }} />
 
           {/* Header */}
-          <View className="flex-row justify-between items-center px-6 mb-4">
-            <View className="flex-row items-center flex-1">
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, marginBottom: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
               <View
-                className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                style={{ backgroundColor: colors.primary[50] }}
+                style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 20, 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  marginRight: 12,
+                  backgroundColor: colors.primary[50] 
+                }}
               >
                 <Dumbbell size={20} color={colors.primary[600]} />
               </View>
-              <View className="flex-1">
-                <Text className="text-xl font-bold" style={{ color: colors.neutral[900] }} numberOfLines={1}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }} numberOfLines={1}>
                   {exerciseName}
                 </Text>
-                <Text className="text-xs" style={{ color: colors.neutral[500] }}>
+                <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
                   Detailed Analytics
                 </Text>
               </View>
             </View>
-            <View className="flex-row gap-2">
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 onPress={loadAnalytics}
-                className="w-8 h-8 rounded-full items-center justify-center"
-                style={{ backgroundColor: colors.primary[100] }}
+                style={{ 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: 16, 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  backgroundColor: colors.primary[100] 
+                }}
               >
-                <Text className="text-base font-medium" style={{ color: colors.primary[600] }}>
+                <Text style={{ fontSize: 16, fontWeight: "500", color: colors.primary[600] }}>
                   ↻
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={onClose}
-                className="w-8 h-8 rounded-full items-center justify-center"
-                style={{ backgroundColor: colors.neutral[100] }}
+                style={{ 
+                  width: 32, 
+                  height: 32, 
+                  borderRadius: 16, 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  backgroundColor: colors.background.primary 
+                }}
               >
-                <Text className="text-xl font-medium" style={{ color: colors.neutral[500] }}>
+                <Text style={{ fontSize: 20, fontWeight: "500", color: colors.text.tertiary }}>
                   ×
                 </Text>
               </TouchableOpacity>
@@ -212,7 +242,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
             <View 
               style={{ 
                 flexDirection: "row", 
-                backgroundColor: colors.neutral[100], 
+                backgroundColor: colors.background.primary, 
                 borderRadius: 12, 
                 padding: 4 
               }}
@@ -226,7 +256,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                     paddingVertical: 8,
                     borderRadius: 8,
                     backgroundColor: selectedTimeframe === timeframe.value 
-                      ? colors.primary[600] 
+                      ? colors.primary[500] 
                       : "transparent",
                   }}
                 >
@@ -237,7 +267,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                       fontSize: 14,
                       color: selectedTimeframe === timeframe.value 
                         ? colors.text.white 
-                        : colors.neutral[600],
+                        : colors.text.tertiary,
                     }}
                   >
                     {timeframe.label}
@@ -248,24 +278,31 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
           </View>
 
           {loading ? (
-            <View className="flex-1 items-center justify-center py-20">
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 80 }}>
               <ActivityIndicator size="large" color={colors.primary[600]} />
-              <Text className="mt-4" style={{ color: colors.neutral[600] }}>
+              <Text style={{ marginTop: 16, color: colors.text.secondary }}>
                 Loading analytics...
               </Text>
             </View>
           ) : !analyticsData || analyticsData.timeSeriesData.length === 0 ? (
-            <View className="flex-1 items-center justify-center py-20">
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 80 }}>
               <View
-                className="w-16 h-16 rounded-full items-center justify-center mb-4"
-                style={{ backgroundColor: colors.neutral[100] }}
+                style={{ 
+                  width: 64, 
+                  height: 64, 
+                  borderRadius: 32, 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  marginBottom: 16,
+                  backgroundColor: colors.background.primary 
+                }}
               >
-                <Ionicons name="bar-chart-outline" size={32} color={colors.neutral[400]} />
+                <Ionicons name="bar-chart-outline" size={32} color={colors.icon.secondary} />
               </View>
-              <Text className="text-lg font-semibold" style={{ color: colors.neutral[700] }}>
+              <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text.primary }}>
                 No Data Available
               </Text>
-              <Text className="text-sm mt-2" style={{ color: colors.neutral[500] }}>
+              <Text style={{ fontSize: 14, marginTop: 8, color: colors.text.secondary }}>
                 No data for selected timeframe
               </Text>
             </View>
@@ -313,10 +350,10 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
               {chartData.length > 0 && (
                 <View style={{ marginBottom: 20 }}>
                   <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.neutral[900] }}>
+                    <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary }}>
                       Progression Over Time
                     </Text>
-                    <Text style={{ fontSize: 12, color: colors.neutral[500], marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }}>
                       Swipe to see all data points
                     </Text>
                   </View>
@@ -328,7 +365,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   >
                     <View 
                       style={{ 
-                        backgroundColor: colors.neutral[50], 
+                        backgroundColor: colors.background.primary, 
                         borderRadius: 12, 
                         padding: 16,
                         paddingTop: 20,
@@ -350,7 +387,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                             shadowRadius: 3,
                             elevation: 3
                           }} />
-                          <Text style={{ fontSize: 13, color: colors.neutral[700], fontWeight: '600' }}>Weight (kg)</Text>
+                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Weight (kg)</Text>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
                           <View style={{ 
@@ -365,7 +402,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                             shadowRadius: 3,
                             elevation: 3
                           }} />
-                          <Text style={{ fontSize: 13, color: colors.neutral[700], fontWeight: '600' }}>Reps</Text>
+                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Reps</Text>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
                           <View style={{ 
@@ -380,13 +417,13 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                             shadowRadius: 3,
                             elevation: 3
                           }} />
-                          <Text style={{ fontSize: 13, color: colors.neutral[700], fontWeight: '600' }}>Sets</Text>
+                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Sets</Text>
                         </View>
                       </View>
 
                       {/* Weight Chart */}
                       <View style={{ marginBottom: 24 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.neutral[700], marginBottom: 12, marginLeft: 4 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
                           Weight Progression
                         </Text>
                         <BarChart
@@ -403,8 +440,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           xAxisThickness={1}
                           xAxisColor={colors.border.medium}
                           yAxisColor={colors.border.medium}
-                          yAxisTextStyle={{ color: colors.neutral[600], fontSize: 11, fontWeight: '500' }}
-                          xAxisLabelTextStyle={{ color: colors.neutral[600], fontSize: 10, fontWeight: '500', textAlign: 'center' }}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
                           yAxisLabelWidth={40}
                           noOfSections={5}
                           isAnimated
@@ -423,7 +460,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
                       {/* Reps Chart */}
                       <View style={{ marginBottom: 24 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.neutral[700], marginBottom: 12, marginLeft: 4 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
                           Reps Progression
                         </Text>
                         <BarChart
@@ -443,8 +480,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           xAxisThickness={1}
                           xAxisColor={colors.border.medium}
                           yAxisColor={colors.border.medium}
-                          yAxisTextStyle={{ color: colors.neutral[600], fontSize: 11, fontWeight: '500' }}
-                          xAxisLabelTextStyle={{ color: colors.neutral[600], fontSize: 10, fontWeight: '500', textAlign: 'center' }}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
                           yAxisLabelWidth={40}
                           noOfSections={5}
                           isAnimated
@@ -463,7 +500,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
                       {/* Sets Chart */}
                       <View>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.neutral[700], marginBottom: 12, marginLeft: 4 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
                           Sets Progression
                         </Text>
                         <BarChart
@@ -483,8 +520,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           xAxisThickness={1}
                           xAxisColor={colors.border.medium}
                           yAxisColor={colors.border.medium}
-                          yAxisTextStyle={{ color: colors.neutral[600], fontSize: 11, fontWeight: '500' }}
-                          xAxisLabelTextStyle={{ color: colors.neutral[600], fontSize: 10, fontWeight: '500', textAlign: 'center' }}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
                           yAxisLabelWidth={40}
                           noOfSections={5}
                           isAnimated
@@ -508,7 +545,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
               {/* Trend Insights */}
               <View style={{ paddingHorizontal: 24, marginBottom: 20 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.neutral[900] }}>
+                  <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary }}>
                     Performance Trends
                   </Text>
                   <TouchableOpacity
@@ -569,11 +606,11 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                       >
                         <Calendar size={16} color={colors.primary[600]} />
                       </View>
-                      <View className="flex-1">
-                        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.neutral[900] }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.primary }}>
                           Consistency
                         </Text>
-                        <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
+                        <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 2 }}>
                           Workouts per week
                         </Text>
                       </View>

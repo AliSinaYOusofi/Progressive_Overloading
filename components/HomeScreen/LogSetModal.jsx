@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { ChevronDown } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
 
 export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting }) {
+    const colors = useThemedColors();
     const [exerciseName, setExerciseName] = useState("");
     const [weight, setWeight] = useState("");
     const [reps, setReps] = useState("");
@@ -237,12 +238,12 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting }
                                 onPress={handleSubmit}
                                 disabled={isSubmitting}
                                 style={{ 
-                                    backgroundColor: colors.primary[600], 
+                                    backgroundColor: colors.primary[300], 
                                     borderRadius: 12, 
                                     paddingVertical: 16, 
                                     alignItems: "center", 
                                     marginTop: 8,
-                                    shadowColor: colors.shadow?.colored || colors.primary[600],
+                                    shadowColor: colors.shadow?.colored || colors.primary[300],
                                     shadowOffset: { width: 0, height: 4 },
                                     shadowOpacity: 0.3,
                                     shadowRadius: 8,

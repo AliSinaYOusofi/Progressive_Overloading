@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { View, Text, TouchableOpacity } from "react-native"
-import { colors } from "../../constants/ui_colors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import { Ionicons } from "@expo/vector-icons"
 import { getCurrentUser, getProgressiveOverloadInsights } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
@@ -10,6 +10,7 @@ export default function ProgressiveOverloadInsights({
   progressiveOverloadInsights: initialData,
   parentTimeframe = 30 
 }) {
+  const colors = useThemedColors();
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [userId, setUserId] = useState(null)
@@ -84,7 +85,7 @@ export default function ProgressiveOverloadInsights({
     return (
       <View style={{ marginBottom: 32 }}>
         <View style={{ 
-          backgroundColor: "white", 
+          backgroundColor: colors.background.card, 
           borderRadius: 16, 
           padding: 24, 
           shadowColor: "#000",
@@ -93,14 +94,14 @@ export default function ProgressiveOverloadInsights({
           shadowRadius: 2,
           elevation: 2,
           borderWidth: 1,
-          borderColor: "#F1F5F9"
+          borderColor: colors.border.light
         }}>
           <View style={{ alignItems: "center", paddingVertical: 32 }}>
             <Ionicons name="analytics-outline" size={28} color={colors.primary[600]} />
             <Text style={{ 
               fontSize: 16, 
               fontWeight: "500", 
-              color: colors.neutral[600], 
+              color: colors.text.secondary, 
               textAlign: "center", 
               marginTop: 16 
             }}>Loading insights...</Text>
@@ -118,7 +119,7 @@ export default function ProgressiveOverloadInsights({
           <View 
             style={{ 
               flexDirection: "row", 
-              backgroundColor: colors.neutral[100], 
+              backgroundColor: colors.background.secondary, 
               borderRadius: 12, 
               padding: 4 
             }}
@@ -146,7 +147,7 @@ export default function ProgressiveOverloadInsights({
                     fontSize: 14,
                     color: selectedTimeframe === timeframe.value 
                       ? colors.text.white 
-                      : colors.neutral[600],
+                      : colors.text.secondary,
                   }}
                 >
                   {timeframe.label}
@@ -157,7 +158,7 @@ export default function ProgressiveOverloadInsights({
         </View>
 
         <View style={{ 
-          backgroundColor: "white", 
+          backgroundColor: colors.background.card, 
           borderRadius: 16, 
           padding: 24, 
           shadowColor: "#000",
@@ -166,13 +167,13 @@ export default function ProgressiveOverloadInsights({
           shadowRadius: 2,
           elevation: 2,
           borderWidth: 1,
-          borderColor: "#F1F5F9"
+          borderColor: colors.border.light
         }}>
           <View style={{ alignItems: "center", paddingVertical: 32 }}>
             <View style={{ 
               width: 64, 
               height: 64, 
-              backgroundColor: "#F1F5F9", 
+              backgroundColor: colors.background.secondary, 
               borderRadius: 32, 
               alignItems: "center", 
               justifyContent: "center", 
@@ -183,12 +184,12 @@ export default function ProgressiveOverloadInsights({
             <Text style={{ 
               fontSize: 16, 
               fontWeight: "500", 
-              color: colors.neutral[600], 
+              color: colors.text.secondary, 
               textAlign: "center" 
             }}>No progression data available yet</Text>
             <Text style={{ 
               fontSize: 14, 
-              color: colors.neutral[500], 
+              color: colors.text.tertiary, 
               textAlign: "center", 
               marginTop: 4 
             }}>Complete more workouts to see insights</Text>
@@ -252,7 +253,7 @@ export default function ProgressiveOverloadInsights({
     <View>
       {/* Header with Info Icon */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.neutral[900] }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
           Progressive Overload Insights
         </Text>
         <TouchableOpacity
@@ -312,19 +313,11 @@ export default function ProgressiveOverloadInsights({
 
       <View>
         {insights.slice(0, 5).map((insight, index) => {
-          const bgColor = getProgressionBg(insight.progression)
-          const bgColorMap = {
-            "bg-green-50": "#F0FDF4",
-            "bg-emerald-50": "#ECFDF5",
-            "bg-yellow-50": "#FEFCE8",
-            "bg-red-50": "#FEF2F2",
-            "bg-slate-50": "#F8FAFC"
-          }
           return (
             <View
               key={index}
               style={{
-                backgroundColor: bgColorMap[bgColor] || "#F8FAFC",
+                backgroundColor: colors.background.card,
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -333,7 +326,7 @@ export default function ProgressiveOverloadInsights({
                 shadowRadius: 2,
                 elevation: 2,
                 borderWidth: 1,
-                borderColor: "#F1F5F9",
+                borderColor: colors.border.light,
                 marginBottom: index < insights.slice(0, 5).length - 1 ? 16 : 0
               }}
             >
@@ -346,7 +339,7 @@ export default function ProgressiveOverloadInsights({
                   <Text style={{ 
                     fontSize: 18, 
                     fontWeight: "700", 
-                    color: colors.neutral[900], 
+                    color: colors.text.primary, 
                     marginBottom: 4,
                     textDecorationLine: 'underline' 
                   }}>
@@ -362,9 +355,9 @@ export default function ProgressiveOverloadInsights({
                       {insight.totalGain > 0 ? "+" : ""}
                       {(insight.totalGain || 0).toFixed(1)}%
                     </Text>
-                    <Text style={{ fontSize: 14, color: colors.neutral[600], fontWeight: "500" }}>total gain</Text>
+                    <Text style={{ fontSize: 14, color: colors.text.secondary, fontWeight: "500" }}>total gain</Text>
                   </View>
-                  <Text style={{ fontSize: 12, color: colors.neutral[500] }}>
+                  <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
                     {insight.weeklyGain > 0 ? "+" : ""}
                     {(insight.weeklyGain || 0).toFixed(2)}% per week
                     {insight.timeSpanWeeks ? ` • ${insight.timeSpanWeeks.toFixed(1)} weeks` : ''}
@@ -406,7 +399,7 @@ export default function ProgressiveOverloadInsights({
               <View style={{ marginBottom: 16 }}>
                 <View style={{ 
                   height: 8, 
-                  backgroundColor: "#E2E8F0", 
+                  backgroundColor: colors.background.secondary, 
                   borderRadius: 4, 
                   overflow: "hidden" 
                 }}>
@@ -422,7 +415,7 @@ export default function ProgressiveOverloadInsights({
               </View>
 
               <View style={{ 
-                backgroundColor: "rgba(255, 255, 255, 0.7)", 
+                backgroundColor: colors.background.primary, 
                 borderRadius: 12, 
                 padding: 12 
               }}>
@@ -435,7 +428,7 @@ export default function ProgressiveOverloadInsights({
                   />
                   <Text style={{ 
                     fontSize: 14, 
-                    color: colors.neutral[700], 
+                    color: colors.text.secondary, 
                     fontWeight: "500", 
                     flex: 1, 
                     lineHeight: 20 
@@ -450,15 +443,15 @@ export default function ProgressiveOverloadInsights({
       {insights.length > 5 && (
         <View style={{ 
           marginTop: 16, 
-          backgroundColor: "#F8FAFC", 
+          backgroundColor: colors.background.secondary, 
           borderRadius: 12, 
           padding: 16, 
           borderWidth: 1, 
-          borderColor: "#F1F5F9" 
+          borderColor: colors.border.light 
         }}>
           <Text style={{ 
             fontSize: 14, 
-            color: colors.neutral[600], 
+            color: colors.text.secondary, 
             textAlign: "center", 
             fontWeight: "500" 
           }}>
@@ -476,7 +469,7 @@ export default function ProgressiveOverloadInsights({
           bottom: 0, 
           alignItems: "center", 
           justifyContent: "center", 
-          backgroundColor: "rgba(255, 255, 255, 0.5)" 
+          backgroundColor: colors.background.card + "80"
         }}>
           <Ionicons name="refresh" size={24} color={colors.primary[600]} />
         </View>

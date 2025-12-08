@@ -1,9 +1,9 @@
 import React from "react"
 import { View, Text } from "react-native"
 import { TrendingUp, TrendingDown, Activity } from "lucide-react-native"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
-const getTrendIcon = (trend) => {
+const getTrendIcon = (trend, colors) => {
   switch (trend) {
     case "up":
       return <TrendingUp size={16} color={colors.status.success} />
@@ -14,7 +14,7 @@ const getTrendIcon = (trend) => {
   }
 }
 
-const getTrendColor = (trend) => {
+const getTrendColor = (trend, colors) => {
   switch (trend) {
     case "up":
       return colors.status.success
@@ -25,7 +25,7 @@ const getTrendColor = (trend) => {
   }
 }
 
-const getTrendBgColor = (trend) => {
+const getTrendBgColor = (trend, colors) => {
   switch (trend) {
     case "up":
       return colors.status.successLight
@@ -52,15 +52,16 @@ export default function TrendCard({
   trend, 
   trendPercent 
 }) {
+  const colors = useThemedColors();
   return (
     <View 
       style={{ 
-        backgroundColor: getTrendBgColor(trend),
+        backgroundColor: getTrendBgColor(trend, colors),
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: getTrendColor(trend) + "40"
+        borderColor: getTrendColor(trend, colors) + "40"
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -76,13 +77,13 @@ export default function TrendCard({
               marginRight: 12
             }}
           >
-            {getTrendIcon(trend)}
+            {getTrendIcon(trend, colors)}
           </View>
-          <View className="flex-1">
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.neutral[900] }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.primary }}>
               {label}
             </Text>
-            <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
+            <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 2 }}>
               {getTrendLabel(trend)}
             </Text>
           </View>
@@ -91,7 +92,7 @@ export default function TrendCard({
           style={{ 
             fontSize: 24, 
             fontWeight: "bold", 
-            color: getTrendColor(trend) 
+            color: getTrendColor(trend, colors) 
           }}
         >
           {trend === "up" ? "+" : trend === "down" ? "-" : ""}

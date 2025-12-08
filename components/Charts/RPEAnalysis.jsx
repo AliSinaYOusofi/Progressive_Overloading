@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function RPEAnalysis({ rpeAnalysis }) {
+    const colors = useThemedColors();
     if (!rpeAnalysis || rpeAnalysis.length === 0) {
         return null;
     }
@@ -37,35 +38,51 @@ export default function RPEAnalysis({ rpeAnalysis }) {
 
     return (
         <View>
-            <View className="gap-3">
+            <View style={{ gap: 12 }}>
                 {rpeAnalysis.slice(0, 4).map((exercise, index) => {
                     if (!exercise || !exercise.exercise) return null;
                     return (
-                        <View key={index} className="bg-white rounded-xl p-4 shadow-sm">
-                            <View className="flex-row justify-between items-center mb-2">
-                                <Text className="text-base font-semibold text-slate-900 flex-1">{exercise.exercise}</Text>
+                        <View 
+                            key={index} 
+                            style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 12,
+                                padding: 16,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 2
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary, flex: 1 }}>{exercise.exercise}</Text>
                                 <View 
-                                    className="px-2 py-1 rounded-xl"
-                                    style={{ backgroundColor: getIntensityColor(exercise.intensity) }}
+                                    style={{
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 4,
+                                        borderRadius: 12,
+                                        backgroundColor: getIntensityColor(exercise.intensity)
+                                    }}
                                 >
-                                    <Text className="text-xs font-semibold text-white">
+                                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.text.white }}>
                                         {(exercise.intensity || 'low').toUpperCase()}
                                     </Text>
                                 </View>
                             </View>
                             
-                            <View className="flex-row justify-between mb-3">
-                                <Text className="text-sm font-semibold text-slate-700">
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary }}>
                                     Avg RPE: {(exercise.avgRPE || 0).toFixed(1)}/10
                                 </Text>
-                                <Text className="text-xs text-slate-600">
+                                <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
                                     {exercise.totalSets || 0} sets logged
                                 </Text>
                             </View>
                             
                             {/* RPE Trend Visualization */}
                             {exercise.rpeTrend && exercise.rpeTrend.length > 1 && (
-                            <View className="h-24 mb-2">
+                            <View style={{ height: 96, marginBottom: 8 }}>
                                 <LineChart
                                     data={formatRPEDataForChart(exercise.rpeTrend)}
                                     width={screenWidth - 100}
@@ -77,9 +94,9 @@ export default function RPEAnalysis({ rpeAnalysis }) {
                                     hideDataPoints={false}
                                     hideRules={false}
                                     rulesType="solid"
-                                    rulesColor={colors.neutral[200]}
-                                    yAxisColor={colors.neutral[200]}
-                                    xAxisColor={colors.neutral[200]}
+                                    rulesColor={colors.border.light}
+                                    yAxisColor={colors.border.light}
+                                    xAxisColor={colors.border.light}
                                     yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 8 }}
                                     xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 8 }}
                                     showVerticalLines={false}

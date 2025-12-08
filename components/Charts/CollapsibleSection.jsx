@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { ChevronDown, ChevronUp } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 
 export default function CollapsibleSection({ 
     title, 
@@ -10,40 +10,64 @@ export default function CollapsibleSection({
     defaultExpanded = false,
     icon: Icon 
 }) {
+    const colors = useThemedColors();
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     return (
-        <View className="mb-6">
+        <View style={{ marginBottom: 24 }}>
             <TouchableOpacity
                 onPress={() => setIsExpanded(!isExpanded)}
-                className="bg-white rounded-xl p-4 shadow-sm mb-2"
+                style={{
+                    backgroundColor: colors.background.card,
+                    borderRadius: 12,
+                    padding: 16,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 2,
+                    marginBottom: 8
+                }}
                 activeOpacity={0.7}
             >
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-1 flex-row items-center">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                         {Icon && (
                             <View 
-                                className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                                style={{ backgroundColor: colors.primary[100] }}
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 12,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: 12,
+                                    backgroundColor: colors.primary[100]
+                                }}
                             >
                                 <Icon size={20} color={colors.primary[600]} />
                             </View>
                         )}
-                        <View className="flex-1">
-                            <Text className="text-lg font-bold text-slate-900">{title}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>{title}</Text>
                             {subtitle && (
-                                <Text className="text-sm text-slate-600 mt-0.5">{subtitle}</Text>
+                                <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>{subtitle}</Text>
                             )}
                         </View>
                     </View>
                     <View 
-                        className="w-8 h-8 rounded-full items-center justify-center"
-                        style={{ backgroundColor: colors.neutral[100] }}
+                        style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 16,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: colors.background.primary
+                        }}
                     >
                         {isExpanded ? (
                             <ChevronUp size={18} color={colors.primary[600]} />
                         ) : (
-                            <ChevronDown size={18} color={colors.neutral[600]} />
+                            <ChevronDown size={18} color={colors.text.secondary} />
                         )}
                     </View>
                 </View>

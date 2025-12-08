@@ -2,10 +2,11 @@ import { View, Text, TouchableOpacity } from "react-native"
 import { useState } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { PieChart } from "react-native-gifted-charts"
-import { colors } from "../../constants/ui_colors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import VolumeCalculationInfoModal from "./VolumeCalculationInfoModal"
 
 export default function VolumeProgression({ volumeProgression }) {
+  const colors = useThemedColors();
   const [showInfoModal, setShowInfoModal] = useState(false)
 
   // Helper for PieChart (distribution of volume over the last 14 days)
@@ -97,7 +98,7 @@ export default function VolumeProgression({ volumeProgression }) {
                   ? colors.status.successLight
                   : trend === "down"
                     ? colors.status.errorLight
-                    : colors.neutral[100],
+                    : colors.background.primary,
               paddingHorizontal: 8,
               paddingVertical: 4,
               borderRadius: 12,
@@ -146,7 +147,7 @@ export default function VolumeProgression({ volumeProgression }) {
             style={{
               height: 220,
               marginBottom: 20,
-              backgroundColor: colors.neutral[50],
+              backgroundColor: colors.background.primary,
               borderRadius: 12,
               paddingVertical: 12,
               alignItems: 'center',
@@ -157,6 +158,7 @@ export default function VolumeProgression({ volumeProgression }) {
               data={formatVolumeDataForPie(volumeProgression)}
               radius={80}
               innerRadius={40}
+              innerCircleColor={colors.background.primary}
               showText
               textColor={colors.text.white}
               textSize={10}
@@ -204,7 +206,7 @@ export default function VolumeProgression({ volumeProgression }) {
               style={{
                 alignItems: "center",
                 flex: 1,
-                backgroundColor: colors.neutral[100],
+                backgroundColor: colors.background.secondary,
                 padding: 16,
                 borderRadius: 12,
                 marginLeft: 8,
@@ -238,7 +240,7 @@ export default function VolumeProgression({ volumeProgression }) {
         >
           <View
             style={{
-              backgroundColor: colors.neutral[100],
+              backgroundColor: colors.background.secondary,
               borderRadius: 32,
               padding: 16,
               marginBottom: 16,

@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { TrendingUp, Target, Dumbbell, Trophy } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 
 export default function QuickStats({ userStats, personalRecords }) {
+    const colors = useThemedColors();
     const stats = [
         {
             icon: TrendingUp,
@@ -32,16 +33,39 @@ export default function QuickStats({ userStats, personalRecords }) {
     ];
 
     return (
-        <View className="flex-row flex-wrap justify-between mb-8">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 32 }}>
             {stats.map((stat, index) => {
                 const IconComponent = stat.icon;
                 return (
-                    <View key={index} className="w-[48%] bg-white p-4 rounded-xl items-center mb-4 shadow-sm">
-                        <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center mb-2">
+                    <View 
+                        key={index} 
+                        style={{
+                            width: '48%',
+                            backgroundColor: colors.background.card,
+                            padding: 16,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            marginBottom: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 2,
+                            elevation: 2
+                        }}
+                    >
+                        <View style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: colors.primary[50],
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 8
+                        }}>
                             <IconComponent size={24} color={stat.color} />
                         </View>
-                        <Text className="text-2xl font-bold text-slate-900 mb-1">{stat.value}</Text>
-                        <Text className="text-xs text-slate-600 text-center">{stat.label}</Text>
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{stat.value}</Text>
+                        <Text style={{ fontSize: 12, color: colors.text.secondary, textAlign: 'center' }}>{stat.label}</Text>
                     </View>
                 );
             })}

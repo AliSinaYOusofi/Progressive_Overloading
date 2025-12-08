@@ -2,13 +2,14 @@ import React from "react"
 import { View, Text } from "react-native"
 import { Target } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 export default function AllTimeStatsSection({ 
   allTimeData, 
   analyticsData, 
   selectedTimeframe 
 }) {
+  const colors = useThemedColors();
   if (!allTimeData) return null
 
   return (

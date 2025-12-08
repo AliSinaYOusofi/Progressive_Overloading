@@ -1,17 +1,20 @@
 import { Tabs, Slot, useRouter, useSegments } from "expo-router"
 import { Home, Settings, BarChart3, User } from "lucide-react-native"
-import { colors } from '../constants/ui_colors'
+import { getColors } from '../constants/ui_colors'
 import { Platform, View, Text, ActivityIndicator } from "react-native"
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
+import { ThemeProvider, useTheme } from "../contexts/ThemeContext"
 import "../assets/css/global.css"
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const segments = useSegments()
   const firstSegment = segments?.[0]
+  const { isDarkMode } = useTheme()
+  const colors = getColors(isDarkMode)
 
   useEffect(() => {
     const getInitialSession = async () => {
@@ -47,13 +50,14 @@ export default function RootLayout() {
     if (isLoading) return
 
     const inAuthGroup = firstSegment === "(auth)"
+    const onIndexPage = segments.length === 0 || firstSegment === "index"
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace("/(auth)/signin")
-    } else if (isAuthenticated && inAuthGroup) {
+    } else if (isAuthenticated && (inAuthGroup || onIndexPage)) {
       router.replace("/homescreen")
     }
-  }, [firstSegment, isAuthenticated, isLoading, router])
+  }, [segments, firstSegment, isAuthenticated, isLoading, router])
 
   if (isLoading) {
     return (
@@ -190,5 +194,13 @@ export default function RootLayout() {
       <Tabs.Screen name="(auth)" options={{ href: null }} />
       <Tabs.Screen name="index" options={{ href: null }} />
     </Tabs>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
   )
 }

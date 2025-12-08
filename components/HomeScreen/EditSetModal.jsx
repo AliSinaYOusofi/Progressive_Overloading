@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Trash2, ChevronDown } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
 
 export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isSubmitting, isDeleting, initialValues }) {
+    const colors = useThemedColors();
     const [exerciseName, setExerciseName] = useState("");
     const [weight, setWeight] = useState("");
     const [reps, setReps] = useState("");
@@ -270,7 +271,7 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                                     disabled={isSubmitting || isDeleting}
                                     style={{ 
                                         flex: 1,
-                                        backgroundColor: colors.primary[600], 
+                                        backgroundColor: colors.primary[300], 
                                         borderRadius: 12, 
                                         paddingVertical: 16, 
                                         alignItems: "center", 

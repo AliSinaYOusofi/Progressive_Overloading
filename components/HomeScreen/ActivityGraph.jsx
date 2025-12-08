@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 import { 
   getLastNDays, 
   groupDaysIntoWeeks, 
@@ -16,6 +16,7 @@ import {
  * Displays a GitHub-style contribution graph showing workout activity
  */
 export default function ActivityGraph({ streakData }) {
+  const colors = useThemedColors()
   const [tooltip, setTooltip] = useState(null)
   const [selectedBox, setSelectedBox] = useState(null)
 

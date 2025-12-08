@@ -1,28 +1,29 @@
 import { View, Text } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from "../../constants/ui_colors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import { PieChart } from "react-native-gifted-charts"
 
 export default function MonthlyTrends({ monthlyStats }) {
+  const colors = useThemedColors();
   if (!monthlyStats || monthlyStats.length === 0) {
     return (
       <View className="mb-10">
         <View className="flex-row items-center mb-2">
           <Ionicons name="trending-up" size={24} color={colors.primary[600]} />
-          <Text className="text-xl font-bold ml-2" style={{ color: colors.neutral[900] }}>
+          <Text className="text-xl font-bold ml-2" style={{ color: colors.text.primary }}>
             Monthly Trends
           </Text>
         </View>
-        <Text className="text-sm mb-4" style={{ color: colors.neutral[600] }}>
+        <Text className="text-sm mb-4" style={{ color: colors.text.secondary }}>
           Track your workout consistency over time
         </Text>
 
-        <View className="rounded-2xl p-6 items-center justify-center" style={{ backgroundColor: colors.neutral[50] }}>
-          <Ionicons name="bar-chart-outline" size={48} color={colors.neutral[400]} />
-          <Text className="text-base font-medium mt-3 mb-1" style={{ color: colors.neutral[700] }}>
+        <View className="rounded-2xl p-6 items-center justify-center" style={{ backgroundColor: colors.background.card }}>
+          <Ionicons name="bar-chart-outline" size={48} color={colors.text.tertiary} />
+          <Text className="text-base font-medium mt-3 mb-1" style={{ color: colors.text.secondary }}>
             No Monthly Data Yet
           </Text>
-          <Text className="text-sm text-center" style={{ color: colors.neutral[500] }}>
+          <Text className="text-sm text-center" style={{ color: colors.text.tertiary }}>
             Complete more workouts to see your monthly trends
           </Text>
         </View>
@@ -126,7 +127,7 @@ export default function MonthlyTrends({ monthlyStats }) {
         </View>
       </View>
 
-      <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: colors.neutral[50] }}>
+      <View className="rounded-2xl p-6 shadow-sm" style={{ backgroundColor: colors.background.card }}>
         {/* Pie Chart */}
         <View className="items-center justify-center mb-4" style={{ height: 220 }}>
           {buildPieData().length > 0 ? (
@@ -134,22 +135,23 @@ export default function MonthlyTrends({ monthlyStats }) {
               data={buildPieData()}
               radius={80}
               innerRadius={40}
+              innerCircleColor={colors.background.card}
               showText
               textColor={colors.text?.white || 'white'}
               textSize={10}
               centerLabelComponent={() => (
                 <View className="items-center">
-                  <Text className="text-lg font-bold" style={{ color: colors.neutral?.[900] || '#000' }}>
+                  <Text className="text-lg font-bold" style={{ color: colors.text.primary }}>
                     {totalExercises}
                   </Text>
-                  <Text className="text-xs" style={{ color: colors.neutral?.[600] || '#666' }}>Workouts</Text>
+                  <Text className="text-xs" style={{ color: colors.text.secondary }}>Workouts</Text>
                 </View>
               )}
             />
           ) : (
             <View className="items-center justify-center" style={{ height: 180 }}>
-              <Ionicons name="pie-chart-outline" size={48} color={colors.neutral?.[400] || '#999'} />
-              <Text className="text-sm mt-3" style={{ color: colors.neutral?.[600] || '#666' }}>
+              <Ionicons name="pie-chart-outline" size={48} color={colors.text.tertiary} />
+              <Text className="text-sm mt-3" style={{ color: colors.text.secondary }}>
                 No data to display
               </Text>
             </View>
@@ -187,12 +189,12 @@ export default function MonthlyTrends({ monthlyStats }) {
 
             return sortedYears.map(year => (
               <View key={year} className="mb-3">
-                <Text className="text-sm font-semibold mb-2" style={{ color: colors.neutral[700] }}>
+                <Text className="text-sm font-semibold mb-2" style={{ color: colors.text.secondary }}>
                   {year}:
                 </Text>
                 <View className="flex-row flex-wrap">
                   {groupedByYear[year].map((monthData, idx) => (
-                    <Text key={idx} className="text-xs mx-2 my-1" style={{ color: colors.neutral[600] }}>
+                    <Text key={idx} className="text-xs mx-2 my-1" style={{ color: colors.text.tertiary }}>
                       {monthData.label}({monthData.totalSets})
                     </Text>
                   ))}
@@ -203,29 +205,29 @@ export default function MonthlyTrends({ monthlyStats }) {
         </View>
 
         {/* Stats Summary */}
-        <View className="flex-row justify-around pt-4 border-t-2" style={{ borderTopColor: colors.neutral[200] }}>
+        <View className="flex-row justify-around pt-4 border-t-2" style={{ borderTopColor: colors.border.light }}>
           <View className="items-center flex-1">
             <View className="flex-row items-center mb-1">
               <Ionicons name="fitness" size={16} color={colors.primary[600]} />
-              <Text className="text-lg font-bold ml-1" style={{ color: colors.neutral[900] }}>
+              <Text className="text-lg font-bold ml-1" style={{ color: colors.text.primary }}>
                 {totalExercises}
               </Text>
             </View>
-            <Text className="text-xs font-medium" style={{ color: colors.neutral[600] }}>
+            <Text className="text-xs font-medium" style={{ color: colors.text.secondary }}>
               Unique Exercises
             </Text>
           </View>
 
-          <View className="w-px mx-4" style={{ backgroundColor: colors.neutral[300] }} />
+          <View className="w-px mx-4" style={{ backgroundColor: colors.border.light }} />
 
           <View className="items-center flex-1">
             <View className="flex-row items-center mb-1">
               <Ionicons name="barbell" size={16} color={colors.primary[600]} />
-              <Text className="text-lg font-bold ml-1" style={{ color: colors.neutral[900] }}>
+              <Text className="text-lg font-bold ml-1" style={{ color: colors.text.primary }}>
                 {totalSets}
               </Text>
             </View>
-            <Text className="text-xs font-medium" style={{ color: colors.neutral[600] }}>
+            <Text className="text-xs font-medium" style={{ color: colors.text.secondary }}>
               Total Sets
             </Text>
           </View>

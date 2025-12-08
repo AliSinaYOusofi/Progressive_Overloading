@@ -1,77 +1,125 @@
 import { View, Text, Modal, TouchableOpacity, Linking } from "react-native"
 import { ExternalLink, Calculator } from "lucide-react-native"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 export default function BMIInfoModal({ visible, onClose }) {
+  const colors = useThemedColors();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity
         activeOpacity={1}
         onPress={onClose}
-        className="flex-1 justify-end"
-        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: "rgba(0,0,0,0.5)" }}
       >
-        <TouchableOpacity activeOpacity={1} className="bg-white rounded-t-3xl shadow-2xl">
-          <View className="w-12 h-1 bg-gray-300 rounded-full self-center mt-3 mb-4" />
+        <TouchableOpacity 
+          activeOpacity={1} 
+          style={{ 
+            backgroundColor: colors.background.card, 
+            borderTopLeftRadius: 24, 
+            borderTopRightRadius: 24,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 8
+          }}
+        >
+          <View style={{ 
+            width: 48, 
+            height: 4, 
+            backgroundColor: colors.border.light, 
+            borderRadius: 2, 
+            alignSelf: 'center', 
+            marginTop: 12, 
+            marginBottom: 16 
+          }} />
 
-          <View className="flex-row justify-between items-center px-6 mb-4">
-            <View className="flex-row items-center">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View
-                className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                style={{ backgroundColor: colors.primary[50] }}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                  backgroundColor: colors.primary[50]
+                }}
               >
                 <Calculator size={20} color={colors.primary[600]} />
               </View>
-              <Text className="text-xl font-bold" style={{ color: colors.neutral[900] }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>
                 What is BMI?
               </Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
-              className="w-8 h-8 rounded-full items-center justify-center"
-              style={{ backgroundColor: colors.neutral[100] }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.background.primary
+              }}
             >
-              <Text className="text-xl font-medium" style={{ color: colors.neutral[500] }}>
+              <Text style={{ fontSize: 20, fontWeight: '500', color: colors.text.tertiary }}>
                 ×
               </Text>
             </TouchableOpacity>
           </View>
 
-          <View className="px-6 mb-6">
-            <Text className="text-base leading-6" style={{ color: colors.neutral[600] }}>
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            <Text style={{ fontSize: 16, lineHeight: 24, color: colors.text.secondary }}>
               Body Mass Index (BMI) is a measure of body fat based on height and weight. It's calculated by dividing
               your weight in kilograms by your height in meters squared.
             </Text>
 
             <View
-              className="mt-4 p-4 rounded-xl border-2"
-              style={{ backgroundColor: colors.primary[50], borderColor: colors.primary[200] }}
+              style={{
+                marginTop: 16,
+                padding: 16,
+                borderRadius: 12,
+                borderWidth: 2,
+                backgroundColor: colors.primary[50],
+                borderColor: colors.primary[200]
+              }}
             >
-              <Text className="text-center font-semibold" style={{ color: colors.primary[800] }}>
+              <Text style={{ textAlign: 'center', fontWeight: '600', color: colors.primary[800] }}>
                 BMI = Weight (kg) ÷ Height² (m²)
               </Text>
             </View>
           </View>
 
-          <View className="px-6 mb-6">
-            <Text className="text-lg font-semibold mb-4" style={{ color: colors.neutral[900] }}>
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: colors.text.primary }}>
               BMI Categories
             </Text>
-            <View className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: colors.neutral[50] }}>
+            <View style={{ 
+              borderRadius: 12, 
+              padding: 16, 
+              backgroundColor: colors.background.primary,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 2,
+              elevation: 2
+            }}>
               {[
                 { label: "Underweight", range: "Below 18.5", color: colors.status.info },
                 { label: "Normal", range: "18.5 - 24.9", color: colors.status.success },
                 { label: "Overweight", range: "25.0 - 29.9", color: colors.status.warning },
                 { label: "Obese", range: "30.0 and above", color: colors.status.error },
               ].map((category, index) => (
-                <View key={index} className="flex-row justify-between items-center py-3">
-                  <View className="flex-row items-center">
-                    <View className="w-3 h-3 rounded-full mr-3" style={{ backgroundColor: category.color }} />
-                    <Text className="font-medium" style={{ color: colors.neutral[700] }}>
+                <View key={index} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 6, marginRight: 12, backgroundColor: category.color }} />
+                    <Text style={{ fontWeight: '500', color: colors.text.secondary }}>
                       {category.label}
                     </Text>
                   </View>
-                  <Text className="font-semibold" style={{ color: colors.neutral[900] }}>
+                  <Text style={{ fontWeight: '600', color: colors.text.primary }}>
                     {category.range}
                   </Text>
                 </View>
@@ -79,14 +127,25 @@ export default function BMIInfoModal({ visible, onClose }) {
             </View>
           </View>
 
-          <View className="px-6 pb-8">
+          <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
             <TouchableOpacity
               onPress={() => Linking.openURL("https://www.cdc.gov/healthyweight/assessing/bmi/index.html")}
-              className="flex-row items-center justify-center py-4 rounded-xl shadow-lg"
-              style={{ backgroundColor: colors.primary[600] }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 16,
+                borderRadius: 12,
+                backgroundColor: colors.primary[600],
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 4,
+                elevation: 4
+              }}
             >
               <ExternalLink size={18} color="white" />
-              <Text className="ml-2 text-white font-bold text-base">Learn More from CDC</Text>
+              <Text style={{ marginLeft: 8, color: colors.text.white, fontWeight: 'bold', fontSize: 16 }}>Learn More from CDC</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Dimensions, TouchableOpacity } from "react-native";
 import { Dumbbell } from "lucide-react-native";
 import { PieChart } from "react-native-gifted-charts";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 import { getCurrentUser } from "../../lib/database";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function ExerciseProgression({ exerciseProgression }) {
+    const colors = useThemedColors();
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [userId, setUserId] = useState(null);
@@ -82,41 +83,51 @@ export default function ExerciseProgression({ exerciseProgression }) {
     return (
         <View>
             {Object.keys(exerciseProgression).length > 0 ? (
-                <View className="bg-white rounded-xl p-6 shadow-sm">
-                    <View className="items-center h-56 justify-center">
+                <View style={{
+                    backgroundColor: colors.background.card,
+                    borderRadius: 12,
+                    padding: 24,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 2
+                }}>
+                    <View style={{ alignItems: 'center', height: 224, justifyContent: 'center' }}>
                         {buildPieData().length > 0 ? (
                             <PieChart
                                 data={buildPieData()}
                                 radius={80}
                                 innerRadius={40}
+                                innerCircleColor={colors.background.card}
                                 showText
                                 textColor={colors.text?.white || 'white'}
                                 textSize={10}
                                 centerLabelComponent={() => (
-                                    <View className="items-center">
-                                        <Text className="text-lg font-bold text-slate-900">
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>
                                             {getExerciseNames().length}
                                         </Text>
-                                        <Text className="text-xs text-slate-600">Exercises</Text>
+                                        <Text style={{ fontSize: 12, color: colors.text.secondary }}>Exercises</Text>
                                     </View>
                                 )}
                             />
                         ) : (
-                            <Text className="text-slate-600">No progression data</Text>
+                            <Text style={{ color: colors.text.secondary }}>No progression data</Text>
                         )}
                     </View>
                     {/* Legend */}
                     {buildPieData().length > 0 && (
-                        <View className="flex-row flex-wrap justify-center mt-4">
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 16 }}>
                             {buildPieData().map((slice, idx) => (
                                 <TouchableOpacity 
                                     key={idx} 
-                                    className="flex-row items-center mx-2 my-1"
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 8, marginVertical: 4 }}
                                     onPress={() => handleExercisePress(slice.label)}
                                     activeOpacity={0.7}
                                 >
                                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: slice.color, marginRight: 6 }} />
-                                    <Text className="text-xs" style={{ color: colors.text?.secondary || '#666', textDecorationLine: 'underline' }}>
+                                    <Text style={{ fontSize: 12, color: colors.text.secondary, textDecorationLine: 'underline' }}>
                                         {slice.label}
                                     </Text>
                                 </TouchableOpacity>
@@ -125,10 +136,20 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     )}
                 </View>
             ) : (
-                <View className="bg-white rounded-xl p-8 items-center shadow-sm">
-                    <Dumbbell size={48} color={colors.text?.tertiary || '#999'} />
-                    <Text className="text-base font-semibold text-slate-900 mt-3 mb-1">No exercise data yet</Text>
-                    <Text className="text-sm text-slate-700 text-center">Start logging sets to see your progression!</Text>
+                <View style={{
+                    backgroundColor: colors.background.card,
+                    borderRadius: 12,
+                    padding: 32,
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 2
+                }}>
+                    <Dumbbell size={48} color={colors.text.tertiary} />
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary, marginTop: 12, marginBottom: 4 }}>No exercise data yet</Text>
+                    <Text style={{ fontSize: 14, color: colors.text.secondary, textAlign: 'center' }}>Start logging sets to see your progression!</Text>
                 </View>
             )}
 

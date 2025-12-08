@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { TrendingUp, BarChart3, Award, Trophy, Calendar, Target, Activity, Zap } from "lucide-react-native";
-import { colors } from "../constants/ui_colors";
+import { useThemedColors } from "../hooks/useThemedColors";
 import { 
     getCurrentUser, 
     getUserStats, 
@@ -32,6 +32,7 @@ import VolumeAnalysis from "../components/Charts/VolumeAnalysis";
 
 
 export default function ChartsScreen() {
+    const colors = useThemedColors();
     const [user, setUser] = useState(null);
     const [userStats, setUserStats] = useState(null);
     const [exerciseProgression, setExerciseProgression] = useState({});
@@ -127,17 +128,17 @@ export default function ChartsScreen() {
 
     if (isLoading) {
         return (
-            <View className="flex-1 justify-center items-center bg-slate-50">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
-                <Text className="mt-4 text-base text-slate-700">Loading your progress...</Text>
+                <Text style={{ marginTop: 16, fontSize: 16, color: colors.text.secondary }}>Loading your progress...</Text>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-slate-50">
+        <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
             <ScrollView 
-                className="flex-1"
+                style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
                 refreshControl={
@@ -145,9 +146,9 @@ export default function ChartsScreen() {
                 }
             >
                 {/* Header */}
-                <View className="items-center mb-8">
-                    <Text className="text-3xl font-bold text-slate-900 mb-2 text-center">Progressive Overload Analytics</Text>
-                    <Text className="text-base text-slate-700 text-center">Track your strength gains and performance</Text>
+                <View style={{ alignItems: 'center', marginBottom: 32 }}>
+                    <Text style={{ fontSize: 30, fontWeight: 'bold', color: colors.text.primary, marginBottom: 8, textAlign: 'center' }}>Progressive Overload Analytics</Text>
+                    <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center' }}>Track your strength gains and performance</Text>
                 </View>
 
                 {/* Timeframe Filter */}

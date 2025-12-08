@@ -9,11 +9,12 @@ import {
 } from "react-native"
 import { TrendingUp, TrendingDown, Activity, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function TrendInfoModal({ visible, onClose }) {
+  const colors = useThemedColors();
   return (
     <Modal
       visible={visible}

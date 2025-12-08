@@ -24,13 +24,14 @@ import {
     Info,
     ExternalLink,
 } from "lucide-react-native";
-import { colors } from "../constants/ui_colors";
+import { useThemedColors } from "../hooks/useThemedColors";
 import { signOut, getUser } from "../lib/auth";
 import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../lib/database";
 import EditProfileModal from "../components/HomeScreen/EditProfileModal";
 import BMIInfoModal from "../components/Profile/BMIInfoModal";
 
 export default function ProfileScreen() {
+    const colors = useThemedColors();
     const [userProfile, setUserProfile] = useState(null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
@@ -171,6 +172,8 @@ export default function ProfileScreen() {
             return { category: "Overweight", color: colors.status.warning };
         return { category: "Obese", color: colors.status.error };
     };
+
+    const styles = getStyles(colors);
 
     if (isLoading && !hasError) {
         return (
@@ -560,7 +563,7 @@ export default function ProfileScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background.primary,

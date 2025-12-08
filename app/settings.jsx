@@ -17,15 +17,18 @@ import {
     Smartphone,
     LogOut
 } from "lucide-react-native";
-import { colors } from "../constants/ui_colors";
+import { getColors } from "../constants/ui_colors";
 import { signOut } from "../lib/auth";
+import { useTheme } from "../contexts/ThemeContext";
 import PrivacySettingsModal from "../components/Profile/PrivacySettingsModal";
 import DataSharingModal from "../components/Profile/DataSharingModal";
 import AppVersionModal from "../components/Profile/AppVersionModal";
 
 export default function SettingsScreen() {
+    const { isDarkMode, toggleTheme } = useTheme();
+    const colors = getColors(isDarkMode);
+    
     const [notifications, setNotifications] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [biometricAuth, setBiometricAuth] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
@@ -71,12 +74,12 @@ export default function SettingsScreen() {
                 //     onValueChange: setNotifications,
                 // },
                 {
-                    icon: Moon,
+                    icon: isDarkMode ? Sun : Moon,
                     title: "Dark Mode",
                     subtitle: "Switch between light and dark themes",
                     type: "switch",
-                    value: darkMode,
-                    onValueChange: setDarkMode,
+                    value: isDarkMode,
+                    onValueChange: toggleTheme,
                 },
                 // {
                 //     icon: Volume2,
@@ -203,6 +206,8 @@ export default function SettingsScreen() {
         );
     };
 
+    const styles = getStyles(colors);
+
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -251,7 +256,7 @@ export default function SettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background.primary,

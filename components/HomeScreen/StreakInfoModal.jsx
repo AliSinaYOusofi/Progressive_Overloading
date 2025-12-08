@@ -9,7 +9,7 @@ import {
   ActivityIndicator
 } from "react-native"
 import { Flame } from "lucide-react-native"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 import { useStreakData } from '../../hooks/useStreakData'
 import ActivityGraph from './ActivityGraph'
 import StreakStatsCards from './StreakStatsCards'
@@ -18,6 +18,7 @@ import StreakTips from './StreakTips'
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function StreakInfoModal({ visible, onClose, userId }) {
+  const colors = useThemedColors()
   const { streakData, loading, refetch } = useStreakData(visible, userId)
 
 
@@ -67,7 +68,7 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
                 >
                   <Flame size={24} color={colors.primary[600]} />
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.neutral[900] }}>
+                <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }}>
                   Your Workout Streak
                 </Text>
               </View>
@@ -106,7 +107,7 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
           {loading ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="large" color={colors.primary[600]} />
-              <Text style={{ marginTop: 12, color: colors.neutral[600] }}>Loading your stats...</Text>
+              <Text style={{ marginTop: 12, color: colors.text.secondary }}>Loading your stats...</Text>
             </View>
           ) : (
             <ScrollView 
@@ -120,12 +121,12 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
               {/* Activity Graph */}
               <View 
                 style={{ 
-                  backgroundColor: colors.neutral[50],
+                  backgroundColor: colors.background.primary,
                   borderRadius: 16,
                   padding: 16,
                   marginBottom: 20,
                   borderWidth: 1,
-                  borderColor: colors.neutral[200]
+                  borderColor: colors.border.light
                 }}
               >
                 <ActivityGraph streakData={streakData} />

@@ -1,96 +1,104 @@
 import { View, Text, Modal, TouchableOpacity, Linking } from "react-native"
 import { ExternalLink, Dumbbell, Repeat, Layers } from "lucide-react-native"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import ModalCloseButton from "../ModalCloseButton"
 
 export default function RMInfoModal({ visible, onClose }) {
+  const colors = useThemedColors()
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={onClose}
-        className="flex-1 justify-end"
-        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-      >
-        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View className="bg-white rounded-t-3xl shadow-2xl" style={{ minHeight: "60%" }}>
-            <View className="w-12 h-1 bg-gray-300 rounded-full self-center mt-3 mb-6" />
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+        <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
+        <View style={{ 
+          backgroundColor: colors.background.card, 
+          borderTopLeftRadius: 24, 
+          borderTopRightRadius: 24,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 10,
+          minHeight: "60%",
+        }}>
+          <View style={{ width: 48, height: 4, backgroundColor: colors.border.light, borderRadius: 2, alignSelf: "center", marginTop: 12, marginBottom: 24 }} />
 
-            <View className="px-6 pb-8">
-              <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-2xl font-bold text-gray-900">What is Rep Max (RM)?</Text>
-                <ModalCloseButton onPress={onClose} size={18} />
-              </View>
-
-              <View className="mb-6">
-                <Text className="text-gray-700 text-base leading-6 mb-4">
-                  Rep Max (RM) is the maximum weight you can lift for a given number of reps.
-                </Text>
-                <View className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded-r-lg">
-                  <Text className="text-emerald-800 font-semibold mb-1">Formula Used:</Text>
-                  <Text className="text-emerald-700">est 1RM = weight × (1 + reps / 30)</Text>
-                </View>
-              </View>
-
-              <View className="bg-gray-50 rounded-2xl p-5 mb-6">
-                <Text className="text-lg font-bold text-gray-900 mb-4">Examples</Text>
-
-                <View className="space-y-3 mb-5">
-                  <View className="flex-row items-center">
-                    <View className="w-2 h-2 bg-emerald-500 rounded-full mr-3" />
-                    <Text className="text-gray-700 flex-1">
-                      <Text className="font-semibold">5RM:</Text> The most weight you can lift for 5 reps
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <View className="w-2 h-2 bg-emerald-500 rounded-full mr-3" />
-                    <Text className="text-gray-700 flex-1">
-                      <Text className="font-semibold">3RM:</Text> The most weight you can lift for 3 reps
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <View className="w-2 h-2 bg-emerald-500 rounded-full mr-3" />
-                    <Text className="text-gray-700 flex-1">
-                      <Text className="font-semibold">1RM:</Text> The most weight you can lift for 1 rep
-                    </Text>
-                  </View>
-                </View>
-
-                <View className="flex-row flex-wrap gap-2">
-                  <View className="flex-row items-center bg-white px-3 py-2 rounded-full shadow-sm border border-gray-200">
-                    <Dumbbell size={16} color="#10B981" />
-                    <Text className="text-gray-700 text-sm font-medium ml-2">Weight</Text>
-                  </View>
-                  <View className="flex-row items-center bg-white px-3 py-2 rounded-full shadow-sm border border-gray-200">
-                    <Repeat size={16} color="#10B981" />
-                    <Text className="text-gray-700 text-sm font-medium ml-2">Reps</Text>
-                  </View>
-                  <View className="flex-row items-center bg-white px-3 py-2 rounded-full shadow-sm border border-gray-200">
-                    <Layers size={16} color="#10B981" />
-                    <Text className="text-gray-700 text-sm font-medium ml-2">Sets</Text>
-                  </View>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => Linking.openURL("https://en.wikipedia.org/wiki/One-repetition_maximum")}
-                className="bg-emerald-500 rounded-2xl p-4 shadow-lg"
-                style={{
-                  shadowColor: "#10B981",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }}
-              >
-                <View className="flex-row items-center justify-center">
-                  <ExternalLink size={20} color="white" />
-                  <Text className="text-white text-lg font-bold ml-3">Learn More about Rep Max</Text>
-                </View>
-              </TouchableOpacity>
+          <View style={{ paddingHorizontal: 24, paddingBottom: 32 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text.primary }}>What is Rep Max (RM)?</Text>
+              <ModalCloseButton onPress={onClose} size={18} />
             </View>
+
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 16, color: colors.text.secondary, lineHeight: 24, marginBottom: 16 }}>
+                Rep Max (RM) is the maximum weight you can lift for a given number of reps.
+              </Text>
+              <View style={{ backgroundColor: colors.primary[50], borderLeftWidth: 4, borderLeftColor: colors.primary[400], padding: 16, borderRadius: 12 }}>
+                <Text style={{ fontWeight: "600", color: colors.text.primary, marginBottom: 4 }}>Formula Used:</Text>
+                <Text style={{ color: colors.text.secondary }}>est 1RM = weight × (1 + reps / 30)</Text>
+              </View>
+            </View>
+
+            <View style={{ backgroundColor: colors.background.primary, borderRadius: 16, padding: 20, marginBottom: 24 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary, marginBottom: 16 }}>Examples</Text>
+
+              <View style={{ marginBottom: 20 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                  <View style={{ width: 8, height: 8, backgroundColor: colors.primary[500], borderRadius: 4, marginRight: 12 }} />
+                  <Text style={{ flex: 1, color: colors.text.secondary, fontSize: 15 }}>
+                    <Text style={{ fontWeight: "600" }}>5RM:</Text> The most weight you can lift for 5 reps
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                  <View style={{ width: 8, height: 8, backgroundColor: colors.primary[500], borderRadius: 4, marginRight: 12 }} />
+                  <Text style={{ flex: 1, color: colors.text.secondary, fontSize: 15 }}>
+                    <Text style={{ fontWeight: "600" }}>3RM:</Text> The most weight you can lift for 3 reps
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ width: 8, height: 8, backgroundColor: colors.primary[500], borderRadius: 4, marginRight: 12 }} />
+                  <Text style={{ flex: 1, color: colors.text.secondary, fontSize: 15 }}>
+                    <Text style={{ fontWeight: "600" }}>1RM:</Text> The most weight you can lift for 1 rep
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.card, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                  <Dumbbell size={16} color={colors.primary[600]} />
+                  <Text style={{ color: colors.text.secondary, fontSize: 14, fontWeight: "500", marginLeft: 8 }}>Weight</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.card, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                  <Repeat size={16} color={colors.primary[600]} />
+                  <Text style={{ color: colors.text.secondary, fontSize: 14, fontWeight: "500", marginLeft: 8 }}>Reps</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.card, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                  <Layers size={16} color={colors.primary[600]} />
+                  <Text style={{ color: colors.text.secondary, fontSize: 14, fontWeight: "500", marginLeft: 8 }}>Sets</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => Linking.openURL("https://en.wikipedia.org/wiki/One-repetition_maximum")}
+              style={{
+                backgroundColor: colors.primary[500],
+                borderRadius: 16,
+                padding: 16,
+                shadowColor: colors.primary[600],
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                <ExternalLink size={20} color="white" />
+                <Text style={{ color: "white", fontSize: 18, fontWeight: "bold", marginLeft: 12 }}>Learn More about Rep Max</Text>
+              </View>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   )
 }

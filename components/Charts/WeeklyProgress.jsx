@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { PieChart } from "react-native-gifted-charts";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function WeeklyProgress({ weeklyProgress }) {
+    const colors = useThemedColors();
     // Build pie data: completed vs missed days in the week
     const buildPieData = () => {
         if (!weeklyProgress || weeklyProgress.length === 0) return [];
@@ -19,39 +20,59 @@ export default function WeeklyProgress({ weeklyProgress }) {
 
     if (!weeklyProgress || weeklyProgress.length === 0) {
         return (
-            <View className="bg-white rounded-xl p-6 items-center shadow-sm">
-                <Text className="text-slate-600">No weekly progress data available</Text>
+            <View style={{
+                backgroundColor: colors.background.card,
+                borderRadius: 12,
+                padding: 24,
+                alignItems: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 2
+            }}>
+                <Text style={{ color: colors.text.secondary }}>No weekly progress data available</Text>
             </View>
         );
     }
 
     return (
         <View>
-            <View className="bg-white rounded-xl p-6 shadow-sm">
-                <View className="items-center justify-center" style={{ height: 160 }}>
+            <View style={{
+                backgroundColor: colors.background.card,
+                borderRadius: 12,
+                padding: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 2
+            }}>
+                <View style={{ alignItems: 'center', justifyContent: 'center', height: 160 }}>
                     <PieChart
                         data={buildPieData()}
                         radius={60}
                         innerRadius={32}
+                        innerCircleColor={colors.background.card}
                         showText
                         textColor={colors.text.white}
                         textSize={10}
                         centerLabelComponent={() => (
-                            <View className="items-center">
-                                <Text className="text-lg font-bold" style={{ color: colors.neutral[900] }}>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>
                                     {weeklyProgress.filter(d => d && d.completed).length}/
                                     {weeklyProgress.length}
                                 </Text>
-                                <Text className="text-xs" style={{ color: colors.neutral[600] }}>Days</Text>
+                                <Text style={{ fontSize: 12, color: colors.text.secondary }}>Days</Text>
                             </View>
                         )}
                     />
                 </View>
-                <View className="flex-row justify-center mt-3">
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
                     {buildPieData().map((s, idx) => (
-                        <View key={idx} className="flex-row items-center mx-3">
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12 }}>
                             <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color, marginRight: 6 }} />
-                            <Text className="text-xs" style={{ color: colors.neutral[600] }}>{s.label}</Text>
+                            <Text style={{ fontSize: 12, color: colors.text.secondary }}>{s.label}</Text>
                         </View>
                     ))}
                 </View>

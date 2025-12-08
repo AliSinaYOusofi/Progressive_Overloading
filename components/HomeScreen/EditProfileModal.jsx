@@ -13,11 +13,12 @@ import {
   Platform,
 } from "react-native"
 import { X, Save, User, Ruler, Weight, Calendar, Users } from "lucide-react-native"
-import { colors } from "../../constants/ui_colors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import { upsertProfile, getCurrentUser } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
 export default function EditProfileModal({ visible, onClose, currentProfile, onProfileUpdate }) {
+  const colors = useThemedColors();
   const [formData, setFormData] = useState({
     username: "",
     height_cm: "",
@@ -167,6 +168,213 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
     }
     onClose()
   }
+
+  const styles = StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "flex-end",
+      alignItems: "center",
+    },
+    keyboardAvoidingView: {
+      width: "100%",
+      height: "90%",
+    },
+    modal: {
+      backgroundColor: colors.background.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      width: "100%",
+      flex: 1,
+      shadowColor: colors.shadow.dark,
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 24,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border.light,
+      position: "relative",
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.text.primary,
+    },
+    closeButton: {
+      padding: 4,
+    },
+    profileSummary: {
+      backgroundColor: colors.primary[50],
+      marginBottom: 16,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary[200],
+    },
+    summaryTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.primary[700],
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    summaryItems: {
+      gap: 8,
+    },
+    summaryItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      fontWeight: "500",
+    },
+    summaryValue: {
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    summaryValueCompleted: {
+      color: colors.status.success,
+    },
+    summaryValueEmpty: {
+      color: colors.text.tertiary,
+      fontStyle: "italic",
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 24,
+    },
+    scrollContent: {
+      paddingTop: 16,
+      paddingBottom: 40,
+    },
+    inputGroup: {
+      marginBottom: 24,
+    },
+    inputLabel: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+      gap: 8,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: "500",
+      color: colors.text.primary,
+    },
+    helperText: {
+      fontSize: 12,
+      color: colors.text.tertiary,
+      marginTop: 4,
+      marginLeft: 4,
+    },
+    bmiPreview: {
+      backgroundColor: colors.background.card,
+      padding: 8,
+      borderRadius: 6,
+      marginTop: 8,
+      marginLeft: 4,
+      borderWidth: 1,
+      borderColor: colors.border.light,
+    },
+    bmiPreviewText: {
+      fontSize: 12,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text.primary,
+      backgroundColor: colors.background.primary,
+    },
+    dateButton: {
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      borderRadius: 8,
+      padding: 12,
+      backgroundColor: colors.background.primary,
+    },
+    genderOptions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    genderOption: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      backgroundColor: colors.background.primary,
+    },
+    genderOptionSelected: {
+      backgroundColor: colors.primary[600],
+      borderColor: colors.primary[600],
+    },
+    genderOptionText: {
+      fontSize: 14,
+      color: colors.text.secondary,
+    },
+    genderOptionTextSelected: {
+      color: colors.background.primary,
+      fontWeight: "500",
+    },
+    actions: {
+      flexDirection: "row",
+      gap: 12,
+      padding: 24,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border.light,
+      backgroundColor: colors.background.card,
+    },
+    button: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 12,
+      borderRadius: 8,
+      gap: 8,
+    },
+    cancelButton: {
+      backgroundColor: colors.background.primary,
+      borderWidth: 1,
+      borderColor: colors.border.light,
+    },
+    cancelButtonText: {
+      fontSize: 16,
+      fontWeight: "500",
+      color: colors.text.secondary,
+    },
+    saveButton: {
+      backgroundColor: colors.primary[600],
+    },
+    saveButtonDisabled: {
+      backgroundColor: colors.primary[400],
+      opacity: 0.7,
+    },
+    saveButtonText: {
+      fontSize: 16,
+      fontWeight: "500",
+      color: colors.background.primary,
+    },
+  })
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={handleCancel}>
@@ -389,210 +597,3 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  keyboardAvoidingView: {
-    width: "100%",
-    height: "90%",
-  },
-  modal: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    width: "100%",
-    flex: 1,
-    shadowColor: colors.shadow.dark,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-    position: "relative",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: colors.text.primary,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  profileSummary: {
-    backgroundColor: colors.primary[50],
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: colors.primary[700],
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  summaryItems: {
-    gap: 8,
-  },
-  summaryItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: "500",
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  summaryValueCompleted: {
-    color: colors.status.success,
-  },
-  summaryValueEmpty: {
-    color: colors.text.tertiary,
-    fontStyle: "italic",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  scrollContent: {
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text.primary,
-  },
-  helperText: {
-    fontSize: 12,
-    color: colors.text.tertiary,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  bmiPreview: {
-    backgroundColor: colors.background.card,
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 8,
-    marginLeft: 4,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  bmiPreviewText: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.text.primary,
-    backgroundColor: colors.background.primary,
-  },
-  dateButton: {
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: colors.background.primary,
-  },
-  genderOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  genderOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    backgroundColor: colors.background.primary,
-  },
-  genderOptionSelected: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
-  },
-  genderOptionText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  genderOptionTextSelected: {
-    color: colors.background.primary,
-    fontWeight: "500",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    padding: 24,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
-    backgroundColor: colors.background.card,
-  },
-  button: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  cancelButton: {
-    backgroundColor: colors.background.primary,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.text.secondary,
-  },
-  saveButton: {
-    backgroundColor: colors.primary[600],
-  },
-  saveButtonDisabled: {
-    backgroundColor: colors.primary[400],
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: colors.background.primary,
-  },
-})

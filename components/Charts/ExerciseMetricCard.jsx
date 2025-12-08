@@ -1,7 +1,7 @@
 import React from "react"
 import { View, Text } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 export default function ExerciseMetricCard({ 
   icon, 
@@ -10,6 +10,7 @@ export default function ExerciseMetricCard({
   label, 
   backgroundColor 
 }) {
+  const colors = useThemedColors();
   return (
     <View 
       style={{ 

@@ -1,13 +1,14 @@
 import React from 'react'
 import { View, Text } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 /**
  * Streak Tips Component
  * Displays motivational tips for maintaining workout streaks
  */
 export default function StreakTips() {
+  const colors = useThemedColors()
   const tips = [
     'Consistency is key to achieving your fitness goals',
     'Even a quick 15-minute workout counts!',

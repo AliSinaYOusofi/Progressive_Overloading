@@ -1,18 +1,18 @@
 // colors.js - Progressive Overloading App Color System
 
-export const colors = {
-    // Primary Colors (Emerald - Energy & Growth)
+const lightColors = {
+    // Primary Colors (Darker Emerald - Energy & Growth)
     primary: {
         50: "#ECFDF5", // emerald-50
         100: "#D1FAE5", // emerald-100 - light backgrounds, badges
         200: "#A7F3D0", // emerald-200
         300: "#6EE7B7", // emerald-300
         400: "#34D399", // emerald-400
-        500: "#10B981", // emerald-500 - secondary actions
-        600: "#059669", // emerald-600 - primary buttons, headers
-        700: "#047857", // emerald-700
-        800: "#065F46", // emerald-800
-        900: "#064E3B", // emerald-900
+        500: "#047857", // emerald-700 - secondary actions (darker)
+        600: "#065F46", // emerald-800 - primary buttons, headers (darker)
+        700: "#064E3B", // emerald-900
+        800: "#043827", // even darker
+        900: "#022818", // darkest
     },
 
     // Neutral Colors (Gray Scale)
@@ -49,22 +49,22 @@ export const colors = {
 
     // Action Colors
     action: {
-        primary: "#059669", // emerald-600 - primary buttons
-        primaryHover: "#047857", // emerald-700 - primary button hover
-        secondary: "#10B981", // emerald-500 - secondary actions
+        primary: "#065F46", // emerald-800 - primary buttons (darker)
+        primaryHover: "#064E3B", // emerald-900 - primary button hover (darker)
+        secondary: "#047857", // emerald-700 - secondary actions (darker)
         cancel: "#E2E8F0", // gray-200 - cancel buttons
         cancelText: "#334155", // gray-700 - cancel button text
     },
 
     // Status Colors
     status: {
-        success: "#059669", // emerald-600 - success states
+        success: "#047857", // emerald-700 - success states (darker)
         successLight: "#D1FAE5", // emerald-100 - success backgrounds
-        error: "#EF4444", // red-500 - error states, delete actions
+        error: "#DC2626", // red-600 - error states, delete actions (darker)
         errorLight: "#FEE2E2", // red-100 - error backgrounds
-        warning: "#F59E0B", // amber-500 - warning states
+        warning: "#D97706", // amber-600 - warning states (darker)
         warningLight: "#FEF3C7", // amber-100 - warning backgrounds
-        info: "#3B82F6", // blue-500 - info states
+        info: "#2563EB", // blue-600 - info states (darker)
         infoLight: "#DBEAFE", // blue-100 - info backgrounds
     },
 
@@ -88,43 +88,152 @@ export const colors = {
     icon: {
         primary: "#475569", // gray-600 - default icon color
         secondary: "#9CA3AF", // gray-400 - secondary icons
-        accent: "#059669", // emerald-600 - accent icons
+        accent: "#065F46", // emerald-800 - accent icons (darker)
         white: "#FFFFFF", // white icons on dark backgrounds
+        error: "#DC2626", // red-600 - error/delete icons (darker)
+    },
+};
+
+const darkColors = {
+    // Primary Colors (Emerald - Energy & Growth) - Slightly adjusted for dark mode
+    primary: {
+        50: "#064E3B", // emerald-900 (inverted)
+        100: "#065F46", // emerald-800 (inverted)
+        200: "#047857", // emerald-700 (inverted)
+        300: "#059669", // emerald-600
+        400: "#10B981", // emerald-500
+        500: "#34D399", // emerald-400
+        600: "#6EE7B7", // emerald-300 - primary buttons, headers
+        700: "#A7F3D0", // emerald-200
+        800: "#D1FAE5", // emerald-100
+        900: "#ECFDF5", // emerald-50
+    },
+
+    // Neutral Colors (Dark theme optimized)
+    neutral: {
+        50: "#0F172A", // slate-900 - darkest background
+        100: "#1E293B", // slate-800
+        200: "#334155", // slate-700
+        300: "#475569", // slate-600
+        400: "#64748B", // slate-500
+        500: "#94A3B8", // slate-400
+        600: "#CBD5E1", // slate-300
+        700: "#E2E8F0", // slate-200
+        800: "#F1F5F9", // slate-100
+        900: "#F8FAFC", // slate-50
+    },
+
+    // Background Colors
+    background: {
+        primary: "#0F172A", // slate-900 - main app background
+        card: "#1E293B", // slate-800 - card backgrounds
+        input: "#334155", // slate-700 - input field backgrounds
+        disabled: "#1E293B", // slate-800 - disabled button background
+    },
+
+    // Text Colors
+    text: {
+        primary: "#F8FAFC", // slate-50 - main headings
+        secondary: "#E2E8F0", // slate-200 - body text, labels
+        tertiary: "#CBD5E1", // slate-300 - secondary text
+        placeholder: "#64748B", // slate-500 - placeholder text
+        white: "#FFFFFF", // white text
+        light: "#94A3B8", // slate-400 - light text
+    },
+
+    // Action Colors
+    action: {
+        primary: "#10B981", // emerald-500 - primary buttons
+        primaryHover: "#34D399", // emerald-400 - primary button hover
+        secondary: "#059669", // emerald-600 - secondary actions
+        cancel: "#334155", // slate-700 - cancel buttons
+        cancelText: "#E2E8F0", // slate-200 - cancel button text
+    },
+
+    // Status Colors
+    status: {
+        success: "#10B981", // emerald-500 - success states
+        successLight: "#064E3B", // emerald-900 - success backgrounds
+        error: "#EF4444", // red-500 - error states, delete actions
+        errorLight: "#7F1D1D", // red-900 - error backgrounds
+        warning: "#F59E0B", // amber-500 - warning states
+        warningLight: "#78350F", // amber-900 - warning backgrounds
+        info: "#3B82F6", // blue-500 - info states
+        infoLight: "#1E3A8A", // blue-900 - info backgrounds
+    },
+
+    // Border Colors
+    border: {
+        light: "#334155", // slate-700 - card borders
+        medium: "#475569", // slate-600 - dividers
+        focus: "#10B981", // emerald-500 - focused input borders
+        error: "#EF4444", // red-500 - error input borders
+    },
+
+    // Shadow Colors (for elevation)
+    shadow: {
+        light: "rgba(0, 0, 0, 0.3)", // light card shadows
+        medium: "rgba(0, 0, 0, 0.5)", // medium shadows
+        dark: "rgba(0, 0, 0, 0.7)", // dark shadows
+        colored: "rgba(16, 185, 129, 0.4)", // emerald shadow for primary buttons
+    },
+
+    // Icon Colors
+    icon: {
+        primary: "#CBD5E1", // slate-300 - default icon color
+        secondary: "#64748B", // slate-500 - secondary icons
+        accent: "#10B981", // emerald-500 - accent icons
+        white: "#FFFFFF", // white icons
         error: "#EF4444", // red-500 - error/delete icons
     },
 };
 
-// Semantic Color Aliases for easier usage
-export const semanticColors = {
-    // Backgrounds
-    appBackground: colors.background.primary,
-    cardBackground: colors.background.card,
-    inputBackground: colors.background.input,
-
-    // Primary Actions
-    primaryButton: colors.primary[600],
-    primaryButtonHover: colors.primary[700],
-    primaryButtonText: colors.text.white,
-
-    // Secondary Actions
-    secondaryButton: colors.primary[100],
-    secondaryButtonText: colors.primary[700],
-
-    // Text
-    headingText: colors.text.primary,
-    bodyText: colors.text.secondary,
-    captionText: colors.text.tertiary,
-    placeholderText: colors.text.placeholder,
-
-    // States
-    successColor: colors.status.success,
-    errorColor: colors.status.error,
-    warningColor: colors.status.warning,
-
-    // Borders
-    defaultBorder: colors.border.light,
-    focusBorder: colors.border.focus,
-    errorBorder: colors.border.error,
+// Function to get colors based on theme
+export const getColors = (isDarkMode = false) => {
+    return isDarkMode ? darkColors : lightColors;
 };
+
+// Default export for backward compatibility (light mode)
+export const colors = lightColors;
+
+// Semantic Color Aliases function
+export const getSemanticColors = (isDarkMode = false) => {
+    const themeColors = getColors(isDarkMode);
+    
+    return {
+        // Backgrounds
+        appBackground: themeColors.background.primary,
+        cardBackground: themeColors.background.card,
+        inputBackground: themeColors.background.input,
+
+        // Primary Actions
+        primaryButton: themeColors.primary[600],
+        primaryButtonHover: themeColors.primary[700],
+        primaryButtonText: themeColors.text.white,
+
+        // Secondary Actions
+        secondaryButton: themeColors.primary[100],
+        secondaryButtonText: themeColors.primary[700],
+
+        // Text
+        headingText: themeColors.text.primary,
+        bodyText: themeColors.text.secondary,
+        captionText: themeColors.text.tertiary,
+        placeholderText: themeColors.text.placeholder,
+
+        // States
+        successColor: themeColors.status.success,
+        errorColor: themeColors.status.error,
+        warningColor: themeColors.status.warning,
+
+        // Borders
+        defaultBorder: themeColors.border.light,
+        focusBorder: themeColors.border.focus,
+        errorBorder: themeColors.border.error,
+    };
+};
+
+// Semantic colors for backward compatibility (light mode)
+export const semanticColors = getSemanticColors(false);
 
 export default colors;

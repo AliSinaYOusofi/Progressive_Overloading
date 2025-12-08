@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native"
 import { useState, useEffect } from "react"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from "../../constants/ui_colors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import { getCurrentUser, getVolumeAnalysis } from "../../lib/database"
 import VolumeAnalysisInfoModal from "./VolumeAnalysisInfoModal"
 
@@ -9,6 +9,7 @@ export default function VolumeAnalysis({
   volumeAnalysis: initialData,
   parentTimeframe = 30 
 }) {
+  const colors = useThemedColors();
   const [hasUserChangedFilter, setHasUserChangedFilter] = useState(false)
   
   // Convert parent timeframe to component's format
@@ -85,7 +86,7 @@ export default function VolumeAnalysis({
           <View 
             style={{ 
               flexDirection: "row", 
-              backgroundColor: colors.neutral[100], 
+              backgroundColor: colors.background.secondary, 
               borderRadius: 12, 
               padding: 4 
             }}
@@ -113,7 +114,7 @@ export default function VolumeAnalysis({
                     fontSize: 14,
                     color: selectedTimeframe === timeframe.value 
                       ? colors.text.white 
-                      : colors.neutral[600],
+                      : colors.text.secondary,
                   }}
                 >
                   {timeframe.label}
@@ -123,10 +124,10 @@ export default function VolumeAnalysis({
           </View>
         </View>
 
-        <View className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-          <View className="items-center py-8">
+        <View style={{ backgroundColor: colors.background.card, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.border.light }}>
+          <View style={{ alignItems: 'center', paddingVertical: 32 }}>
             <Ionicons name="analytics-outline" size={48} color={colors.primary[600]} />
-            <Text className="text-slate-500 font-medium mt-3">Loading volume data...</Text>
+            <Text style={{ color: colors.text.secondary, fontWeight: '500', marginTop: 12 }}>Loading volume data...</Text>
           </View>
         </View>
       </View>
@@ -141,7 +142,7 @@ export default function VolumeAnalysis({
           <View 
             style={{ 
               flexDirection: "row", 
-              backgroundColor: colors.neutral[100], 
+              backgroundColor: colors.background.secondary, 
               borderRadius: 12, 
               padding: 4 
             }}
@@ -169,7 +170,7 @@ export default function VolumeAnalysis({
                     fontSize: 14,
                     color: selectedTimeframe === timeframe.value 
                       ? colors.text.white 
-                      : colors.neutral[600],
+                      : colors.text.secondary,
                   }}
                 >
                   {timeframe.label}
@@ -179,11 +180,11 @@ export default function VolumeAnalysis({
           </View>
         </View>
 
-        <View className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-          <View className="items-center py-8">
-            <Ionicons name="analytics-outline" size={48} color={colors.neutral[400]} />
-            <Text className="text-slate-500 font-medium mt-3">No volume data available</Text>
-            <Text className="text-slate-400 text-sm mt-1">Complete workouts to see analysis</Text>
+        <View style={{ backgroundColor: colors.background.card, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.border.light }}>
+          <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+            <Ionicons name="analytics-outline" size={48} color={colors.text.tertiary} />
+            <Text style={{ color: colors.text.secondary, fontWeight: '500', marginTop: 12 }}>No volume data available</Text>
+            <Text style={{ color: colors.text.tertiary, fontSize: 14, marginTop: 4 }}>Complete workouts to see analysis</Text>
           </View>
         </View>
       </View>
@@ -218,7 +219,7 @@ export default function VolumeAnalysis({
     <View>
       {/* Header with Info Icon */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.neutral[900] }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
           Volume Analysis
         </Text>
         <TouchableOpacity
@@ -276,44 +277,64 @@ export default function VolumeAnalysis({
         </View>
       </View>
 
-      <View className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-100 mb-4" style={{ opacity: loading ? 0.6 : 1 }}>
-        <View className="flex-row justify-between mb-6">
-          <View className="flex-1 items-center bg-slate-50 rounded-xl p-4 mr-2">
-            <Ionicons name="fitness" size={20} color={colors.primary[600]} className="mb-2" />
-            <Text className="text-2xl font-bold text-slate-900 mb-1">{volumeData.totalVolume?.toFixed(0) || '0'}</Text>
-            <Text className="text-xs text-slate-600 font-medium">Total Volume</Text>
-            <Text className="text-xs text-slate-500">(kg)</Text>
+      <View 
+        style={{ 
+          backgroundColor: colors.background.card, 
+          borderRadius: 16, 
+          padding: 24, 
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 4,
+          borderWidth: 1, 
+          borderColor: colors.border.light, 
+          marginBottom: 16,
+          opacity: loading ? 0.6 : 1 
+        }}
+      >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
+          <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginRight: 8 }}>
+            <Ionicons name="fitness" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{volumeData.totalVolume?.toFixed(0) || '0'}</Text>
+            <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Total Volume</Text>
+            <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
           </View>
 
-          <View className="flex-1 items-center bg-slate-50 rounded-xl p-4 mx-1">
-            <Ionicons name="barbell" size={20} color={colors.primary[600]} className="mb-2" />
-            <Text className="text-2xl font-bold text-slate-900 mb-1">
+          <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginHorizontal: 4 }}>
+            <Ionicons name="barbell" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>
               {volumeData.avgVolumePerWorkout?.toFixed(0) || '0'}
             </Text>
-            <Text className="text-xs text-slate-600 font-medium">Avg/Workout</Text>
-            <Text className="text-xs text-slate-500">(kg)</Text>
+            <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Avg/Workout</Text>
+            <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
           </View>
 
-          <View className="flex-1 items-center bg-slate-50 rounded-xl p-4 ml-2">
-            <Ionicons name="trophy" size={20} color={colors.primary[600]} className="mb-2" />
-            <Text className="text-2xl font-bold text-slate-900 mb-1">{volumeData.maxVolume?.toFixed(0) || '0'}</Text>
-            <Text className="text-xs text-slate-600 font-medium">Peak Day</Text>
-            <Text className="text-xs text-slate-500">(kg)</Text>
+          <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginLeft: 8 }}>
+            <Ionicons name="trophy" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{volumeData.maxVolume?.toFixed(0) || '0'}</Text>
+            <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Peak Day</Text>
+            <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
           </View>
         </View>
 
-        <View className="border-t border-slate-100 pt-4 mb-4">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-slate-700 font-semibold">Volume Trend</Text>
-            <View className="flex-row items-center">
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.border.light, paddingTop: 16, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ color: colors.text.secondary, fontWeight: '600' }}>Volume Trend</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons
                 name={getTrendIcon(volumeData.trend)}
                 size={16}
                 color={getTrendColor(volumeData.trend)}
               />
               <Text
-                className="text-sm font-bold ml-1 capitalize"
-                style={{ color: getTrendColor(volumeData.trend) }}
+                style={{ 
+                  fontSize: 14, 
+                  fontWeight: 'bold', 
+                  marginLeft: 4, 
+                  textTransform: 'capitalize',
+                  color: getTrendColor(volumeData.trend) 
+                }}
               >
                 {volumeData.trend}
               </Text>
@@ -321,24 +342,25 @@ export default function VolumeAnalysis({
           </View>
         </View>
 
-        <View className="border-t border-slate-100 pt-4">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-slate-700 font-semibold">Workout Frequency</Text>
-            <Text className="text-sm font-bold" style={{ color: colors.primary[600] }}>
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.border.light, paddingTop: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ color: colors.text.secondary, fontWeight: '600' }}>Workout Frequency</Text>
+            <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.primary[600] }}>
               {volumeData.workoutDays || 0} days
             </Text>
           </View>
 
-          <View className="bg-slate-100 rounded-full h-2 mb-2">
+          <View style={{ backgroundColor: colors.background.secondary, borderRadius: 9999, height: 8, marginBottom: 8 }}>
             <View
-              className="h-2 rounded-full"
               style={{
+                height: 8,
+                borderRadius: 9999,
                 width: `${Math.min(workoutFrequency, 100)}%`,
                 backgroundColor: colors.primary[500],
               }}
             />
           </View>
-          <Text className="text-xs text-slate-500 text-center">
+          <Text style={{ fontSize: 12, color: colors.text.tertiary, textAlign: 'center' }}>
             {Math.min(workoutFrequency, 100).toFixed(0)}% workout frequency ({timeframeLabel})
           </Text>
         </View>

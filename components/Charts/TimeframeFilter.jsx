@@ -2,9 +2,10 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, TextInput, Platform, ScrollView } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, X, ChevronDown, Check } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 
 export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, onCustomDateRange }) {
+    const colors = useThemedColors();
     const [showDropdown, setShowDropdown] = useState(false);
     const [showCustomModal, setShowCustomModal] = useState(false);
     const [startDate, setStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
@@ -77,8 +78,8 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
 
     return (
         <>
-            <View className="mb-6">
-                <Text className="text-base font-semibold text-slate-900 mb-3">Time Period</Text>
+            <View style={{ marginBottom: 24 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary, marginBottom: 12 }}>Time Period</Text>
                 
                 {/* Dropdown Button */}
                 <TouchableOpacity

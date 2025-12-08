@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Target, CheckCircle2, RotateCcw, Pencil, Trash2 } from "lucide-react-native";
-import { colors } from "../../constants/ui_colors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
 
 export default function GoalDetailsModal({
@@ -16,6 +16,7 @@ export default function GoalDetailsModal({
     completeLoadingId = null,
     deleteLoadingId = null
 }) {
+    const colors = useThemedColors();
     if (!selectedGoal) return null;
 
     return (

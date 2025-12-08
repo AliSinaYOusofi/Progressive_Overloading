@@ -8,11 +8,12 @@ import {
   Dimensions
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { colors } from '../../constants/ui_colors'
+import { useThemedColors } from '../../hooks/useThemedColors'
 
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function ProgressiveOverloadInfoModal({ visible, onClose }) {
+  const colors = useThemedColors();
   return (
     <Modal
       visible={visible}
