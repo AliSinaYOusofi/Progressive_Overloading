@@ -61,24 +61,28 @@ export default function ProgressSection({
           <TouchableOpacity
             onPress={() => setShowRMInfoModal(true)}
             style={{
-              backgroundColor: colors.primary[50],
+              backgroundColor: colors.background.input,
               padding: 8,
               borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border.light,
             }}
           >
-            <Info size={18} color={colors.primary[600]} />
+            <Info size={18} color={colors.text.tertiary} />
           </TouchableOpacity>
           <View
             style={{
-              backgroundColor: colors.primary[50],
+              backgroundColor: colors.background.input,
               padding: 8,
               borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border.light,
             }}
           >
             {cardExpanded.progress ? (
-              <ChevronUp size={18} color={colors.primary[600]} />
+              <ChevronUp size={18} color={colors.text.tertiary} />
             ) : (
-              <ChevronDown size={18} color={colors.primary[600]} />
+              <ChevronDown size={18} color={colors.text.tertiary} />
             )}
           </View>
         </View>

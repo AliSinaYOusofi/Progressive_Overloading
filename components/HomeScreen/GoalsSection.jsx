@@ -80,12 +80,18 @@ export default function GoalsSection({
             </TouchableOpacity>
           )}
           <View
-            style={{ backgroundColor: colors.primary[50], padding: 8, borderRadius: 20 }}
+            style={{
+              backgroundColor: colors.background.input,
+              padding: 8,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border.light,
+            }}
           >
             {cardExpanded[cardType] ? (
-              <ChevronUp size={18} color={colors.primary[600]} />
+              <ChevronUp size={18} color={colors.text.tertiary} />
             ) : (
-              <ChevronDown size={18} color={colors.primary[600]} />
+              <ChevronDown size={18} color={colors.text.tertiary} />
             )}
           </View>
         </View>

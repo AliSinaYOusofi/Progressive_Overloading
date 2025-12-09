@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Dumbbell, Repeat, Layers, Pencil, Trash2 } from "lucide-react-native";
+import { Dumbbell, Repeat, Layers, Pencil, Trash2, Calendar } from "lucide-react-native";
+import { formatDistanceToNow, format } from "date-fns";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
 
@@ -15,6 +16,12 @@ export default function SetDetailsModal({
 }) {
     const colors = useThemedColors();
     if (!selectedSet) return null;
+
+    // Get the date from performed_at or created_at
+    const setDate = selectedSet.performed_at || selectedSet.created_at;
+    const dateObj = setDate ? new Date(setDate) : null;
+    const formattedDate = dateObj ? format(dateObj, 'MMM dd, yyyy') : 'Unknown date';
+    const dateDifference = dateObj ? formatDistanceToNow(dateObj, { addSuffix: true }) : '';
 
     return (
         <Modal
@@ -41,20 +48,35 @@ export default function SetDetailsModal({
                         <ModalCloseButton onPress={onClose} size={18} />
                     </View>
                     
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primary[50], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 }}>
-                            <Dumbbell size={14} color={colors.icon.accent} />
-                            <Text style={{ color: colors.text.secondary, fontSize: 12, marginLeft: 4 }}>{selectedSet.weight} {selectedSet.unit}</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.input, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                            <Dumbbell size={18} color={colors.text.tertiary} />
+                            <Text style={{ color: colors.text.secondary, fontSize: 14, marginLeft: 6, fontWeight: '500' }}>{selectedSet.weight} {selectedSet.unit}</Text>
                         </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primary[50], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 }}>
-                            <Repeat size={14} color={colors.icon.accent} />
-                            <Text style={{ color: colors.text.secondary, fontSize: 12, marginLeft: 4 }}>{selectedSet.reps} reps</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.input, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                            <Repeat size={18} color={colors.text.tertiary} />
+                            <Text style={{ color: colors.text.secondary, fontSize: 14, marginLeft: 6, fontWeight: '500' }}>{selectedSet.reps} reps</Text>
                         </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primary[50], paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 }}>
-                            <Layers size={14} color={colors.icon.accent} />
-                            <Text style={{ color: colors.text.secondary, fontSize: 12, marginLeft: 4 }}>{selectedSet.sets} sets</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.background.input, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.border.light }}>
+                            <Layers size={18} color={colors.text.tertiary} />
+                            <Text style={{ color: colors.text.secondary, fontSize: 14, marginLeft: 6, fontWeight: '500' }}>{selectedSet.sets} sets</Text>
                         </View>
                     </View>
+
+                    {/* Date Information */}
+                    {dateObj && (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.background.input, borderRadius: 12, borderWidth: 1, borderColor: colors.border.light }}>
+                            <Calendar size={16} color={colors.text.tertiary} />
+                            <View style={{ marginLeft: 8, flex: 1 }}>
+                                <Text style={{ color: colors.text.secondary, fontSize: 14, fontWeight: '500' }}>
+                                    {formattedDate}
+                                </Text>
+                                <Text style={{ color: colors.text.tertiary, fontSize: 12, marginTop: 2 }}>
+                                    {dateDifference}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
 
                     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
                         <TouchableOpacity
