@@ -94,7 +94,7 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: colors.neutral[100],
+                  backgroundColor: isDarkMode ? colors.neutral[200] : colors.neutral[100],
                   alignItems: "center",
                   justifyContent: "center"
                 }}

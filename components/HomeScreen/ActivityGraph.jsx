@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 import { 
   getLastNDays, 
   groupDaysIntoWeeks, 
@@ -16,7 +17,8 @@ import {
  * Displays a GitHub-style contribution graph showing workout activity
  */
 export default function ActivityGraph({ streakData }) {
-  const colors = useThemedColors()
+  const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   const [tooltip, setTooltip] = useState(null)
   const [selectedBox, setSelectedBox] = useState(null)
 
@@ -39,7 +41,7 @@ export default function ActivityGraph({ streakData }) {
     setTimeout(() => {
       setTooltip(null)
       setSelectedBox(null)
-    }, 2000)
+    }, 4000)
   }
 
   const getBoxColor = (level) => {
@@ -181,7 +183,7 @@ export default function ActivityGraph({ streakData }) {
           bottom: -60,
           left: 20,
           right: 20,
-          backgroundColor: colors.neutral[800],
+          backgroundColor: isDarkMode ? colors.neutral[200] : colors.neutral[700],
           borderRadius: 8,
           padding: 12,
           shadowColor: "#000",

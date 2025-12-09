@@ -37,11 +37,11 @@ export default function ProgressSection({
           marginBottom: 16,
         }}
       >
-        <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold' }}>
+        <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold', marginRight: 2 }}>
           Your Progress
         </Text>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity
             onPress={handleOpenLogSet}
             style={{
@@ -58,15 +58,12 @@ export default function ProgressSection({
               Log Set
             </Text>
           </TouchableOpacity>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
             onPress={() => setShowRMInfoModal(true)}
             style={{
               backgroundColor: colors.primary[50],
               padding: 8,
               borderRadius: 20,
-              marginRight: 8,
             }}
           >
             <Info size={18} color={colors.primary[600]} />
@@ -76,7 +73,6 @@ export default function ProgressSection({
               backgroundColor: colors.primary[50],
               padding: 8,
               borderRadius: 20,
-              marginRight: 8,
             }}
           >
             {cardExpanded.progress ? (
