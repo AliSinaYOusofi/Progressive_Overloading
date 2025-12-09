@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Trash2, ChevronDown } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
 import ModalCloseButton from "../ModalCloseButton";
 
 export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isSubmitting, isDeleting, initialValues }) {
     const colors = useThemedColors();
+    const { isDarkMode } = useTheme();
     const [exerciseName, setExerciseName] = useState("");
     const [weight, setWeight] = useState("");
     const [reps, setReps] = useState("");
@@ -271,11 +273,11 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                                     disabled={isSubmitting || isDeleting}
                                     style={{ 
                                         flex: 1,
-                                        backgroundColor: colors.primary[300], 
+                                        backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
                                         borderRadius: 12, 
                                         paddingVertical: 16, 
                                         alignItems: "center", 
-                                        shadowColor: colors.shadow?.colored || colors.primary[600],
+                                        shadowColor: colors.shadow?.colored || (isDarkMode ? colors.primary[200] : colors.primary[600]),
                                         shadowOffset: { width: 0, height: 4 },
                                         shadowOpacity: 0.3,
                                         shadowRadius: 8,

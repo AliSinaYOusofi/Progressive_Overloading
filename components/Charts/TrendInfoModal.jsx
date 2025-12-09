@@ -10,11 +10,13 @@ import {
 import { TrendingUp, TrendingDown, Activity, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function TrendInfoModal({ visible, onClose }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   return (
     <Modal
       visible={visible}
@@ -294,10 +296,10 @@ export default function TrendInfoModal({ visible, onClose }) {
             <TouchableOpacity
               onPress={onClose}
               style={{
-                backgroundColor: colors.primary[600],
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 paddingVertical: 14,
                 borderRadius: 12,
-                shadowColor: colors.primary[600],
+                shadowColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.3,
                 shadowRadius: 8,

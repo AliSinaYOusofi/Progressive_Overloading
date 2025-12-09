@@ -1,10 +1,12 @@
 import { View, Text, Modal, TouchableOpacity, Linking } from "react-native"
 import { ExternalLink, Dumbbell, Repeat, Layers } from "lucide-react-native"
 import { useThemedColors } from "../../hooks/useThemedColors"
+import { useTheme } from "../../contexts/ThemeContext"
 import ModalCloseButton from "../ModalCloseButton"
 
 export default function RMInfoModal({ visible, onClose }) {
-  const colors = useThemedColors()
+  const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
@@ -81,10 +83,10 @@ export default function RMInfoModal({ visible, onClose }) {
             <TouchableOpacity
               onPress={() => Linking.openURL("https://en.wikipedia.org/wiki/One-repetition_maximum")}
               style={{
-                backgroundColor: colors.primary[500],
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 borderRadius: 16,
                 padding: 16,
-                shadowColor: colors.primary[600],
+                shadowColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.3,
                 shadowRadius: 8,

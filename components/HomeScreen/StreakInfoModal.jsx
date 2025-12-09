@@ -10,6 +10,7 @@ import {
 } from "react-native"
 import { Flame } from "lucide-react-native"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 import { useStreakData } from '../../hooks/useStreakData'
 import ActivityGraph from './ActivityGraph'
 import StreakStatsCards from './StreakStatsCards'
@@ -18,7 +19,8 @@ import StreakTips from './StreakTips'
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function StreakInfoModal({ visible, onClose, userId }) {
-  const colors = useThemedColors()
+  const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   const { streakData, loading, refetch } = useStreakData(visible, userId)
 
 
@@ -149,10 +151,10 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
             <TouchableOpacity
               onPress={onClose}
               style={{
-                backgroundColor: colors.primary[600],
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 paddingVertical: 14,
                 borderRadius: 12,
-                shadowColor: colors.primary[600],
+                shadowColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.3,
                 shadowRadius: 8,

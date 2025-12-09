@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Target, Calendar, CheckCircle2, RotateCcw, Trash2, ChevronDown } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
 import ModalCloseButton from "../ModalCloseButton";
 
 export default function AddGoalModal({
@@ -37,6 +38,7 @@ export default function AddGoalModal({
   deleteLoading = false
 }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   const [formState, setFormState] = useState(initialValues);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
@@ -342,7 +344,7 @@ export default function AddGoalModal({
                 disabled={isLoading}
                 style={{ 
                   flex: 1, 
-                  backgroundColor: colors.primary[300], 
+                  backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
                   borderRadius: 12, 
                   paddingVertical: 16, 
                   marginLeft: 8, 

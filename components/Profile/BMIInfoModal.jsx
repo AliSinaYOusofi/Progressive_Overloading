@@ -1,9 +1,11 @@
 import { View, Text, Modal, TouchableOpacity, Linking } from "react-native"
 import { ExternalLink, Calculator } from "lucide-react-native"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function BMIInfoModal({ visible, onClose }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity
@@ -136,7 +138,7 @@ export default function BMIInfoModal({ visible, onClose }) {
                 justifyContent: 'center',
                 paddingVertical: 16,
                 borderRadius: 12,
-                backgroundColor: colors.primary[600],
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.15,
