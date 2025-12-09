@@ -2,14 +2,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Flame } from 'lucide-react-native';
 import { useThemedColors } from '../../hooks/useThemedColors';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function HomeScreenHeader({ profile, user, currentStreak, setShowStreakModal }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
 
   return (
     <View
       style={{
-        backgroundColor: colors.primary[200],
+        backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
         paddingTop: 48,
         paddingBottom: 24,
         paddingHorizontal: 24,
@@ -38,7 +40,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak, setShow
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.primary[500],
+            backgroundColor: isDarkMode ? colors.primary[400] : colors.primary[500],
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 20,
@@ -50,7 +52,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak, setShow
             {currentStreak}
           </Text>
           <Text style={{ color: colors.primary[100], fontSize: 14, marginLeft: 4 }}>
-            day streak
+            day(s) streak
           </Text>
         </TouchableOpacity>
       </View>

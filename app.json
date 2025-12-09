@@ -7,7 +7,7 @@
     "version": "1.0.0",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#FFFFFF",
+      "backgroundColor": "#10B981",
       "image": "./assets/images/app_splash_screen_light.png",
       "resizeMode": "contain"
     },

@@ -1,11 +1,13 @@
 import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions } from "react-native"
 import { Calculator, BarChart3, TrendingUp } from "lucide-react-native"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const { height: screenHeight } = Dimensions.get('window')
 
 export default function VolumeCalculationInfoModal({ visible, onClose }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -178,7 +180,7 @@ export default function VolumeCalculationInfoModal({ visible, onClose }) {
               style={{ 
                 paddingVertical: 16, 
                 borderRadius: 12, 
-                backgroundColor: colors.primary[600],
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600],
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.25,
