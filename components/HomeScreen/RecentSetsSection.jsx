@@ -1,21 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
-import {
-  TrendingUp,
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  Dumbbell,
-  Repeat,
-  Layers,
-  Pencil,
-  Trash2,
-  Search,
-  X,
-  LayoutGrid,
-  List,
-} from 'lucide-react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View } from 'react-native';
 import { useThemedColors } from '../../hooks/useThemedColors';
+import SetListItem from './SetListItem';
+import SetGridItem from './SetGridItem';
+import SearchBarWithViewToggle from './SearchBarWithViewToggle';
+import LoadMoreButton from './LoadMoreButton';
+import EmptyState from './EmptyState';
+import SectionHeader from './SectionHeader';
+import SortFilterModal from './SortFilterModal';
 
 export default function RecentSetsSection({
   recentSets,
@@ -30,25 +22,102 @@ export default function RecentSetsSection({
   const colors = useThemedColors();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [displayLimit, setDisplayLimit] = useState(10); // Initial display limit
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'weight', 'reps', 'sets', 'exercise'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortModalVisible, setSortModalVisible] = useState(false);
 
-  // Filter sets based on search query
+  // Filter and sort sets
   const filteredSets = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return recentSets || [];
+    let sets = recentSets || [];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      sets = sets.filter(set => {
+        const exerciseName = (set.exercises?.name || 'Exercise').toLowerCase();
+        return exerciseName.includes(query);
+      });
     }
-    const query = searchQuery.toLowerCase().trim();
-    return (recentSets || []).filter(set => {
-      const exerciseName = (set.exercises?.name || 'Exercise').toLowerCase();
-      return exerciseName.includes(query);
-    });
-  }, [recentSets, searchQuery]);
 
-  // Clear search when card is collapsed
-  React.useEffect(() => {
+    // Apply sorting
+    const sorted = [...sets].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case 'date':
+          aValue = new Date(a.created_at || a.date || 0).getTime();
+          bValue = new Date(b.created_at || b.date || 0).getTime();
+          break;
+        case 'weight':
+          aValue = parseFloat(a.weight) || 0;
+          bValue = parseFloat(b.weight) || 0;
+          break;
+        case 'reps':
+          aValue = parseInt(a.reps) || 0;
+          bValue = parseInt(b.reps) || 0;
+          break;
+        case 'sets':
+          aValue = parseInt(a.sets) || 0;
+          bValue = parseInt(b.sets) || 0;
+          break;
+        case 'exercise':
+          aValue = (a.exercises?.name || 'Exercise').toLowerCase();
+          bValue = (b.exercises?.name || 'Exercise').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortBy === 'exercise') {
+        // String comparison for exercise names
+        if (sortOrder === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      } else {
+        // Numeric/date comparison
+        if (sortOrder === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      }
+    });
+
+    return sorted;
+  }, [recentSets, searchQuery, sortBy, sortOrder]);
+
+  // Get sets to display (limited)
+  const displayedSets = useMemo(() => {
+    return filteredSets.slice(0, displayLimit);
+  }, [filteredSets, displayLimit]);
+
+  const hasMore = filteredSets.length > displayLimit;
+  const displayCount = searchQuery.trim() ? filteredSets.length : recentSets.length;
+
+  // Reset display limit when search changes or card collapses
+  useEffect(() => {
     if (!cardExpanded.recentSets) {
       setSearchQuery('');
+      setDisplayLimit(10);
     }
   }, [cardExpanded.recentSets]);
+
+  useEffect(() => {
+    setDisplayLimit(10); // Reset to initial limit when search changes
+  }, [searchQuery]);
+
+  const handleSortChange = (newSortBy, newSortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setDisplayLimit(10); // Reset display limit when sort changes
+  };
+
+  const handleLoadMore = () => {
+    setDisplayLimit(prev => Math.min(prev + 20, filteredSets.length));
+  };
 
   return (
     <View
@@ -66,521 +135,95 @@ export default function RecentSetsSection({
         marginBottom: 24,
       }}
     >
-      <TouchableOpacity
-        onPress={() => toggleCardExpansion('recentSets')}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold' }}>
-            Recent Sets
-          </Text>
-          {recentSets?.length > 0 && (
-            <View
-              style={{
-                backgroundColor: colors.background.input,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.border.light,
-                marginLeft: 8,
-              }}
-            >
-              <Text style={{ color: colors.text.secondary, fontSize: 14, fontWeight: '600' }}>
-                {searchQuery.trim() ? filteredSets.length : recentSets.length}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity
-            onPress={handleOpenLogSet}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: colors.primary[100],
-              paddingHorizontal: 12,
-              paddingVertical: 4,
-              borderRadius: 20,
-            }}
-          >
-            <Plus size={18} color={colors.primary[600]} />
-            <Text style={{ color: colors.primary[700], fontWeight: '500', marginLeft: 4 }}>
-              Log Set
-            </Text>
-          </TouchableOpacity>
-          <View
-            style={{
-              backgroundColor: colors.background.input,
-              padding: 8,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: colors.border.light,
-            }}
-          >
-            {cardExpanded.recentSets ? (
-              <ChevronUp size={18} color={colors.text.tertiary} />
-            ) : (
-              <ChevronDown size={18} color={colors.text.tertiary} />
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
+      <SectionHeader
+        title="Recent Sets"
+        count={recentSets?.length > 0 ? displayCount : 0}
+        isExpanded={cardExpanded.recentSets}
+        onToggle={() => toggleCardExpansion('recentSets')}
+        onLogSet={handleOpenLogSet}
+        showLogSetButton={true}
+      />
 
       {cardExpanded.recentSets && (
         <>
-          {/* Search Input */}
+          {/* Search Input with View Toggle */}
           {recentSets?.length > 0 && (
-            <View style={{ marginBottom: 16 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: colors.background.input,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border.light,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
-              >
-                <Search size={18} color={colors.text.tertiary} />
-                <TextInput
-                  style={{
-                    flex: 1,
-                    marginLeft: 8,
-                    color: colors.text.primary,
-                    fontSize: 14,
-                  }}
-                  placeholder="Search exercises..."
-                  placeholderTextColor={colors.text.tertiary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity
-                    onPress={() => setSearchQuery('')}
-                    style={{ padding: 4, marginRight: 8 }}
-                  >
-                    <X size={18} color={colors.text.tertiary} />
-                  </TouchableOpacity>
-                )}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <TouchableOpacity
-                    onPress={() => setViewMode('list')}
-                    style={{
-                      backgroundColor: viewMode === 'list' ? colors.primary[100] : 'transparent',
-                      padding: 6,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: viewMode === 'list' ? colors.primary[200] : colors.border.light,
-                    }}
-                  >
-                    <List size={16} color={viewMode === 'list' ? colors.primary[600] : colors.text.tertiary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setViewMode('grid')}
-                    style={{
-                      backgroundColor: viewMode === 'grid' ? colors.primary[100] : 'transparent',
-                      padding: 6,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: viewMode === 'grid' ? colors.primary[200] : colors.border.light,
-                    }}
-                  >
-                    <LayoutGrid size={16} color={viewMode === 'grid' ? colors.primary[600] : colors.text.tertiary} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+            <SearchBarWithViewToggle
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onSortPress={() => setSortModalVisible(true)}
+            />
           )}
 
+          {/* Sort/Filter Modal */}
+          <SortFilterModal
+            visible={sortModalVisible}
+            onClose={() => setSortModalVisible(false)}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+          />
+
+          {/* Content */}
           {recentSets?.length > 0 ? (
             filteredSets.length > 0 ? (
               viewMode === 'list' ? (
                 // List View
-                filteredSets.map((s, idx, arr) => (
-                  <TouchableOpacity
-                    key={s.id}
-                    onPress={() => openSetDetails(s)}
-                    style={{
-                      paddingVertical: 12,
-                      borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                      borderBottomColor: colors.border.light,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                      <View
-                        style={{
-                          backgroundColor: colors.primary[100],
-                          padding: 8,
-                          borderRadius: 20,
-                          marginRight: 12,
-                        }}
-                      >
-                        <Dumbbell size={16} color={colors.primary[600]} />
-                      </View>
-                      <View style={{ flex: 1, marginRight: 8 }}>
-                        <Text
-                          style={{
-                            color: colors.text.primary,
-                            fontWeight: '600',
-                            marginBottom: 6,
-                          }}
-                        >
-                          {s.exercises?.name || 'Exercise'}
-                        </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              backgroundColor: colors.background.input,
-                              paddingHorizontal: 8,
-                              paddingVertical: 4,
-                              borderRadius: 20,
-                              borderWidth: 1,
-                              borderColor: colors.border.light,
-                            }}
-                          >
-                            <Dumbbell size={14} color={colors.text.tertiary} />
-                            <Text
-                              style={{
-                                color: colors.text.secondary,
-                                fontSize: 12,
-                                marginLeft: 4,
-                              }}
-                            >
-                              {s.weight} {s.unit}
-                            </Text>
-                          </View>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              backgroundColor: colors.background.input,
-                              paddingHorizontal: 8,
-                              paddingVertical: 4,
-                              borderRadius: 20,
-                              borderWidth: 1,
-                              borderColor: colors.border.light,
-                            }}
-                          >
-                            <Repeat size={14} color={colors.text.tertiary} />
-                            <Text
-                              style={{
-                                color: colors.text.secondary,
-                                fontSize: 12,
-                                marginLeft: 4,
-                              }}
-                            >
-                              {s.reps} reps
-                            </Text>
-                          </View>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              backgroundColor: colors.background.input,
-                              paddingHorizontal: 8,
-                              paddingVertical: 4,
-                              borderRadius: 20,
-                              borderWidth: 1,
-                              borderColor: colors.border.light,
-                            }}
-                          >
-                            <Layers size={14} color={colors.text.tertiary} />
-                            <Text
-                              style={{
-                                color: colors.text.secondary,
-                                fontSize: 12,
-                                marginLeft: 4,
-                              }}
-                            >
-                              {s.sets} sets
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TouchableOpacity
-                          onPress={() => openEditSetModal(s)}
-                          style={{ paddingHorizontal: 6, paddingVertical: 6 }}
-                        >
-                          <Pencil size={18} color={colors.text.tertiary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteSetFromList(s)}
-                          disabled={deleteLoadingSetId === s.id}
-                          style={{ paddingHorizontal: 6, paddingVertical: 6 }}
-                        >
-                          {deleteLoadingSetId === s.id ? (
-                            <ActivityIndicator size="small" color={colors.status.error} />
-                          ) : (
-                            <Trash2 size={18} color={colors.status.error} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))
+                <>
+                  {displayedSets.map((s, idx, arr) => (
+                    <SetListItem
+                      key={s.id}
+                      set={s}
+                      index={idx}
+                      isLast={idx === arr.length - 1}
+                      onPress={() => openSetDetails(s)}
+                      onEdit={() => openEditSetModal(s)}
+                      onDelete={() => handleDeleteSetFromList(s)}
+                      isDeleting={deleteLoadingSetId === s.id}
+                    />
+                  ))}
+                  {hasMore && (
+                    <LoadMoreButton
+                      remaining={filteredSets.length - displayLimit}
+                      onLoadMore={handleLoadMore}
+                    />
+                  )}
+                </>
               ) : (
                 // Grid View
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                  {filteredSets.map((s) => (
-                    <TouchableOpacity
-                      key={s.id}
-                      onPress={() => openSetDetails(s)}
-                      activeOpacity={0.7}
-                      style={{
-                        width: '48%',
-                        backgroundColor: colors.background.card,
-                        borderRadius: 16,
-                        padding: 16,
-                        borderWidth: 1,
-                        borderColor: colors.border.light,
-                        shadowColor: colors.shadow.light,
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 4,
-                        elevation: 2,
-                      }}
-                    >
-                      {/* Header with Icon and Exercise Name */}
-                      <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                        <View
-                          style={{
-                            backgroundColor: colors.primary[100],
-                            padding: 14,
-                            borderRadius: 24,
-                            marginBottom: 10,
-                            borderWidth: 2,
-                            borderColor: colors.primary[200],
-                          }}
-                        >
-                          <Dumbbell size={24} color={colors.primary[600]} />
-                        </View>
-                        <Text
-                          style={{
-                            color: colors.text.primary,
-                            fontWeight: '700',
-                            fontSize: 15,
-                            textAlign: 'center',
-                            lineHeight: 20,
-                          }}
-                          numberOfLines={2}
-                        >
-                          {s.exercises?.name || 'Exercise'}
-                        </Text>
-                      </View>
-
-                      {/* Stats in a compact row */}
-                      <View style={{ 
-                        flexDirection: 'row', 
-                        flexWrap: 'wrap', 
-                        gap: 6, 
-                        marginBottom: 12,
-                        justifyContent: 'center'
-                      }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.background.input,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border.light,
-                            minWidth: 60,
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Dumbbell size={12} color={colors.text.tertiary} />
-                          <Text
-                            style={{
-                              color: colors.text.secondary,
-                              fontSize: 11,
-                              marginLeft: 4,
-                              fontWeight: '600',
-                            }}
-                          >
-                            {s.weight} {s.unit}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.background.input,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border.light,
-                            minWidth: 60,
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Repeat size={12} color={colors.text.tertiary} />
-                          <Text
-                            style={{
-                              color: colors.text.secondary,
-                              fontSize: 11,
-                              marginLeft: 4,
-                              fontWeight: '600',
-                            }}
-                          >
-                            {s.reps}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.background.input,
-                            paddingHorizontal: 10,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border.light,
-                            minWidth: 60,
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Layers size={12} color={colors.text.tertiary} />
-                          <Text
-                            style={{
-                              color: colors.text.secondary,
-                              fontSize: 11,
-                              marginLeft: 4,
-                              fontWeight: '600',
-                            }}
-                          >
-                            {s.sets}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Action Buttons */}
-                      <View style={{ 
-                        flexDirection: 'row', 
-                        justifyContent: 'center', 
-                        marginTop: 8,
-                        paddingTop: 12,
-                        borderTopWidth: 1,
-                        borderTopColor: colors.border.light,
-                        gap: 16
-                      }}>
-                        <TouchableOpacity
-                          onPress={() => openEditSetModal(s)}
-                          style={{ 
-                            padding: 8,
-                            backgroundColor: colors.background.input,
-                            borderRadius: 10,
-                            borderWidth: 1,
-                            borderColor: colors.border.light,
-                          }}
-                        >
-                          <Pencil size={16} color={colors.text.tertiary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteSetFromList(s)}
-                          disabled={deleteLoadingSetId === s.id}
-                          style={{ 
-                            padding: 8,
-                            backgroundColor: colors.status.errorLight,
-                            borderRadius: 10,
-                            borderWidth: 1,
-                            borderColor: colors.status.error + '30',
-                            opacity: deleteLoadingSetId === s.id ? 0.6 : 1,
-                          }}
-                        >
-                          {deleteLoadingSetId === s.id ? (
-                            <ActivityIndicator size="small" color={colors.status.error} />
-                          ) : (
-                            <Trash2 size={16} color={colors.status.error} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    {displayedSets.map((s, idx) => (
+                      <SetGridItem
+                        key={s.id}
+                        set={s}
+                        index={idx}
+                        onPress={() => openSetDetails(s)}
+                        onEdit={() => openEditSetModal(s)}
+                        onDelete={() => handleDeleteSetFromList(s)}
+                        isDeleting={deleteLoadingSetId === s.id}
+                      />
+                    ))}
+                  </View>
+                  {hasMore && (
+                    <LoadMoreButton
+                      remaining={filteredSets.length - displayLimit}
+                      onLoadMore={handleLoadMore}
+                      fullWidth={true}
+                    />
+                  )}
+                </>
               )
             ) : (
-              <View
-                style={{
-                  backgroundColor: colors.background.card,
-                  borderRadius: 12,
-                  padding: 24,
-                  alignItems: 'center',
-                  borderWidth: 1,
-                  borderColor: colors.border.light,
-                  borderStyle: 'dashed',
-                }}
-              >
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 32,
-                    backgroundColor: colors.background.input,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 12,
-                    borderWidth: 2,
-                    borderColor: colors.border.light,
-                  }}
-                >
-                  <Search size={28} color={colors.text.tertiary} />
-                </View>
-                <Text
-                  style={{
-                    color: colors.text.primary,
-                    fontSize: 16,
-                    fontWeight: '600',
-                    textAlign: 'center',
-                    marginBottom: 4,
-                  }}
-                >
-                  No matches found
-                </Text>
-                <Text
-                  style={{
-                    color: colors.text.secondary,
-                    fontSize: 14,
-                    textAlign: 'center',
-                  }}
-                >
-                  No sets found matching "{searchQuery}"
-                </Text>
-              </View>
+              <EmptyState type="noMatches" searchQuery={searchQuery} />
             )
           ) : (
-            <View
-              style={{
-                backgroundColor: colors.background.primary,
-                borderRadius: 12,
-                padding: 16,
-                alignItems: 'center',
-              }}
-            >
-              <TrendingUp size={32} color={colors.text.tertiary} />
-              <Text
-                style={{ color: colors.text.tertiary, textAlign: 'center', marginTop: 8 }}
-              >
-                No sets logged yet. Log your first set!
-              </Text>
-            </View>
+            <EmptyState type="noSets" />
           )}
         </>
       )}
     </View>
   );
 }
-
