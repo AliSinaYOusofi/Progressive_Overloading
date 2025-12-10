@@ -1,16 +1,14 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import {
-  Target,
-  Plus,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  RotateCcw,
-  Pencil,
-  Trash2,
-} from 'lucide-react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, Text } from 'react-native';
+import { Target } from 'lucide-react-native';
 import { useThemedColors } from '../../hooks/useThemedColors';
+import GoalListItem from './GoalListItem';
+import GoalGridItem from './GoalGridItem';
+import SearchBarWithViewToggle from './SearchBarWithViewToggle';
+import LoadMoreButton from './LoadMoreButton';
+import EmptyState from './EmptyState';
+import SectionHeader from './SectionHeader';
+import GoalSortFilterModal from './GoalSortFilterModal';
 
 export default function GoalsSection({
   fitnessGoals,
@@ -26,10 +24,116 @@ export default function GoalsSection({
   isCompleted = false,
 }) {
   const colors = useThemedColors();
-  const filteredGoals = fitnessGoals?.filter((g) =>
-    isCompleted ? g.is_completed : !g.is_completed
-  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [displayLimit, setDisplayLimit] = useState(10); // Initial display limit
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'title', 'progress', 'target'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortModalVisible, setSortModalVisible] = useState(false);
+
   const cardType = isCompleted ? 'completedGoals' : 'goals';
+  
+  // Filter goals by completion status
+  const baseFilteredGoals = useMemo(() => {
+    return fitnessGoals?.filter((g) =>
+      isCompleted ? g.is_completed : !g.is_completed
+    ) || [];
+  }, [fitnessGoals, isCompleted]);
+
+  // Filter and sort goals
+  const filteredGoals = useMemo(() => {
+    let goals = baseFilteredGoals;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      goals = goals.filter(goal => {
+        const title = (goal.title || '').toLowerCase();
+        const description = (goal.description || '').toLowerCase();
+        return title.includes(query) || description.includes(query);
+      });
+    }
+
+    // Apply sorting
+    const sorted = [...goals].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case 'date':
+          aValue = new Date(a.created_at || 0).getTime();
+          bValue = new Date(b.created_at || 0).getTime();
+          break;
+        case 'title':
+          aValue = (a.title || '').toLowerCase();
+          bValue = (b.title || '').toLowerCase();
+          break;
+        case 'progress':
+          const aProgress = a.target_value > 0 
+            ? (a.current_value / a.target_value) * 100 
+            : 0;
+          const bProgress = b.target_value > 0 
+            ? (b.current_value / b.target_value) * 100 
+            : 0;
+          aValue = aProgress;
+          bValue = bProgress;
+          break;
+        case 'target':
+          aValue = parseFloat(a.target_value) || 0;
+          bValue = parseFloat(b.target_value) || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortBy === 'title') {
+        // String comparison for titles
+        if (sortOrder === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      } else {
+        // Numeric/date comparison
+        if (sortOrder === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      }
+    });
+
+    return sorted;
+  }, [baseFilteredGoals, searchQuery, sortBy, sortOrder]);
+
+  // Get goals to display (limited)
+  const displayedGoals = useMemo(() => {
+    return filteredGoals.slice(0, displayLimit);
+  }, [filteredGoals, displayLimit]);
+
+  const hasMore = filteredGoals.length > displayLimit;
+  const displayCount = searchQuery.trim() ? filteredGoals.length : baseFilteredGoals.length;
+
+  // Reset display limit when search changes or card collapses
+  useEffect(() => {
+    if (!cardExpanded[cardType]) {
+      setSearchQuery('');
+      setDisplayLimit(10);
+    }
+  }, [cardExpanded, cardType]);
+
+  useEffect(() => {
+    setDisplayLimit(10); // Reset to initial limit when search changes
+  }, [searchQuery]);
+
+  const handleSortChange = (newSortBy, newSortOrder) => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setDisplayLimit(10); // Reset display limit when sort changes
+  };
+
+  const handleLoadMore = () => {
+    setDisplayLimit(prev => Math.min(prev + 20, filteredGoals.length));
+  };
 
   return (
     <View
@@ -47,142 +151,95 @@ export default function GoalsSection({
         marginBottom: 24,
       }}
     >
-      <TouchableOpacity
-        onPress={() => toggleCardExpansion(cardType)}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold' }}>
-          {isCompleted ? 'Completed Goals' : 'Goals'}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {!isCompleted && (
-            <TouchableOpacity
-              onPress={openAddGoalModal}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.primary[100],
-                paddingHorizontal: 12,
-                paddingVertical: 4,
-                borderRadius: 20,
-                marginRight: 8,
-              }}
-            >
-              <Plus size={18} color={colors.primary[600]} />
-              <Text style={{ color: colors.primary[700], fontWeight: '500', marginLeft: 4 }}>
-                Add Goal
-              </Text>
-            </TouchableOpacity>
-          )}
-          <View
-            style={{
-              backgroundColor: colors.background.input,
-              padding: 8,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: colors.border.light,
-            }}
-          >
-            {cardExpanded[cardType] ? (
-              <ChevronUp size={18} color={colors.text.tertiary} />
-            ) : (
-              <ChevronDown size={18} color={colors.text.tertiary} />
-            )}
-          </View>
-        </View>
-      </TouchableOpacity>
+      <SectionHeader
+        title={isCompleted ? 'Completed Goals' : 'Goals'}
+        count={baseFilteredGoals.length > 0 ? displayCount : 0}
+        isExpanded={cardExpanded[cardType]}
+        onToggle={() => toggleCardExpansion(cardType)}
+        onLogSet={openAddGoalModal}
+        showLogSetButton={!isCompleted}
+        buttonText="Add Goal"
+      />
 
       {cardExpanded[cardType] && (
         <>
-          {filteredGoals?.length > 0 ? (
-            filteredGoals.map((goal, idx, arr) => (
-              <View
-                key={goal.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 12,
-                  borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                  borderBottomColor: colors.border.light,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => openGoalDetails(goal)}
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: colors.primary[100],
-                      padding: 8,
-                      borderRadius: 20,
-                      marginRight: 12,
-                    }}
-                  >
-                    <Target size={16} color={colors.primary[600]} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text.primary, fontWeight: '600' }}>
-                      {goal.title}
-                    </Text>
-                    <Text style={{ color: colors.text.secondary, fontSize: 14 }}>
-                      {goal.current_value} / {goal.target_value} {goal.unit}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity
-                    onPress={() => handleToggleComplete(goal)}
-                    disabled={completeLoadingGoalId === goal.id}
-                    style={{ paddingHorizontal: 8, paddingVertical: 6 }}
-                  >
-                    {completeLoadingGoalId === goal.id ? (
-                      <ActivityIndicator size="small" color={colors.primary[600]} />
-                    ) : goal.is_completed ? (
-                      <RotateCcw size={18} color={colors.primary[600]} />
-                    ) : (
-                      <CheckCircle2 size={18} color={colors.primary[600]} />
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => openEditGoalModal(goal)}
-                    disabled={
-                      completeLoadingGoalId === goal.id || deleteLoadingGoalId === goal.id
-                    }
-                    style={{ paddingHorizontal: 8, paddingVertical: 6 }}
-                  >
-                    <Pencil
-                      size={18}
-                      color={
-                        completeLoadingGoalId === goal.id ||
-                        deleteLoadingGoalId === goal.id
-                          ? colors.text.tertiary
-                          : colors.text.secondary
-                      }
+          {/* Search Input with View Toggle */}
+          {baseFilteredGoals.length > 0 && (
+            <SearchBarWithViewToggle
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onSortPress={() => setSortModalVisible(true)}
+            />
+          )}
+
+          {/* Sort/Filter Modal */}
+          <GoalSortFilterModal
+            visible={sortModalVisible}
+            onClose={() => setSortModalVisible(false)}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+          />
+
+          {/* Content */}
+          {baseFilteredGoals.length > 0 ? (
+            filteredGoals.length > 0 ? (
+              viewMode === 'list' ? (
+                // List View
+                <>
+                  {displayedGoals.map((goal, idx, arr) => (
+                    <GoalListItem
+                      key={goal.id}
+                      goal={goal}
+                      index={idx}
+                      isLast={idx === arr.length - 1}
+                      onPress={() => openGoalDetails(goal)}
+                      onToggleComplete={() => handleToggleComplete(goal)}
+                      onEdit={() => openEditGoalModal(goal)}
+                      onDelete={() => handleDeleteGoal(goal.id)}
+                      isCompleting={completeLoadingGoalId === goal.id}
+                      isDeleting={deleteLoadingGoalId === goal.id}
                     />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteGoal(goal.id)}
-                    disabled={deleteLoadingGoalId === goal.id}
-                    style={{ paddingHorizontal: 8, paddingVertical: 6 }}
-                  >
-                    {deleteLoadingGoalId === goal.id ? (
-                      <ActivityIndicator size="small" color={colors.status.error} />
-                    ) : (
-                      <Trash2 size={18} color={colors.status.error} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+                  ))}
+                  {hasMore && (
+                    <LoadMoreButton
+                      remaining={filteredGoals.length - displayLimit}
+                      onLoadMore={handleLoadMore}
+                    />
+                  )}
+                </>
+              ) : (
+                // Grid View
+                <>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    {displayedGoals.map((goal, idx) => (
+                      <GoalGridItem
+                        key={goal.id}
+                        goal={goal}
+                        index={idx}
+                        onPress={() => openGoalDetails(goal)}
+                        onToggleComplete={() => handleToggleComplete(goal)}
+                        onEdit={() => openEditGoalModal(goal)}
+                        onDelete={() => handleDeleteGoal(goal.id)}
+                        isCompleting={completeLoadingGoalId === goal.id}
+                        isDeleting={deleteLoadingGoalId === goal.id}
+                      />
+                    ))}
+                  </View>
+                  {hasMore && (
+                    <LoadMoreButton
+                      remaining={filteredGoals.length - displayLimit}
+                      onLoadMore={handleLoadMore}
+                      fullWidth={true}
+                    />
+                  )}
+                </>
+              )
+            ) : (
+              <EmptyState type="noMatches" searchQuery={searchQuery} />
+            )
           ) : (
             <View
               style={{
@@ -207,4 +264,3 @@ export default function GoalsSection({
     </View>
   );
 }
-

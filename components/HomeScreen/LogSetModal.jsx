@@ -302,8 +302,8 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting }
                                         paddingHorizontal: 20,
                                         paddingVertical: 16,
                                         borderBottomWidth: index < weightUnits.length - 1 ? 1 : 0,
-                                        borderBottomColor: "#F3F4F6",
-                                        backgroundColor: unit === unitOption.value ? "#F0F9FF" : "transparent",
+                                        borderBottomColor: isDarkMode ? colors.border.medium : "#F3F4F6",
+                                        backgroundColor: unit === unitOption.value ? (isDarkMode ? colors.primary[100] : colors.primary[50]) : "transparent",
                                     }}
                                 >
                                     <Text
