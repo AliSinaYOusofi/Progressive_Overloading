@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { ArrowUpDown, Calendar, Dumbbell, Repeat, Layers, ArrowUp, ArrowDown, Type } from 'lucide-react-native';
 import { useThemedColors } from '../../hooks/useThemedColors';
 import { useTheme } from '../../contexts/ThemeContext';
 import ModalCloseButton from '../ModalCloseButton';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 const SORT_OPTIONS = [
   { 
@@ -56,6 +59,59 @@ const SORT_OPTIONS = [
 export default function SortFilterModal({ visible, onClose, sortBy, sortOrder, onSortChange }) {
   const colors = useThemedColors();
   const { isDarkMode } = useTheme();
+  const screenHeight = Dimensions.get("window").height;
+  const translateY = useSharedValue(0);
+  const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
+
+  // Define close function in RN Runtime scope (required for scheduleOnRN)
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Only allow downward swipes (positive translationY)
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > SWIPE_THRESHOLD) {
+        // Swipe exceeded threshold, animate out then close modal
+        translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+          'worklet';
+          scheduleOnRN(handleClose);
+        });
+      } else {
+        // Snap back to original position
+        translateY.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+
+  // Animated style for drag handle that changes color when swiping
+  const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      translateY.value,
+      [0, 50, 100],
+      [colors.border.light, colors.primary[400], colors.primary[600]]
+    );
+    return {
+      backgroundColor,
+    };
+  });
+
+  // Reset translateY when modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      translateY.value = 0;
+    }
+  }, [visible, translateY]);
 
   const handleSortSelect = (optionId, orderId) => {
     onSortChange(optionId, orderId);
@@ -69,35 +125,42 @@ export default function SortFilterModal({ visible, onClose, sortBy, sortOrder, o
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <TouchableOpacity 
-          activeOpacity={1} 
-          onPress={onClose}
-          style={{ flex: 1 }}
-        />
-        <View 
-          style={{ 
-            backgroundColor: colors.background.card,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            maxHeight: '70%',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 12,
-            elevation: 20
-          }}
-        >
-          {/* Drag Handle */}
-          <View style={{ 
-            width: 40, 
-            height: 4, 
-            backgroundColor: colors.border.light, 
-            borderRadius: 2, 
-            alignSelf: 'center', 
-            marginTop: 12, 
-            marginBottom: 8 
-          }} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={onClose}
+            style={{ flex: 1 }}
+          />
+          <GestureDetector gesture={panGesture}>
+            <Animated.View 
+              style={[
+                { 
+                  backgroundColor: colors.background.card,
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  maxHeight: '70%',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 12,
+                  elevation: 20
+                },
+                animatedStyle
+              ]}
+            >
+              {/* Drag Handle */}
+              <Animated.View style={[
+                { 
+                  width: 48, 
+                  height: 4, 
+                  borderRadius: 2, 
+                  alignSelf: 'center', 
+                  marginTop: 12, 
+                  marginBottom: 8 
+                },
+                dragHandleAnimatedStyle
+              ]} />
 
           {/* Header */}
           <View style={{ 
@@ -211,8 +274,10 @@ export default function SortFilterModal({ visible, onClose, sortBy, sortOrder, o
               );
             })}
           </ScrollView>
+            </Animated.View>
+          </GestureDetector>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

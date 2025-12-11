@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getCurrentUser } from '../lib/database';
+import Toast from 'react-native-toast-message';
 
 /**
  * Custom hook for managing set-related actions (log, edit, delete)
@@ -20,11 +21,14 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
   const handleCloseLogSet = () => setIsLogSetVisible(false);
 
   const handleSubmitLogSet = async ({ exerciseName, weight, reps, sets, unit }) => {
+    setIsLogSubmitting(true);
+    const currentUser = user || (await getCurrentUser());
+    if (!currentUser) {
+      setIsLogSubmitting(false);
+      return;
+    }
+    
     try {
-      setIsLogSubmitting(true);
-      const currentUser = user || (await getCurrentUser());
-      if (!currentUser) return;
-      
       const { findOrCreateExercise, createExerciseSet } = await import('../lib/database');
       const exercise = await findOrCreateExercise(currentUser.id, exerciseName);
       await createExerciseSet({
@@ -37,11 +41,25 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
         performed_at: new Date().toISOString(),
       });
       
+      handleCloseLogSet();
+      
+      // Show toast immediately after closing modal
+      Toast.show({
+        type: 'success',
+        text1: 'Set logged',
+        text2: 'Your workout set has been logged successfully',
+      });
+      
+      // Load data in background
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
-      handleCloseLogSet();
     } catch (e) {
       console.error('Error logging set:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to log set',
+        text2: e.message || 'Please try again',
+      });
     } finally {
       setIsLogSubmitting(false);
     }
@@ -68,11 +86,14 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
   };
 
   const handleSaveEditedSet = async ({ exerciseName, weight, reps, sets, unit }) => {
+    setIsEditSubmitting(true);
+    const currentUser = user || (await getCurrentUser());
+    if (!currentUser || !editingSet) {
+      setIsEditSubmitting(false);
+      return;
+    }
+    
     try {
-      setIsEditSubmitting(true);
-      const currentUser = user || (await getCurrentUser());
-      if (!currentUser || !editingSet) return;
-      
       const { findOrCreateExercise, updateExerciseSet } = await import('../lib/database');
       const exercise = await findOrCreateExercise(currentUser.id, exerciseName);
       await updateExerciseSet(editingSet.id, {
@@ -83,46 +104,94 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
         unit,
       });
       
+      closeEditSetModal();
+      
+      // Show toast immediately after closing modal
+      Toast.show({
+        type: 'success',
+        text1: 'Set updated',
+        text2: 'Your workout set has been updated successfully',
+      });
+      
+      // Load data in background
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
-      closeEditSetModal();
     } catch (e) {
       console.error('Error updating set:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to update set',
+        text2: e.message || 'Please try again',
+      });
     } finally {
       setIsEditSubmitting(false);
     }
   };
 
   const handleDeleteSet = async () => {
+    setIsEditDeleting(true);
+    const currentUser = user || (await getCurrentUser());
+    if (!currentUser || !editingSet) {
+      setIsEditDeleting(false);
+      return;
+    }
+    
+    const setToDelete = editingSet;
+    closeEditSetModal();
+    
+    // Show toast immediately
+    Toast.show({
+      type: 'success',
+      text1: 'Set deleted',
+      text2: 'Your workout set has been deleted successfully',
+    });
+    
+    // Then make API call
     try {
-      setIsEditDeleting(true);
-      const currentUser = user || (await getCurrentUser());
-      if (!currentUser || !editingSet) return;
-      
       const { deleteExerciseSet } = await import('../lib/database');
-      await deleteExerciseSet(editingSet.id);
+      await deleteExerciseSet(setToDelete.id);
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
-      closeEditSetModal();
     } catch (e) {
       console.error('Error deleting set:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to delete set',
+        text2: e.message || 'Please try again',
+      });
     } finally {
       setIsEditDeleting(false);
     }
   };
 
   const handleDeleteSetFromList = async (setItem) => {
+    setDeleteLoadingSetId(setItem.id);
+    const currentUser = user || (await getCurrentUser());
+    if (!currentUser) {
+      setDeleteLoadingSetId(null);
+      return;
+    }
+    
+    // Show toast immediately
+    Toast.show({
+      type: 'success',
+      text1: 'Set deleted',
+      text2: 'Your workout set has been deleted successfully',
+    });
+    
+    // Then make API call
     try {
-      setDeleteLoadingSetId(setItem.id);
-      const currentUser = user || (await getCurrentUser());
-      if (!currentUser) return;
-      
       const { deleteExerciseSet } = await import('../lib/database');
       await deleteExerciseSet(setItem.id);
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
     } catch (e) {
       console.error('Error deleting set:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to delete set',
+        text2: e.message || 'Please try again',
+      });
     } finally {
       setDeleteLoadingSetId(null);
     }
@@ -140,8 +209,19 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
       closeSetDetails();
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Set deleted',
+        text2: 'Your workout set has been deleted successfully',
+      });
     } catch (e) {
       console.error('Error deleting set:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to delete set',
+        text2: e.message || 'Please try again',
+      });
     } finally {
       setModalDeleteLoadingSetId(null);
     }

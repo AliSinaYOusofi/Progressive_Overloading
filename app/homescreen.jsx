@@ -9,6 +9,7 @@ import { useGoalActions } from "../hooks/useGoalActions";
 import HomeScreenHeader from "../components/HomeScreen/HomeScreenHeader";
 import ProgressSection from "../components/HomeScreen/ProgressSection";
 import GoalsSection from "../components/HomeScreen/GoalsSection";
+import ExpiredGoalsSection from "../components/HomeScreen/ExpiredGoalsSection";
 import RecentSetsSection from "../components/HomeScreen/RecentSetsSection";
 import AddGoalModal from "../components/HomeScreen/AddGoalModal";
 import LogSetModal from "../components/HomeScreen/LogSetModal";
@@ -49,6 +50,7 @@ export default function HomeScreen() {
     const [cardExpanded, setCardExpanded] = useState({
         progress: true,
         goals: true,
+        expiredGoals: true,
         completedGoals: true,
         recentSets: true,
     });
@@ -111,6 +113,20 @@ export default function HomeScreen() {
                     completeLoadingGoalId={goalActions.completeLoadingGoalId}
                     deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
                     isCompleted={false}
+                />
+
+                {/* Expired Goals Section */}
+                <ExpiredGoalsSection
+                    fitnessGoals={fitnessGoals}
+                    cardExpanded={cardExpanded}
+                    toggleCardExpansion={toggleCardExpansion}
+                    openAddGoalModal={goalActions.openAddGoalModal}
+                    openGoalDetails={goalActions.openGoalDetails}
+                    openEditGoalModal={goalActions.openEditGoalModal}
+                    handleToggleComplete={goalActions.handleToggleComplete}
+                    handleDeleteGoal={goalActions.handleDeleteGoal}
+                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
+                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
                 />
 
                 {/* Completed Goals Section */}

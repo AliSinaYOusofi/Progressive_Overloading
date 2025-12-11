@@ -1,9 +1,12 @@
-import React from "react";
-import { View, Text, Modal, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
-import { Target, CheckCircle2, RotateCcw, Pencil, Trash2, Calendar, TrendingUp, Clock } from "lucide-react-native";
-import { formatDistanceToNow, format } from "date-fns";
+import React, { useEffect, useCallback } from "react";
+import { View, Text, Modal, TouchableOpacity, ActivityIndicator, ScrollView, Dimensions } from "react-native";
+import { Target, CheckCircle2, RotateCcw, Pencil, Trash2, Calendar, TrendingUp, Clock, AlertCircle } from "lucide-react-native";
+import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 export default function GoalDetailsModal({
     visible,
@@ -18,6 +21,60 @@ export default function GoalDetailsModal({
     deleteLoadingId = null
 }) {
     const colors = useThemedColors();
+    const screenHeight = Dimensions.get("window").height;
+    const translateY = useSharedValue(0);
+    const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
+
+    // Define close function in RN Runtime scope (required for scheduleOnRN)
+    const handleClose = useCallback(() => {
+        onClose();
+    }, [onClose]);
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((event) => {
+            // Only allow downward swipes (positive translationY)
+            if (event.translationY > 0) {
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            if (event.translationY > SWIPE_THRESHOLD) {
+                // Swipe exceeded threshold, animate out then close modal
+                translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+                    'worklet';
+                    scheduleOnRN(handleClose);
+                });
+            } else {
+                // Snap back to original position
+                translateY.value = withTiming(0, { duration: 200 });
+            }
+        });
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateY: translateY.value }],
+        };
+    });
+
+    // Animated style for drag handle that changes color when swiping
+    const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+        const backgroundColor = interpolateColor(
+            translateY.value,
+            [0, 50, 100],
+            [colors.border.light, colors.primary[400], colors.primary[600]]
+        );
+        return {
+            backgroundColor,
+        };
+    });
+
+    // Reset translateY when modal becomes visible
+    useEffect(() => {
+        if (visible) {
+            translateY.value = 0;
+        }
+    }, [visible, translateY]);
+
     if (!selectedGoal) return null;
 
     // Calculate progress
@@ -46,6 +103,95 @@ export default function GoalDetailsModal({
 
     const formattedTargetDate = targetDate ? format(targetDate, 'MMM dd, yyyy') : null;
     const targetDateDiff = targetDate ? formatDistanceToNow(targetDate, { addSuffix: true }) : null;
+    
+    // Calculate days until target date
+    const daysUntilTarget = targetDate ? differenceInDays(targetDate, new Date()) : null;
+    
+    // Determine urgency level and colors based on days remaining
+    const getDueDateInfo = (days) => {
+        if (days === null) return null;
+        
+        if (days < 0) {
+            // Overdue
+            return {
+                label: "Overdue",
+                days: Math.abs(days),
+                text: `${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} overdue`,
+                backgroundColor: colors.status.errorLight || colors.background.input,
+                borderColor: colors.status.error + '30' || colors.border.light,
+                textColor: colors.status.error,
+                iconColor: colors.status.error
+            };
+        } else if (days === 0) {
+            // Due today
+            return {
+                label: "Due Today",
+                days: 0,
+                text: "Due today",
+                backgroundColor: colors.status.warningLight || colors.background.input,
+                borderColor: colors.status.warning + '30' || colors.border.light,
+                textColor: colors.status.warning,
+                iconColor: colors.status.warning
+            };
+        } else if (days <= 3) {
+            // Very close (1-3 days)
+            return {
+                label: "Very Close",
+                days: days,
+                text: `${days} day${days !== 1 ? 's' : ''} remaining`,
+                backgroundColor: colors.status.warningLight || colors.background.input,
+                borderColor: colors.status.warning + '30' || colors.border.light,
+                textColor: colors.status.warning,
+                iconColor: colors.status.warning
+            };
+        } else if (days <= 7) {
+            // Close (4-7 days)
+            return {
+                label: "Close",
+                days: days,
+                text: `${days} days remaining`,
+                backgroundColor: colors.status.warningLight || colors.background.input,
+                borderColor: colors.status.warning + '30' || colors.border.light,
+                textColor: colors.status.warning,
+                iconColor: colors.status.warning
+            };
+        } else if (days <= 30) {
+            // Normal (8-30 days)
+            return {
+                label: "Normal",
+                days: days,
+                text: `${days} days remaining`,
+                backgroundColor: colors.background.input,
+                borderColor: colors.border.light,
+                textColor: colors.text.secondary,
+                iconColor: colors.text.tertiary
+            };
+        } else if (days <= 60) {
+            // Far (31-60 days)
+            return {
+                label: "Far",
+                days: days,
+                text: `${days} days remaining`,
+                backgroundColor: colors.primary[100] || colors.background.input,
+                borderColor: colors.primary[600] + '30' || colors.border.light,
+                textColor: colors.primary[600],
+                iconColor: colors.primary[600]
+            };
+        } else {
+            // Very far (> 60 days)
+            return {
+                label: "Very Far",
+                days: days,
+                text: `${days} days remaining`,
+                backgroundColor: colors.status.infoLight || colors.background.input,
+                borderColor: colors.status.info + '30' || colors.border.light,
+                textColor: colors.status.info,
+                iconColor: colors.status.info
+            };
+        }
+    };
+    
+    const dueDateInfo = getDueDateInfo(daysUntilTarget);
 
     return (
         <Modal
@@ -54,22 +200,40 @@ export default function GoalDetailsModal({
             animationType="slide"
             onRequestClose={onClose}
         >
-            <TouchableOpacity
-                activeOpacity={1}
-                onPress={onClose}
-                style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
-            >
-                <View style={{ 
-                    backgroundColor: colors.background.card, 
-                    borderTopLeftRadius: 24, 
-                    borderTopRightRadius: 24,
-                    maxHeight: "85%",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: -4 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 12,
-                    elevation: 20
-                }}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={onClose}
+                    style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+                >
+                    <GestureDetector gesture={panGesture}>
+                        <Animated.View style={[
+                            { 
+                                backgroundColor: colors.background.card, 
+                                borderTopLeftRadius: 24, 
+                                borderTopRightRadius: 24,
+                                maxHeight: "85%",
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: -4 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 12,
+                                elevation: 20
+                            },
+                            animatedStyle
+                        ]}>
+                            {/* Drag Handle */}
+                            <Animated.View style={[
+                                { 
+                                    width: 48, 
+                                    height: 4, 
+                                    borderRadius: 2, 
+                                    alignSelf: "center", 
+                                    marginTop: 12, 
+                                    marginBottom: 16 
+                                },
+                                dragHandleAnimatedStyle
+                            ]} />
+                            
                     <ScrollView 
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ padding: 24 }}
@@ -232,6 +396,54 @@ export default function GoalDetailsModal({
                                 </View>
                             )}
 
+                            {dueDateInfo && (
+                                <View style={{ 
+                                    flexDirection: "row", 
+                                    alignItems: "center", 
+                                    marginBottom: 12, 
+                                    paddingVertical: 10, 
+                                    paddingHorizontal: 12, 
+                                    backgroundColor: dueDateInfo.backgroundColor, 
+                                    borderRadius: 12, 
+                                    borderWidth: 1, 
+                                    borderColor: dueDateInfo.borderColor 
+                                }}>
+                                    <AlertCircle size={16} color={dueDateInfo.iconColor} />
+                                    <View style={{ marginLeft: 10, flex: 1 }}>
+                                        <Text style={{ color: dueDateInfo.textColor, fontSize: 13, fontWeight: '600', marginBottom: 2 }}>
+                                            {dueDateInfo.label}
+                                        </Text>
+                                        <Text style={{ color: dueDateInfo.textColor, fontSize: 14, fontWeight: '500' }}>
+                                            {dueDateInfo.text}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {!targetDate && (
+                                <View style={{ 
+                                    flexDirection: "row", 
+                                    alignItems: "center", 
+                                    marginBottom: 12, 
+                                    paddingVertical: 10, 
+                                    paddingHorizontal: 12, 
+                                    backgroundColor: colors.background.input, 
+                                    borderRadius: 12, 
+                                    borderWidth: 1, 
+                                    borderColor: colors.border.light 
+                                }}>
+                                    <AlertCircle size={16} color={colors.text.tertiary} />
+                                    <View style={{ marginLeft: 10, flex: 1 }}>
+                                        <Text style={{ color: colors.text.secondary, fontSize: 13, fontWeight: '600', marginBottom: 2 }}>
+                                            Target Date
+                                        </Text>
+                                        <Text style={{ color: colors.text.tertiary, fontSize: 14, fontWeight: '500' }}>
+                                            No target date set
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
                             {formattedCompletedDate && (
                                 <View style={{ 
                                     flexDirection: "row", 
@@ -339,8 +551,10 @@ export default function GoalDetailsModal({
                             </TouchableOpacity>
                         </View>
                     </ScrollView>
-                </View>
-            </TouchableOpacity>
+                        </Animated.View>
+                    </GestureDetector>
+                </TouchableOpacity>
+            </GestureHandlerRootView>
         </Modal>
     );
 }
