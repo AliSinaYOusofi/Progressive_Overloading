@@ -1,9 +1,12 @@
-import React from "react";
-import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useCallback } from "react";
+import { View, Text, Modal, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
 import { Dumbbell, Repeat, Layers, Pencil, Trash2, Calendar } from "lucide-react-native";
 import { formatDistanceToNow, format } from "date-fns";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 export default function SetDetailsModal({
     visible,
@@ -15,6 +18,60 @@ export default function SetDetailsModal({
     deleteLoadingId = null
 }) {
     const colors = useThemedColors();
+    const screenHeight = Dimensions.get("window").height;
+    const translateY = useSharedValue(0);
+    const SWIPE_THRESHOLD = screenHeight * 0.01; // 20% of screen height
+
+    // Define close function in RN Runtime scope (required for scheduleOnRN)
+    const handleClose = useCallback(() => {
+        onClose();
+    }, [onClose]);
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((event) => {
+            // Only allow downward swipes (positive translationY)
+            if (event.translationY > 0) {
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            if (event.translationY > SWIPE_THRESHOLD) {
+                // Swipe exceeded threshold, animate out then close modal
+                translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+                    'worklet';
+                    scheduleOnRN(handleClose);
+                });
+            } else {
+                // Snap back to original position
+                translateY.value = withTiming(0, { duration: 200 });
+            }
+        });
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateY: translateY.value }],
+        };
+    });
+
+    // Animated style for drag handle that changes color when swiping
+    const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+        const backgroundColor = interpolateColor(
+            translateY.value,
+            [0, 50, 100],
+            [colors.border.light, colors.primary[400], colors.primary[600]]
+        );
+        return {
+            backgroundColor,
+        };
+    });
+
+    // Reset translateY when modal becomes visible
+    useEffect(() => {
+        if (visible) {
+            translateY.value = 0;
+        }
+    }, [visible, translateY]);
+
     if (!selectedSet) return null;
 
     // Get the date from performed_at or created_at
@@ -30,12 +87,35 @@ export default function SetDetailsModal({
             animationType="slide"
             onRequestClose={onClose}
         >
-            <TouchableOpacity
-                activeOpacity={1}
-                onPress={onClose}
-                style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
-            >
-                <View style={{ backgroundColor: colors.background.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={onClose}
+                    style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+                >
+                    <GestureDetector gesture={panGesture}>
+                        <Animated.View style={[
+                            { 
+                                backgroundColor: colors.background.card, 
+                                borderTopLeftRadius: 20, 
+                                borderTopRightRadius: 20, 
+                                padding: 20 
+                            },
+                            animatedStyle
+                        ]}>
+                            {/* Drag Handle */}
+                            <Animated.View style={[
+                                { 
+                                    width: 48, 
+                                    height: 4, 
+                                    borderRadius: 2, 
+                                    alignSelf: "center", 
+                                    marginTop: 2, 
+                                    marginBottom: 16 
+                                },
+                                dragHandleAnimatedStyle
+                            ]} />
+                            
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
                             <View style={{ backgroundColor: colors.primary[100], padding: 8, borderRadius: 20, marginRight: 12 }}>
@@ -118,8 +198,10 @@ export default function SetDetailsModal({
                             <Text style={{ marginLeft: 8, color: colors.status.error, fontWeight: "600" }}>Delete</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
-            </TouchableOpacity>
+                        </Animated.View>
+                    </GestureDetector>
+                </TouchableOpacity>
+            </GestureHandlerRootView>
         </Modal>
     );
 }

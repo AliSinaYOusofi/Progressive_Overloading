@@ -1,7 +1,7 @@
 {
   "expo": {
     "scheme": "progressive-loading",
-    "icon": "./assets/app_icon.png",
+    "icon": "./assets/images/app_icon.png",
     "name": "app",
     "slug": "app",
     "version": "1.0.0",
@@ -14,6 +14,9 @@
     "plugins": [
       "expo-router",
       "expo-splash-screen"
-    ]
+    ],
+    "ios": {
+      "bundleIdentifier": "com.anonymous.app"
+    }
   }
 }

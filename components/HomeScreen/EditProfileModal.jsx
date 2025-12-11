@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   View,
   Text,
@@ -11,14 +11,23 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from "react-native"
-import { X, Save, User, Ruler, Weight, Calendar, Users } from "lucide-react-native"
+import { Save, User, Ruler, Weight, Calendar, Users } from "lucide-react-native"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { upsertProfile, getCurrentUser } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
+import ModalCloseButton from "../ModalCloseButton"
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler"
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated"
+import { scheduleOnRN } from "react-native-worklets"
 
 export default function EditProfileModal({ visible, onClose, currentProfile, onProfileUpdate }) {
   const colors = useThemedColors();
+  const screenHeight = Dimensions.get("window").height;
+  const translateY = useSharedValue(0);
+  const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
+
   const [formData, setFormData] = useState({
     username: "",
     height_cm: "",
@@ -28,6 +37,56 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
+
+  // Define close function in RN Runtime scope (required for scheduleOnRN)
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Only allow downward swipes (positive translationY)
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > SWIPE_THRESHOLD) {
+        // Swipe exceeded threshold, animate out then close modal
+        translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+          'worklet';
+          scheduleOnRN(handleClose);
+        });
+      } else {
+        // Snap back to original position
+        translateY.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+
+  // Animated style for drag handle that changes color when swiping
+  const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      translateY.value,
+      [0, 50, 100],
+      [colors.border.light, colors.primary[400], colors.primary[600]]
+    );
+    return {
+      backgroundColor,
+    };
+  });
+
+  // Reset translateY when modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      translateY.value = 0;
+    }
+  }, [visible, translateY]);
 
   const genderOptions = [
     { value: "male", label: "Male" },
@@ -209,9 +268,6 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
       fontWeight: "600",
       color: colors.text.primary,
     },
-    closeButton: {
-      padding: 4,
-    },
     profileSummary: {
       backgroundColor: colors.primary[50],
       marginBottom: 16,
@@ -378,19 +434,32 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={handleCancel}>
-      <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
-        >
-          <View style={styles.modal}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Edit Profile</Text>
-              <TouchableOpacity onPress={handleCancel} style={styles.closeButton}>
-                <X size={24} color={colors.text.secondary} />
-              </TouchableOpacity>
-            </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={0}
+          >
+            <GestureDetector gesture={panGesture}>
+              <Animated.View style={[styles.modal, animatedStyle]}>
+                {/* Drag Handle */}
+                <Animated.View style={[
+                  { 
+                    width: 48, 
+                    height: 4, 
+                    borderRadius: 2, 
+                    alignSelf: "center", 
+                    marginTop: 12, 
+                    marginBottom: 8 
+                  },
+                  dragHandleAnimatedStyle
+                ]} />
+
+                <View style={styles.header}>
+                  <Text style={styles.title}>Edit Profile</Text>
+                  <ModalCloseButton onPress={handleCancel} />
+                </View>
 
             {/* Profile Summary - now inside ScrollView */}
             <ScrollView
@@ -581,9 +650,11 @@ export default function EditProfileModal({ visible, onClose, currentProfile, onP
                 <Text style={styles.saveButtonText}>{isLoading ? "Saving..." : "Save"}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+              </Animated.View>
+            </GestureDetector>
+          </KeyboardAvoidingView>
+        </View>
+      </GestureHandlerRootView>
 
       {showDatePicker && (
         <DateTimePicker
