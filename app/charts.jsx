@@ -12,8 +12,7 @@ import {
     getPersonalRecords,
     getWeeklyProgress,
     getRPEAnalysis,
-    getProgressiveOverloadInsights,
-    getVolumeAnalysis
+    getProgressiveOverloadInsights
 } from "../lib/database";
 
 // Import chart components
@@ -30,9 +29,9 @@ import PersonalRecordsModal from "../components/Charts/PersonalRecordsModal";
 import WeeklyProgress from "../components/Charts/WeeklyProgress";
 import WeeklyProgressModal from "../components/Charts/WeeklyProgressModal";
 import MonthlyTrends from "../components/Charts/MonthlyTrends";
-import ProgressiveOverloadInsights from "../components/Charts/ProgressiveOverloadInsights";
+import MonthlyTrendsModal from "../components/Charts/MonthlyTrendsModal";
+import ProgressiveOverloadInsightsModal from "../components/Charts/ProgressiveOverloadInsightsModal";
 import RPEAnalysis from "../components/Charts/RPEAnalysis";
-import VolumeAnalysis from "../components/Charts/VolumeAnalysis";
 
 
 export default function ChartsScreen() {
@@ -47,7 +46,6 @@ export default function ChartsScreen() {
     const [weeklyProgress, setWeeklyProgress] = useState([]);
     const [rpeAnalysis, setRpeAnalysis] = useState([]);
     const [progressiveOverloadInsights, setProgressiveOverloadInsights] = useState([]);
-    const [volumeAnalysis, setVolumeAnalysis] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
@@ -56,6 +54,8 @@ export default function ChartsScreen() {
     const [showVolumeProgressionModal, setShowVolumeProgressionModal] = useState(false);
     const [showWeeklyProgressModal, setShowWeeklyProgressModal] = useState(false);
     const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
+    const [showMonthlyTrendsModal, setShowMonthlyTrendsModal] = useState(false);
+    const [showProgressiveOverloadModal, setShowProgressiveOverloadModal] = useState(false);
 
     useEffect(() => {
         loadChartsData();
@@ -82,8 +82,7 @@ export default function ChartsScreen() {
                 records,
                 weekly,
                 rpe,
-                overloadInsights,
-                volumeInsights
+                overloadInsights
             ] = await Promise.all([
                 getUserStats(currentUser.id),
                 getExerciseProgressionData(currentUser.id, null, timeframeValue),
@@ -93,8 +92,7 @@ export default function ChartsScreen() {
                 getPersonalRecords(currentUser.id, timeframe === 'all' ? 100 : 10), // More records for all time
                 getWeeklyProgress(currentUser.id),
                 getRPEAnalysis(currentUser.id, timeframeValue),
-                getProgressiveOverloadInsights(currentUser.id, timeframeValue),
-                getVolumeAnalysis(currentUser.id, timeframeValue)
+                getProgressiveOverloadInsights(currentUser.id, timeframeValue)
             ]);
 
             setUserStats(stats);
@@ -106,7 +104,6 @@ export default function ChartsScreen() {
             setWeeklyProgress(weekly);
             setRpeAnalysis(rpe);
             setProgressiveOverloadInsights(overloadInsights);
-            setVolumeAnalysis(volumeInsights);
         } catch (error) {
             console.error("Error loading charts data:", error);
         } finally {
@@ -219,7 +216,7 @@ export default function ChartsScreen() {
                                     backgroundColor: colors.background.primary
                                 }}
                             >
-                                <TrendingUp size={18} color={colors.primary[600]} />
+                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -272,7 +269,7 @@ export default function ChartsScreen() {
                                     backgroundColor: colors.background.primary
                                 }}
                             >
-                                <BarChart3 size={18} color={colors.primary[600]} />
+                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -478,29 +475,120 @@ export default function ChartsScreen() {
 
                 {/* Monthly Trends */}
                 {monthlyStats && monthlyStats.length > 0 && (
-                    <CollapsibleSection
-                        title="Monthly Trends"
-                        subtitle="Sets and exercises over time"
-                        icon={Calendar}
-                        defaultExpanded={false}
-                    >
-                        <MonthlyTrends monthlyStats={monthlyStats} />
-                    </CollapsibleSection>
+                    <View style={{ marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => setShowMonthlyTrendsModal(true)}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 12,
+                                padding: 16,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 2
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 12,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: colors.primary[100]
+                                        }}
+                                    >
+                                        <Calendar size={20} color={colors.primary[600]} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Monthly Trends</Text>
+                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Sets and exercises over time</Text>
+                                    </View>
+                                </View>
+                                <View 
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: colors.background.primary
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Progressive Overload Insights */}
                 {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
-                    <CollapsibleSection
-                        title="Progressive Overload Analysis"
-                        subtitle="Your strength progression insights"
-                        icon={Target}
-                        defaultExpanded={false}
-                    >
-                        <ProgressiveOverloadInsights 
-                          progressiveOverloadInsights={progressiveOverloadInsights}
-                          parentTimeframe={selectedTimeframe}
-                        />
-                    </CollapsibleSection>
+                    <View style={{ marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => setShowProgressiveOverloadModal(true)}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 12,
+                                padding: 16,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 2
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 10,
+                                            backgroundColor: colors.primary[100],
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        <Target size={20} color={colors.primary[600]} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ 
+                                            fontSize: 16, 
+                                            fontWeight: '700', 
+                                            color: colors.text.primary,
+                                            marginBottom: 2
+                                        }}>
+                                            Progressive Overload Analysis
+                                        </Text>
+                                        <Text style={{ 
+                                            fontSize: 13, 
+                                            color: colors.text.secondary 
+                                        }}>
+                                            Your strength progression insights
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View 
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: colors.background.primary
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* RPE Analysis */}
@@ -515,20 +603,6 @@ export default function ChartsScreen() {
                     </CollapsibleSection>
                 )}
 
-                {/* Volume Analysis */}
-                {volumeAnalysis && volumeAnalysis.totalVolume > 0 && (
-                    <CollapsibleSection
-                        title="Volume Analysis"
-                        subtitle="Training volume insights and trends"
-                        icon={Activity}
-                        defaultExpanded={false}
-                    >
-                        <VolumeAnalysis 
-                          volumeAnalysis={volumeAnalysis}
-                          parentTimeframe={selectedTimeframe}
-                        />
-                    </CollapsibleSection>
-                )}
             </ScrollView>
 
             {/* Exercise Progression Modal */}
@@ -558,6 +632,21 @@ export default function ChartsScreen() {
                 visible={showPersonalRecordsModal}
                 onClose={() => setShowPersonalRecordsModal(false)}
                 personalRecords={personalRecords}
+            />
+
+            {/* Monthly Trends Modal */}
+            <MonthlyTrendsModal
+                visible={showMonthlyTrendsModal}
+                onClose={() => setShowMonthlyTrendsModal(false)}
+                monthlyStats={monthlyStats}
+            />
+
+            {/* Progressive Overload Insights Modal */}
+            <ProgressiveOverloadInsightsModal
+                visible={showProgressiveOverloadModal}
+                onClose={() => setShowProgressiveOverloadModal(false)}
+                progressiveOverloadInsights={progressiveOverloadInsights}
+                parentTimeframe={selectedTimeframe}
             />
         </View>
     );

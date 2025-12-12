@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react"
 import { View, Text, TouchableOpacity } from "react-native"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { Ionicons } from "@expo/vector-icons"
+import { Filter, TrendingUp, TrendingDown, Activity, Dumbbell } from "lucide-react-native"
 import { getCurrentUser, getProgressiveOverloadInsights } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
 import ProgressiveOverloadInfoModal from "./ProgressiveOverloadInfoModal"
+import ProgressiveOverloadFilterModal from "./ProgressiveOverloadFilterModal"
+import { sortProgressiveOverloadInsights } from "./utils/progressiveOverloadUtils"
 
 export default function ProgressiveOverloadInsights({ 
   progressiveOverloadInsights: initialData,
@@ -27,6 +30,10 @@ export default function ProgressiveOverloadInsights({
   const [insights, setInsights] = useState(initialData || [])
   const [loading, setLoading] = useState(false)
   const [showInfoModal, setShowInfoModal] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [sortBy, setSortBy] = useState('totalGain')
+  const [sortOrder, setSortOrder] = useState('desc')
   
   // Sync with parent timeframe when it changes (only if user hasn't manually changed it)
   useEffect(() => {
@@ -80,6 +87,55 @@ export default function ProgressiveOverloadInsights({
     setSelectedExercise(exerciseName)
     setShowDetailModal(true)
   }
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + 10)
+  }
+
+  const handleSortChange = (newSortBy, newSortOrder) => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+  }
+
+  // Reset visible count when insights or sort changes
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [insights, sortBy, sortOrder])
+
+  // Calculate summary statistics
+  const summaryStats = React.useMemo(() => {
+    if (!insights || insights.length === 0) return null
+    
+    const excellent = insights.filter(i => i.progression === 'excellent').length
+    const good = insights.filter(i => i.progression === 'good').length
+    const stable = insights.filter(i => i.progression === 'stable').length
+    const declining = insights.filter(i => i.progression === 'declining').length
+    
+    const avgTotalGain = insights.reduce((sum, i) => sum + (i.totalGain || 0), 0) / insights.length
+    const avgWeeklyGain = insights.reduce((sum, i) => sum + (i.weeklyGain || 0), 0) / insights.length
+    const totalWorkouts = insights.reduce((sum, i) => sum + (i.workoutCount || 0), 0)
+    const totalSets = insights.reduce((sum, i) => sum + (i.totalSets || 0), 0)
+    
+    return {
+      total: insights.length,
+      excellent,
+      good,
+      stable,
+      declining,
+      avgTotalGain,
+      avgWeeklyGain,
+      totalWorkouts,
+      totalSets
+    }
+  }, [insights])
+
+  // Get sorted and visible insights
+  const sortedInsights = React.useMemo(() => {
+    return sortProgressiveOverloadInsights(insights, sortBy, sortOrder)
+  }, [insights, sortBy, sortOrder])
+
+  const visibleInsights = sortedInsights.slice(0, visibleCount)
+  const hasMore = sortedInsights.length > visibleCount
 
   if (loading && insights.length === 0) {
     return (
@@ -251,25 +307,156 @@ export default function ProgressiveOverloadInsights({
 
   return (
     <View>
-      {/* Header with Info Icon */}
+      {/* Header with Info Icon and Filter */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
-          Progressive Overload Insights
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
+            PO Insights
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowInfoModal(true)}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: colors.primary[100],
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            <Ionicons name="information" size={16} color={colors.primary[600]} />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
-          onPress={() => setShowInfoModal(true)}
+          onPress={() => setShowFilterModal(true)}
+          activeOpacity={0.7}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            backgroundColor: colors.primary[100],
-            alignItems: "center",
-            justifyContent: "center"
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: colors.background.primary,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.border.light,
           }}
         >
-          <Ionicons name="information" size={18} color={colors.primary[600]} />
+          <Filter size={16} color={colors.primary[600]} />
+          <Text style={{
+            fontSize: 13,
+            fontWeight: '600',
+            color: colors.primary[600],
+          }}>
+            Filter
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Summary Statistics */}
+      {summaryStats && (
+        <View style={{
+          backgroundColor: colors.background.card,
+          borderRadius: 16,
+          padding: 16,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: colors.border.light,
+        }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 12 }}>
+            <View style={{ flex: 1, minWidth: "45%" }}>
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Total Exercises</Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.text.primary }}>
+                {summaryStats.total}
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: "45%" }}>
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Avg Total Gain</Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgTotalGain >= 0 ? colors.status.success : colors.status.error }}>
+                {summaryStats.avgTotalGain >= 0 ? '+' : ''}{summaryStats.avgTotalGain.toFixed(1)}%
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: "45%" }}>
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Avg Weekly Gain</Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgWeeklyGain >= 0 ? colors.status.success : colors.status.error }}>
+                {summaryStats.avgWeeklyGain >= 0 ? '+' : ''}{summaryStats.avgWeeklyGain.toFixed(2)}%
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: "45%" }}>
+              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Total Workouts</Text>
+              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.text.primary }}>
+                {summaryStats.totalWorkouts}
+              </Text>
+            </View>
+          </View>
+          
+          {/* Progression Breakdown */}
+          <View style={{ 
+            flexDirection: "row", 
+            gap: 8, 
+            paddingTop: 12, 
+            borderTopWidth: 1, 
+            borderTopColor: colors.border.light 
+          }}>
+            {summaryStats.excellent > 0 && (
+              <View style={{ 
+                flex: 1, 
+                backgroundColor: colors.status.success + '20', 
+                borderRadius: 8, 
+                padding: 8, 
+                alignItems: "center" 
+              }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.status.success }}>
+                  {summaryStats.excellent}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.text.tertiary, marginTop: 2 }}>Excellent</Text>
+              </View>
+            )}
+            {summaryStats.good > 0 && (
+              <View style={{ 
+                flex: 1, 
+                backgroundColor: colors.primary[100], 
+                borderRadius: 8, 
+                padding: 8, 
+                alignItems: "center" 
+              }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary[600] }}>
+                  {summaryStats.good}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.text.tertiary, marginTop: 2 }}>Good</Text>
+              </View>
+            )}
+            {summaryStats.stable > 0 && (
+              <View style={{ 
+                flex: 1, 
+                backgroundColor: colors.status.warning + '20', 
+                borderRadius: 8, 
+                padding: 8, 
+                alignItems: "center" 
+              }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.status.warning }}>
+                  {summaryStats.stable}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.text.tertiary, marginTop: 2 }}>Stable</Text>
+              </View>
+            )}
+            {summaryStats.declining > 0 && (
+              <View style={{ 
+                flex: 1, 
+                backgroundColor: colors.status.error + '20', 
+                borderRadius: 8, 
+                padding: 8, 
+                alignItems: "center" 
+              }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.status.error }}>
+                  {summaryStats.declining}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.text.tertiary, marginTop: 2 }}>Declining</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Timeframe Filter */}
       <View style={{ marginBottom: 16 }}>
@@ -312,7 +499,7 @@ export default function ProgressiveOverloadInsights({
       </View>
 
       <View>
-        {insights.slice(0, 5).map((insight, index) => {
+        {visibleInsights.map((insight, index) => {
           return (
             <View
               key={index}
@@ -327,49 +514,33 @@ export default function ProgressiveOverloadInsights({
                 elevation: 2,
                 borderWidth: 1,
                 borderColor: colors.border.light,
-                marginBottom: index < insights.slice(0, 5).length - 1 ? 16 : 0
+                marginBottom: 16
               }}
             >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+              {/* Header: Exercise Name and Progression Badge */}
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                 <TouchableOpacity 
                   style={{ flex: 1, marginRight: 16 }}
                   onPress={() => handleExercisePress(insight.exercise)}
                   activeOpacity={0.7}
                 >
                   <Text style={{ 
-                    fontSize: 18, 
+                    fontSize: 20, 
                     fontWeight: "700", 
                     color: colors.text.primary, 
-                    marginBottom: 4,
+                    marginBottom: 12,
                     textDecorationLine: 'underline' 
                   }}>
                     {insight.exercise}
-                  </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                    <Text style={{ 
-                      fontSize: 24, 
-                      fontWeight: "700", 
-                      marginRight: 4,
-                      color: getProgressionColor(insight.progression) 
-                    }}>
-                      {insight.totalGain > 0 ? "+" : ""}
-                      {(insight.totalGain || 0).toFixed(1)}%
-                    </Text>
-                    <Text style={{ fontSize: 14, color: colors.text.secondary, fontWeight: "500" }}>total gain</Text>
-                  </View>
-                  <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
-                    {insight.weeklyGain > 0 ? "+" : ""}
-                    {(insight.weeklyGain || 0).toFixed(2)}% per week
-                    {insight.timeSpanWeeks ? ` • ${insight.timeSpanWeeks.toFixed(1)} weeks` : ''}
                   </Text>
                 </TouchableOpacity>
 
                 <View style={{ alignItems: "center" }}>
                   <View
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
+                      width: 52,
+                      height: 52,
+                      borderRadius: 26,
                       alignItems: "center",
                       justifyContent: "center",
                       marginBottom: 8,
@@ -378,13 +549,13 @@ export default function ProgressiveOverloadInsights({
                   >
                     <Ionicons
                       name={getProgressionIcon(insight.progression)}
-                      size={20}
+                      size={22}
                       color={getProgressionColor(insight.progression)}
                     />
                   </View>
                   <Text
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: "700",
                       textTransform: "uppercase",
                       letterSpacing: 0.5,
@@ -393,6 +564,120 @@ export default function ProgressiveOverloadInsights({
                   >
                     {insight.progression}
                   </Text>
+                </View>
+              </View>
+
+              {/* 1RM Values Section */}
+              {insight.starting1RM && insight.ending1RM && (
+                <View style={{ 
+                  backgroundColor: colors.background.primary, 
+                  borderRadius: 12, 
+                  padding: 14, 
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border.light
+                }}>
+                  <Text style={{ 
+                    fontSize: 11, 
+                    color: colors.text.tertiary, 
+                    marginBottom: 8,
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5
+                  }}>
+                    1RM Progression
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ alignItems: "flex-start" }}>
+                      <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4 }}>Starting</Text>
+                      <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.secondary }}>
+                        {insight.starting1RM.toFixed(1)} kg
+                      </Text>
+                    </View>
+                    <View style={{ 
+                      width: 40, 
+                      height: 1, 
+                      backgroundColor: colors.border.light,
+                      marginHorizontal: 12
+                    }} />
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4 }}>Current</Text>
+                      <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
+                        {insight.ending1RM.toFixed(1)} kg
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Total Gain Section */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", alignItems: "baseline", marginBottom: 8 }}>
+                  <Text style={{ 
+                    fontSize: 32, 
+                    fontWeight: "800", 
+                    marginRight: 8,
+                    color: getProgressionColor(insight.progression),
+                    letterSpacing: -0.5
+                  }}>
+                    {insight.totalGain > 0 ? "+" : ""}
+                    {(insight.totalGain || 0).toFixed(1)}%
+                  </Text>
+                  <Text style={{ fontSize: 15, color: colors.text.secondary, fontWeight: "600" }}>
+                    Total Gain
+                  </Text>
+                </View>
+              </View>
+
+              {/* Metrics Grid */}
+              <View style={{ 
+                backgroundColor: colors.background.primary, 
+                borderRadius: 12, 
+                padding: 14,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: colors.border.light
+              }}>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+                  <View style={{ flex: 1, minWidth: "45%" }}>
+                    <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4, fontWeight: "600" }}>
+                      Weekly Gain
+                    </Text>
+                    <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                      {insight.weeklyGain > 0 ? "+" : ""}
+                      {(insight.weeklyGain || 0).toFixed(2)}%
+                    </Text>
+                  </View>
+                  {insight.timeSpanWeeks && (
+                    <View style={{ flex: 1, minWidth: "45%" }}>
+                      <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4, fontWeight: "600" }}>
+                        Time Period
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                        {insight.timeSpanWeeks.toFixed(1)} weeks
+                      </Text>
+                    </View>
+                  )}
+                  {insight.workoutCount && (
+                    <View style={{ flex: 1, minWidth: "45%" }}>
+                      <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4, fontWeight: "600" }}>
+                        Workouts
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                        {insight.workoutCount}
+                      </Text>
+                    </View>
+                  )}
+                  {insight.totalSets && (
+                    <View style={{ flex: 1, minWidth: "45%" }}>
+                      <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4, fontWeight: "600" }}>
+                        Total Sets
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                        {insight.totalSets}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -440,22 +725,43 @@ export default function ProgressiveOverloadInsights({
         })}
       </View>
 
-      {insights.length > 5 && (
-        <View style={{ 
-          marginTop: 16, 
-          backgroundColor: colors.background.secondary, 
-          borderRadius: 12, 
-          padding: 16, 
-          borderWidth: 1, 
-          borderColor: colors.border.light 
-        }}>
-          <Text style={{ 
-            fontSize: 14, 
-            color: colors.text.secondary, 
-            textAlign: "center", 
-            fontWeight: "500" 
+      {/* Load More Button */}
+      {hasMore && (
+        <TouchableOpacity
+          onPress={handleLoadMore}
+          activeOpacity={0.7}
+          style={{
+            marginTop: 16,
+            backgroundColor: colors.background.primary,
+            borderRadius: 12,
+            padding: 16,
+            borderWidth: 1,
+            borderColor: colors.border.light,
+            alignItems: "center"
+          }}
+        >
+          <Text style={{
+            fontSize: 14,
+            fontWeight: "600",
+            color: colors.primary[600]
           }}>
-            Showing top 5 exercises • {insights.length - 5} more available
+            Load More ({sortedInsights.length - visibleCount} remaining)
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Records Count */}
+      {sortedInsights.length > 0 && (
+        <View style={{
+          marginTop: 12,
+          paddingVertical: 8,
+          alignItems: "center"
+        }}>
+          <Text style={{
+            fontSize: 12,
+            color: colors.text.tertiary
+          }}>
+            Showing {Math.min(visibleCount, sortedInsights.length)} of {sortedInsights.length} exercises
           </Text>
         </View>
       )}
@@ -496,6 +802,15 @@ export default function ProgressiveOverloadInsights({
           onClose={() => setShowInfoModal(false)}
         />
       )}
+
+      {/* Filter Modal */}
+      <ProgressiveOverloadFilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
+      />
     </View>
   )
 }

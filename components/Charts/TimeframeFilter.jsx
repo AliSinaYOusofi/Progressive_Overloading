@@ -85,9 +85,9 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                 <TouchableOpacity
                     onPress={() => setShowDropdown(true)}
                     style={{
-                        backgroundColor: colors.background.card || "white",
+                        backgroundColor: colors.background.card,
                         borderWidth: 1,
-                        borderColor: showDropdown ? colors.primary[600] : "#E5E7EB",
+                        borderColor: showDropdown ? colors.primary[600] : colors.border.light,
                         borderRadius: 12,
                         paddingHorizontal: 16,
                         paddingVertical: 14,
@@ -126,7 +126,7 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                     style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}
                 >
                     <View style={{ 
-                        backgroundColor: colors.background.card || "white", 
+                        backgroundColor: colors.background.card, 
                         borderRadius: 20, 
                         width: "100%", 
                         maxWidth: 400,
@@ -136,7 +136,7 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                         shadowRadius: 12,
                         elevation: 8,
                     }}>
-                        <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" }}>
+                        <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border.light }}>
                             <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: "700" }}>Select Time Period</Text>
                         </View>
                         <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
@@ -148,8 +148,8 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                                         paddingHorizontal: 20,
                                         paddingVertical: 16,
                                         borderBottomWidth: index < timeframeItems.length - 1 ? 1 : 0,
-                                        borderBottomColor: "#F3F4F6",
-                                        backgroundColor: selectedTimeframe === option.value ? "#F0F9FF" : "transparent",
+                                        borderBottomColor: colors.border.light,
+                                        backgroundColor: selectedTimeframe === option.value ? colors.primary[50] : "transparent",
                                         flexDirection: "row",
                                         alignItems: "center",
                                         justifyContent: "space-between",

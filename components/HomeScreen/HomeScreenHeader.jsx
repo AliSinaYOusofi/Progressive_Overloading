@@ -40,7 +40,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak, setShow
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: isDarkMode ? colors.primary[400] : colors.primary[500],
+            backgroundColor: isDarkMode ? colors.primary[300] : colors.primary[500],
             paddingHorizontal: 12,
             paddingVertical: 8,
             borderRadius: 20,
@@ -51,7 +51,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak, setShow
           <Text style={{ color: colors.text.white, fontWeight: 'bold', marginLeft: 4 }}>
             {currentStreak}
           </Text>
-          <Text style={{ color: colors.primary[100], fontSize: 14, marginLeft: 4 }}>
+          <Text style={{ color: colors.primary[50], fontSize: 14, marginLeft: 4 }}>
             day(s) streak
           </Text>
         </TouchableOpacity>
