@@ -26,7 +26,9 @@ import VolumeProgression from "../components/Charts/VolumeProgression";
 import VolumeProgressionModal from "../components/Charts/VolumeProgressionModal";
 import StrengthStandards from "../components/Charts/StrengthStandards";
 import PersonalRecords from "../components/Charts/PersonalRecords";
+import PersonalRecordsModal from "../components/Charts/PersonalRecordsModal";
 import WeeklyProgress from "../components/Charts/WeeklyProgress";
+import WeeklyProgressModal from "../components/Charts/WeeklyProgressModal";
 import MonthlyTrends from "../components/Charts/MonthlyTrends";
 import ProgressiveOverloadInsights from "../components/Charts/ProgressiveOverloadInsights";
 import RPEAnalysis from "../components/Charts/RPEAnalysis";
@@ -52,6 +54,8 @@ export default function ChartsScreen() {
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [showExerciseProgressionModal, setShowExerciseProgressionModal] = useState(false);
     const [showVolumeProgressionModal, setShowVolumeProgressionModal] = useState(false);
+    const [showWeeklyProgressModal, setShowWeeklyProgressModal] = useState(false);
+    const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
 
     useEffect(() => {
         loadChartsData();
@@ -288,25 +292,189 @@ export default function ChartsScreen() {
 
                 {/* Personal Records */}
                 {personalRecords && personalRecords.length > 0 && (
-                    <CollapsibleSection
-                        title="Personal Records"
-                        subtitle="Your best performances"
-                        icon={Trophy}
-                        defaultExpanded={false}
-                    >
-                        <PersonalRecords personalRecords={personalRecords} />
-                    </CollapsibleSection>
+                    <View style={{ marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => setShowPersonalRecordsModal(true)}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 12,
+                                padding: 16,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 2
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 12,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: colors.primary[100]
+                                        }}
+                                    >
+                                        <Trophy size={20} color={colors.primary[600]} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Personal Records</Text>
+                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Your best performances</Text>
+                                    </View>
+                                </View>
+                                <View 
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: colors.background.primary
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
+                                </View>
+                            </View>
+                            {/* Preview of first 3 records */}
+                            <View style={{ marginTop: 16, gap: 12 }}>
+                                {personalRecords.slice(0, 3).map((record, index) => (
+                                    <View
+                                        key={index}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            paddingVertical: 10,
+                                            paddingHorizontal: 12,
+                                            backgroundColor: colors.background.primary,
+                                            borderRadius: 8,
+                                            borderWidth: 1,
+                                            borderColor: colors.border.light,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <View style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 8,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: colors.primary[100],
+                                                marginRight: 10,
+                                            }}>
+                                                <Text style={{ 
+                                                    fontSize: 14, 
+                                                    fontWeight: "800", 
+                                                    color: colors.primary[700],
+                                                }}>
+                                                    {index + 1}
+                                                </Text>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ 
+                                                    fontSize: 15, 
+                                                    fontWeight: "700", 
+                                                    color: colors.text.primary,
+                                                }}>
+                                                    {record.exercise}
+                                                </Text>
+                                                <Text style={{ 
+                                                    fontSize: 12, 
+                                                    color: colors.text.tertiary,
+                                                    marginTop: 2,
+                                                }}>
+                                                    {record.weight} {record.unit || "kg"} × {record.reps} reps
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={{ 
+                                                fontSize: 16, 
+                                                fontWeight: "800", 
+                                                color: colors.primary[600],
+                                            }}>
+                                                {record.oneRM.toFixed(1)}
+                                            </Text>
+                                            <Text style={{ 
+                                                fontSize: 11, 
+                                                color: colors.text.tertiary,
+                                                marginTop: 2,
+                                            }}>
+                                                1RM (kg)
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ))}
+                                {personalRecords.length > 3 && (
+                                    <Text style={{ 
+                                        fontSize: 13, 
+                                        color: colors.text.tertiary,
+                                        textAlign: 'center',
+                                        marginTop: 4,
+                                        fontStyle: 'italic',
+                                    }}>
+                                        +{personalRecords.length - 3} more records
+                                    </Text>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Weekly Progress */}
-                <CollapsibleSection
-                    title="Weekly Progress"
-                    subtitle="Sets logged this week"
-                    icon={Calendar}
-                    defaultExpanded={false}
-                >
-                    <WeeklyProgress weeklyProgress={weeklyProgress} />
-                </CollapsibleSection>
+                <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                        onPress={() => setShowWeeklyProgressModal(true)}
+                        activeOpacity={0.7}
+                        style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 12,
+                            padding: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 2,
+                            elevation: 2
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                <View 
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: colors.primary[100]
+                                    }}
+                                >
+                                    <Calendar size={20} color={colors.primary[600]} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Weekly Progress</Text>
+                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Sets logged this week</Text>
+                                </View>
+                            </View>
+                            <View 
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.background.primary
+                                }}
+                            >
+                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </View>
 
                 {/* Monthly Trends */}
                 {monthlyStats && monthlyStats.length > 0 && (
@@ -375,6 +543,21 @@ export default function ChartsScreen() {
                 visible={showVolumeProgressionModal}
                 onClose={() => setShowVolumeProgressionModal(false)}
                 volumeProgression={volumeProgression}
+            />
+
+            {/* Weekly Progress Modal */}
+            <WeeklyProgressModal
+                visible={showWeeklyProgressModal}
+                onClose={() => setShowWeeklyProgressModal(false)}
+                weeklyProgress={weeklyProgress}
+                userId={user?.id}
+            />
+
+            {/* Personal Records Modal */}
+            <PersonalRecordsModal
+                visible={showPersonalRecordsModal}
+                onClose={() => setShowPersonalRecordsModal(false)}
+                personalRecords={personalRecords}
             />
         </View>
     );
