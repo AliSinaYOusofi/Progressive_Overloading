@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
 import { TrendingUp, BarChart3, Award, Trophy, Calendar, Target, Activity, Zap } from "lucide-react-native";
 import { useThemedColors } from "../hooks/useThemedColors";
 import { 
@@ -21,7 +21,9 @@ import QuickStats from "../components/Charts/QuickStats";
 import TimeframeFilter from "../components/Charts/TimeframeFilter";
 import CollapsibleSection from "../components/Charts/CollapsibleSection";
 import ExerciseProgression from "../components/Charts/ExerciseProgression";
+import ExerciseProgressionModal from "../components/Charts/ExerciseProgressionModal";
 import VolumeProgression from "../components/Charts/VolumeProgression";
+import VolumeProgressionModal from "../components/Charts/VolumeProgressionModal";
 import StrengthStandards from "../components/Charts/StrengthStandards";
 import PersonalRecords from "../components/Charts/PersonalRecords";
 import WeeklyProgress from "../components/Charts/WeeklyProgress";
@@ -48,6 +50,8 @@ export default function ChartsScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
     const [selectedExercise, setSelectedExercise] = useState(null);
+    const [showExerciseProgressionModal, setShowExerciseProgressionModal] = useState(false);
+    const [showVolumeProgressionModal, setShowVolumeProgressionModal] = useState(false);
 
     useEffect(() => {
         loadChartsData();
@@ -165,24 +169,110 @@ export default function ChartsScreen() {
                 />
 
                 {/* Exercise Progression Charts */}
-                <CollapsibleSection
-                    title="Exercise Progression"
-                    subtitle="1RM progression over time"
-                    icon={TrendingUp}
-                    defaultExpanded={true}
-                >
-                    <ExerciseProgression exerciseProgression={exerciseProgression} />
-                </CollapsibleSection>
+                <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                        onPress={() => setShowExerciseProgressionModal(true)}
+                        activeOpacity={0.7}
+                        style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 12,
+                            padding: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 2,
+                            elevation: 2,
+                            marginBottom: 8
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <View 
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 12,
+                                        backgroundColor: colors.primary[100]
+                                    }}
+                                >
+                                    <TrendingUp size={20} color={colors.primary[600]} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Exercise Progression</Text>
+                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>1RM progression over time</Text>
+                                </View>
+                            </View>
+                            <View 
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.background.primary
+                                }}
+                            >
+                                <TrendingUp size={18} color={colors.primary[600]} />
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </View>
 
                 {/* Volume Progression */}
-                <CollapsibleSection
-                    title="Volume Progression"
-                    subtitle="Total weight lifted per day"
-                    icon={BarChart3}
-                    defaultExpanded={false}
-                >
-                    <VolumeProgression volumeProgression={volumeProgression} />
-                </CollapsibleSection>
+                <View style={{ marginBottom: 24 }}>
+                    <TouchableOpacity
+                        onPress={() => setShowVolumeProgressionModal(true)}
+                        activeOpacity={0.7}
+                        style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 12,
+                            padding: 16,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 2,
+                            elevation: 2,
+                            marginBottom: 8
+                        }}
+                    >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                                <View 
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 12,
+                                        backgroundColor: colors.primary[100]
+                                    }}
+                                >
+                                    <BarChart3 size={20} color={colors.primary[600]} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Volume Progression</Text>
+                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Total weight lifted per day</Text>
+                                </View>
+                            </View>
+                            <View 
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.background.primary
+                                }}
+                            >
+                                <BarChart3 size={18} color={colors.primary[600]} />
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                </View>
 
                 {/* Strength Standards */}
                 {strengthStandards && strengthStandards.length > 0 && (
@@ -272,6 +362,20 @@ export default function ChartsScreen() {
                     </CollapsibleSection>
                 )}
             </ScrollView>
+
+            {/* Exercise Progression Modal */}
+            <ExerciseProgressionModal
+                visible={showExerciseProgressionModal}
+                onClose={() => setShowExerciseProgressionModal(false)}
+                exerciseProgression={exerciseProgression}
+            />
+
+            {/* Volume Progression Modal */}
+            <VolumeProgressionModal
+                visible={showVolumeProgressionModal}
+                onClose={() => setShowVolumeProgressionModal(false)}
+                volumeProgression={volumeProgression}
+            />
         </View>
     );
 }

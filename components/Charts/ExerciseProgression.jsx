@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Dimensions, TouchableOpacity } from "react-native";
-import { Dumbbell } from "lucide-react-native";
-import { PieChart } from "react-native-gifted-charts";
+import { View, Text, TouchableOpacity } from "react-native";
+import { ChevronDown, Filter } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { getCurrentUser } from "../../lib/database";
 import ExerciseDetailModal from "./ExerciseDetailModal";
+import ExerciseProgressionCard from "./ExerciseProgressionCard";
+import ExerciseProgressionEmptyState from "./ExerciseProgressionEmptyState";
+import ExerciseProgressionFilterModal from "./ExerciseProgressionFilterModal";
+import { getExerciseList, sortExerciseList } from "./utils/exerciseProgressionUtils";
 
-const { width: screenWidth } = Dimensions.get('window');
+const INITIAL_DISPLAY_COUNT = 10;
+const LOAD_MORE_COUNT = 10;
 
 export default function ExerciseProgression({ exerciseProgression }) {
     const colors = useThemedColors();
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [userId, setUserId] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(INITIAL_DISPLAY_COUNT);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [sortBy, setSortBy] = useState('last1RM');
+    const [sortOrder, setSortOrder] = useState('desc');
 
     useEffect(() => {
         loadUser();
@@ -30,127 +38,114 @@ export default function ExerciseProgression({ exerciseProgression }) {
         setShowDetailModal(true);
     };
 
+    const handleLoadMore = () => {
+        setVisibleCount(prev => prev + LOAD_MORE_COUNT);
+    };
+
+    // Reset visible count when exerciseProgression or sort changes
+    useEffect(() => {
+        setVisibleCount(INITIAL_DISPLAY_COUNT);
+    }, [exerciseProgression, sortBy, sortOrder]);
+    
+    const handleSortChange = (newSortBy, newSortOrder) => {
+        setSortBy(newSortBy);
+        setSortOrder(newSortOrder);
+    };
+
     if (!exerciseProgression) {
         return null;
     }
 
-    const getExerciseNames = () => {
-        return Object.keys(exerciseProgression || {}).slice(0, 5);
-    };
-
-    const calculateProgressionRate = (exerciseData) => {
-        if (!exerciseData || !Array.isArray(exerciseData) || exerciseData.length < 2) return 0;
-        const first = exerciseData[0]?.oneRM || 0;
-        const last = exerciseData[exerciseData.length - 1]?.oneRM || 0;
-        return last > first ? ((last - first) / first) * 100 : 0;
-    };
-
-    // Build pie slices using the latest 1RM per exercise (top 5)
-    const buildPieData = () => {
-        const exerciseNames = getExerciseNames();
-        const slices = [];
-        // Distinct color palette for better visibility
-        const colorPalette = [
-            '#10b981', // emerald-500
-            '#3b82f6', // blue-500
-            '#8b5cf6', // violet-500
-            '#f59e0b', // amber-500
-            '#ef4444', // red-500
-            '#06b6d4', // cyan-500
-            '#ec4899', // pink-500
-            '#84cc16', // lime-500
-            '#f97316', // orange-500
-            '#6366f1', // indigo-500
-        ];
-        exerciseNames.forEach((name, idx) => {
-            const data = exerciseProgression[name] || [];
-            if (!data.length) return;
-            const last = data[data.length - 1]?.oneRM || 0;
-            slices.push({
-                value: Math.max(0, last),
-                color: colorPalette[idx % colorPalette.length],
-                text: last > 0 ? String(Math.round(last)) : '',
-                textColor: colors.text?.white || 'white',
-                textSize: 10,
-                label: name,
-            });
-        });
-        // If all zeros, return empty to trigger fallback
-        const total = slices.reduce((s, d) => s + d.value, 0);
-        return total > 0 ? slices : [];
-    };
+    const exerciseList = getExerciseList(exerciseProgression);
+    const sortedExerciseList = sortExerciseList(exerciseList, sortBy, sortOrder);
+    const visibleExercises = sortedExerciseList.slice(0, visibleCount);
+    const hasMore = sortedExerciseList.length > visibleCount;
+    const remainingCount = sortedExerciseList.length - visibleCount;
 
     return (
         <View>
-            {Object.keys(exerciseProgression).length > 0 ? (
-                <View style={{
-                    backgroundColor: colors.background.card,
-                    borderRadius: 12,
-                    padding: 24,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 2
-                }}>
-                    <View style={{ alignItems: 'center', height: 224, justifyContent: 'center' }}>
-                        {buildPieData().length > 0 ? (
-                            <PieChart
-                                data={buildPieData()}
-                                radius={80}
-                                innerRadius={40}
-                                innerCircleColor={colors.background.card}
-                                showText
-                                textColor={colors.text?.white || 'white'}
-                                textSize={10}
-                                centerLabelComponent={() => (
-                                    <View style={{ alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>
-                                            {getExerciseNames().length}
-                                        </Text>
-                                        <Text style={{ fontSize: 12, color: colors.text.secondary }}>Exercises</Text>
-                                    </View>
-                                )}
-                            />
-                        ) : (
-                            <Text style={{ color: colors.text.secondary }}>No progression data</Text>
-                        )}
+            {exerciseList.length > 0 ? (
+                <View>
+                    <View style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        marginBottom: 12,
+                    }}>
+                        <Text style={{ 
+                            fontSize: 14, 
+                            color: colors.text.secondary,
+                            fontWeight: '500',
+                        }}>
+                            {exerciseList.length} {exerciseList.length === 1 ? 'exercise' : 'exercises'}
+                            {hasMore && ` • Showing ${visibleCount}`}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => setShowFilterModal(true)}
+                            activeOpacity={0.7}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                backgroundColor: colors.background.primary,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: colors.border.light,
+                            }}
+                        >
+                            <Filter size={16} color={colors.primary[600]} />
+                            <Text style={{
+                                fontSize: 13,
+                                fontWeight: '600',
+                                color: colors.primary[600],
+                            }}>
+                                Filter
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                    {/* Legend */}
-                    {buildPieData().length > 0 && (
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 16 }}>
-                            {buildPieData().map((slice, idx) => (
-                                <TouchableOpacity 
-                                    key={idx} 
-                                    style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 8, marginVertical: 4 }}
-                                    onPress={() => handleExercisePress(slice.label)}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: slice.color, marginRight: 6 }} />
-                                    <Text style={{ fontSize: 12, color: colors.text.secondary, textDecorationLine: 'underline' }}>
-                                        {slice.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                    {visibleExercises.map((exercise) => (
+                        <ExerciseProgressionCard
+                            key={exercise.name}
+                            exercise={exercise}
+                            onPress={() => handleExercisePress(exercise.name)}
+                        />
+                    ))}
+                    
+                    {/* Load More Button */}
+                    {hasMore && (
+                        <TouchableOpacity
+                            onPress={handleLoadMore}
+                            activeOpacity={0.7}
+                            style={{
+                                marginTop: 8,
+                                marginBottom: 12,
+                                paddingVertical: 14,
+                                paddingHorizontal: 20,
+                                backgroundColor: colors.background.primary,
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: colors.border.light,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                            }}
+                        >
+                            <Text style={{
+                                fontSize: 15,
+                                fontWeight: '600',
+                                color: colors.primary[600],
+                            }}>
+                                Load {Math.min(LOAD_MORE_COUNT, remainingCount)} More
+                            </Text>
+                            <ChevronDown size={18} color={colors.primary[600]} />
+                        </TouchableOpacity>
                     )}
                 </View>
             ) : (
-                <View style={{
-                    backgroundColor: colors.background.card,
-                    borderRadius: 12,
-                    padding: 32,
-                    alignItems: 'center',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 2
-                }}>
-                    <Dumbbell size={48} color={colors.text.tertiary} />
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary, marginTop: 12, marginBottom: 4 }}>No exercise data yet</Text>
-                    <Text style={{ fontSize: 14, color: colors.text.secondary, textAlign: 'center' }}>Start logging sets to see your progression!</Text>
-                </View>
+                <ExerciseProgressionEmptyState />
             )}
 
             {/* Exercise Detail Modal */}
@@ -162,6 +157,15 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     userId={userId}
                 />
             )}
+
+            {/* Filter Modal */}
+            <ExerciseProgressionFilterModal
+                visible={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
+            />
         </View>
     );
 }
