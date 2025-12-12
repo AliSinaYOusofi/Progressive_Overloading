@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { 
   View, 
   Text, 
@@ -17,6 +17,9 @@ import TrendInfoModal from "./TrendInfoModal"
 import ExerciseMetricCard from "./ExerciseMetricCard"
 import TrendCard from "./TrendCard"
 import AllTimeStatsSection from "./AllTimeStatsSection"
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler"
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated"
+import { scheduleOnRN } from "react-native-worklets"
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
@@ -28,6 +31,60 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
   const [loading, setLoading] = useState(true)
   const [showCustomPicker, setShowCustomPicker] = useState(false)
   const [showTrendInfoModal, setShowTrendInfoModal] = useState(false)
+  
+  // Gesture handling for swipe-to-close
+  const translateY = useSharedValue(0);
+  const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
+
+  // Define close function in RN Runtime scope (required for scheduleOnRN)
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Only allow downward swipes (positive translationY)
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > SWIPE_THRESHOLD) {
+        // Swipe exceeded threshold, animate out then close modal
+        translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+          'worklet';
+          scheduleOnRN(handleClose);
+        });
+      } else {
+        // Snap back to original position
+        translateY.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+
+  // Animated style for drag handle that changes color when swiping
+  const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      translateY.value,
+      [0, 50, 100],
+      [colors.border.light, colors.primary[400], colors.primary[600]]
+    );
+    return {
+      backgroundColor,
+    };
+  });
+
+  // Reset translateY when modal becomes visible
+  useEffect(() => {
+    if (visible) {
+      translateY.value = 0;
+    }
+  }, [visible, translateY]);
 
   const timeframes = [
     { label: "7D", value: 7 },
@@ -155,28 +212,43 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-        <TouchableOpacity 
-          activeOpacity={1} 
-          onPress={onClose}
-          style={{ flex: 1 }}
-        />
-        <View 
-          style={{ 
-            backgroundColor: colors.background.card,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 10,
-            maxHeight: screenHeight * 0.9, 
-            minHeight: screenHeight * 0.75 
-          }}
-        >
-          {/* Drag Handle */}
-          <View style={{ width: 48, height: 4, backgroundColor: colors.border.light, borderRadius: 2, alignSelf: "center", marginTop: 12, marginBottom: 16 }} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={onClose}
+            style={{ flex: 1 }}
+          />
+          <GestureDetector gesture={panGesture}>
+            <Animated.View 
+              style={[
+                { 
+                  backgroundColor: colors.background.card,
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: -2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 10,
+                  maxHeight: screenHeight * 0.9, 
+                  minHeight: screenHeight * 0.75 
+                },
+                animatedStyle
+              ]}
+            >
+              {/* Drag Handle */}
+              <Animated.View style={[
+                { 
+                  width: 48, 
+                  height: 4, 
+                  borderRadius: 2, 
+                  alignSelf: "center", 
+                  marginTop: 12, 
+                  marginBottom: 16 
+                },
+                dragHandleAnimatedStyle
+              ]} />
 
           {/* Header */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, marginBottom: 16 }}>
@@ -636,8 +708,10 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
               />
             </ScrollView>
           )}
+            </Animated.View>
+          </GestureDetector>
         </View>
-      </View>
+      </GestureHandlerRootView>
 
       {/* Trend Info Modal */}
       <TrendInfoModal
