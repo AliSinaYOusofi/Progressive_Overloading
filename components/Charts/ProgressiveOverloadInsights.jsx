@@ -116,6 +116,17 @@ export default function ProgressiveOverloadInsights({
     const totalWorkouts = insights.reduce((sum, i) => sum + (i.workoutCount || 0), 0)
     const totalSets = insights.reduce((sum, i) => sum + (i.totalSets || 0), 0)
     
+    // Calculate average numerical gains
+    const exercisesWith1RM = insights.filter(i => i.starting1RM && i.ending1RM)
+    const avgTotalNumericalGain = exercisesWith1RM.length > 0
+      ? exercisesWith1RM.reduce((sum, i) => sum + (i.ending1RM - i.starting1RM), 0) / exercisesWith1RM.length
+      : null
+    
+    const exercisesWithWeeklyData = insights.filter(i => i.starting1RM && i.ending1RM && i.timeSpanWeeks)
+    const avgWeeklyNumericalGain = exercisesWithWeeklyData.length > 0
+      ? exercisesWithWeeklyData.reduce((sum, i) => sum + ((i.ending1RM - i.starting1RM) / i.timeSpanWeeks), 0) / exercisesWithWeeklyData.length
+      : null
+    
     return {
       total: insights.length,
       excellent,
@@ -124,6 +135,8 @@ export default function ProgressiveOverloadInsights({
       declining,
       avgTotalGain,
       avgWeeklyGain,
+      avgTotalNumericalGain,
+      avgWeeklyNumericalGain,
       totalWorkouts,
       totalSets
     }
@@ -372,15 +385,29 @@ export default function ProgressiveOverloadInsights({
             </View>
             <View style={{ flex: 1, minWidth: "45%" }}>
               <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Avg Total Gain</Text>
-              <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgTotalGain >= 0 ? colors.status.success : colors.status.error }}>
-                {summaryStats.avgTotalGain >= 0 ? '+' : ''}{summaryStats.avgTotalGain.toFixed(1)}%
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" }}>
+                <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgTotalGain >= 0 ? colors.status.success : colors.status.error }}>
+                  {summaryStats.avgTotalGain >= 0 ? '+' : ''}{summaryStats.avgTotalGain.toFixed(1)}%
+                </Text>
+                {summaryStats.avgTotalNumericalGain !== null && !isNaN(summaryStats.avgTotalNumericalGain) && isFinite(summaryStats.avgTotalNumericalGain) && (
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text.secondary, marginLeft: 6 }}>
+                    ({summaryStats.avgTotalNumericalGain >= 0 ? '+' : ''}{summaryStats.avgTotalNumericalGain.toFixed(1)} kg)
+                  </Text>
+                )}
+              </View>
             </View>
             <View style={{ flex: 1, minWidth: "45%" }}>
               <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Avg Weekly Gain</Text>
-              <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgWeeklyGain >= 0 ? colors.status.success : colors.status.error }}>
-                {summaryStats.avgWeeklyGain >= 0 ? '+' : ''}{summaryStats.avgWeeklyGain.toFixed(2)}%
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" }}>
+                <Text style={{ fontSize: 20, fontWeight: "700", color: summaryStats.avgWeeklyGain >= 0 ? colors.status.success : colors.status.error }}>
+                  {summaryStats.avgWeeklyGain >= 0 ? '+' : ''}{summaryStats.avgWeeklyGain.toFixed(2)}%
+                </Text>
+                {summaryStats.avgWeeklyNumericalGain !== null && !isNaN(summaryStats.avgWeeklyNumericalGain) && isFinite(summaryStats.avgWeeklyNumericalGain) && (
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text.secondary, marginLeft: 6 }}>
+                    ({summaryStats.avgWeeklyNumericalGain >= 0 ? '+' : ''}{summaryStats.avgWeeklyNumericalGain.toFixed(2)} kg/week)
+                  </Text>
+                )}
+              </View>
             </View>
             <View style={{ flex: 1, minWidth: "45%" }}>
               <Text style={{ fontSize: 12, color: colors.text.tertiary, marginBottom: 4 }}>Total Workouts</Text>
@@ -613,16 +640,30 @@ export default function ProgressiveOverloadInsights({
               {/* Total Gain Section */}
               <View style={{ marginBottom: 16 }}>
                 <View style={{ flexDirection: "row", alignItems: "baseline", marginBottom: 8 }}>
-                  <Text style={{ 
-                    fontSize: 32, 
-                    fontWeight: "800", 
-                    marginRight: 8,
-                    color: getProgressionColor(insight.progression),
-                    letterSpacing: -0.5
-                  }}>
-                    {insight.totalGain > 0 ? "+" : ""}
-                    {(insight.totalGain || 0).toFixed(1)}%
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" }}>
+                    <Text style={{ 
+                      fontSize: 32, 
+                      fontWeight: "800", 
+                      marginRight: 8,
+                      color: getProgressionColor(insight.progression),
+                      letterSpacing: -0.5
+                    }}>
+                      {insight.totalGain > 0 ? "+" : ""}
+                      {(insight.totalGain || 0).toFixed(1)}%
+                    </Text>
+                    {insight.starting1RM && insight.ending1RM && (
+                      <Text style={{ 
+                        fontSize: 18, 
+                        fontWeight: "700", 
+                        marginRight: 8,
+                        color: colors.text.secondary,
+                        letterSpacing: -0.3
+                      }}>
+                        ({insight.ending1RM - insight.starting1RM > 0 ? "+" : ""}
+                        {(insight.ending1RM - insight.starting1RM).toFixed(1)} kg)
+                      </Text>
+                    )}
+                  </View>
                   <Text style={{ fontSize: 15, color: colors.text.secondary, fontWeight: "600" }}>
                     Total Gain
                   </Text>
@@ -643,10 +684,18 @@ export default function ProgressiveOverloadInsights({
                     <Text style={{ fontSize: 10, color: colors.text.tertiary, marginBottom: 4, fontWeight: "600" }}>
                       Weekly Gain
                     </Text>
-                    <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
-                      {insight.weeklyGain > 0 ? "+" : ""}
-                      {(insight.weeklyGain || 0).toFixed(2)}%
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" }}>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                        {insight.weeklyGain > 0 ? "+" : ""}
+                        {(insight.weeklyGain || 0).toFixed(2)}%
+                      </Text>
+                      {insight.starting1RM && insight.ending1RM && insight.timeSpanWeeks && (
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: colors.text.secondary, marginLeft: 6 }}>
+                          ({((insight.ending1RM - insight.starting1RM) / insight.timeSpanWeeks) >= 0 ? "+" : ""}
+                          {((insight.ending1RM - insight.starting1RM) / insight.timeSpanWeeks).toFixed(2)} kg/week)
+                        </Text>
+                      )}
+                    </View>
                   </View>
                   {insight.timeSpanWeeks && (
                     <View style={{ flex: 1, minWidth: "45%" }}>

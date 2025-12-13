@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions } from "react-native";
-import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity } from "lucide-react-native";
+import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity, ChevronRight } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
 import ModalCloseButton from "../ModalCloseButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
@@ -11,6 +12,7 @@ import WeeklyDayDetailModal from "./WeeklyDayDetailModal";
 
 export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, userId }) {
     const colors = useThemedColors();
+    const { isDarkMode } = useTheme();
     const screenHeight = Dimensions.get("window").height;
     const translateY = useSharedValue(0);
     const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
@@ -166,7 +168,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
             topLabelComponent: () => (
                 <Text style={{ 
                     fontSize: 9, 
-                    color: colors.text.secondary, 
+                    color: isDarkMode ? colors.text.white : colors.text.primary, 
                     fontWeight: '600',
                     marginBottom: 2 
                 }}>
@@ -174,7 +176,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                 </Text>
             ),
         }));
-    }, [weekData, colors]);
+    }, [weekData, colors, isDarkMode]);
 
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -464,10 +466,15 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                     capThickness={3}
                                                     capRadius={3}
                                                     showValuesAsTopLabel
+                                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
                                                     topLabelContainerStyle={{ marginBottom: 6 }}
                                                     rulesColor={colors.border.light}
                                                     rulesType="solid"
                                                     dashGap={0}
+                                                    hideRules={false}
+                                                    showXAxisLabel={true}
+                                                    xAxisLabelRotation={0}
+                                                    xAxisLabelPosition="bottom"
                                                 />
                                             </View>
                                         )}
@@ -563,6 +570,16 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                                 }}>
                                                                     {day.fullDate}
                                                                 </Text>
+                                                                {day.completed && (
+                                                                    <Text style={{ 
+                                                                        fontSize: 11, 
+                                                                        color: colors.primary[600],
+                                                                        marginTop: 4,
+                                                                        fontWeight: "500",
+                                                                    }}>
+                                                                        Tap to view details
+                                                                    </Text>
+                                                                )}
                                                             </View>
                                                         </View>
                                                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -585,22 +602,18 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                                             kg
                                                                         </Text>
                                                                     </View>
-                                                                    <Text style={{ 
-                                                                        fontSize: 18, 
-                                                                        color: colors.primary[600],
-                                                                        fontWeight: "600",
-                                                                    }}>
-                                                                        →
-                                                                    </Text>
+                                                                    <ChevronRight size={20} color={colors.primary[600]} />
                                                                 </>
                                                             ) : (
-                                                                <Text style={{ 
-                                                                    fontSize: 13, 
-                                                                    color: colors.text.tertiary,
-                                                                    fontStyle: "italic",
-                                                                }}>
-                                                                    No workout
-                                                                </Text>
+                                                                <View style={{ alignItems: "flex-end" }}>
+                                                                    <Text style={{ 
+                                                                        fontSize: 13, 
+                                                                        color: colors.text.tertiary,
+                                                                        fontStyle: "italic",
+                                                                    }}>
+                                                                        No workout
+                                                                    </Text>
+                                                                </View>
                                                             )}
                                                         </View>
                                                     </TouchableOpacity>

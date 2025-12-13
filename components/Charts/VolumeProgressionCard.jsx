@@ -221,6 +221,25 @@ export default function VolumeProgressionCard({
                         </View>
                     </View>
                 )}
+
+                {/* Footer: Tap to view details */}
+                <View style={{ 
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border.light,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                }}>
+                    <Text style={{ 
+                        fontSize: 11, 
+                        color: colors.text.tertiary,
+                        fontStyle: 'italic',
+                    }}>
+                        Tap to view details →
+                    </Text>
+                </View>
             </View>
         </TouchableOpacity>
     );

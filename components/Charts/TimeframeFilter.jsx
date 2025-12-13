@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, TextInput, Platform, ScrollView } 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, X, ChevronDown, Check } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { colorScheme } from "nativewind";
 
 export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, onCustomDateRange }) {
     const colors = useThemedColors();
@@ -183,43 +184,71 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                 animationType="slide"
                 onRequestClose={() => setShowCustomModal(false)}
             >
-                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <View className="bg-white rounded-t-3xl p-6" style={{ maxHeight: '80%' }}>
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <View style={{ 
+                        backgroundColor: colors.background.card, 
+                        borderTopLeftRadius: 24, 
+                        borderTopRightRadius: 24, 
+                        padding: 24, 
+                        maxHeight: '80%' 
+                    }}>
                         {/* Header */}
-                        <View className="flex-row justify-between items-center mb-6">
-                            <Text className="text-xl font-bold text-slate-900">Custom Date Range</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>Custom Date Range</Text>
                             <TouchableOpacity
                                 onPress={() => setShowCustomModal(false)}
-                                className="w-8 h-8 rounded-full items-center justify-center"
-                                style={{ backgroundColor: colors.neutral[100] }}
+                                style={{ 
+                                    width: 32, 
+                                    height: 32, 
+                                    borderRadius: 16, 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.neutral[100] 
+                                }}
                             >
                                 <X size={20} color={colors.neutral[600]} />
                             </TouchableOpacity>
                         </View>
 
                         {/* Start Date */}
-                        <View className="mb-4">
-                            <Text className="text-sm font-semibold text-slate-700 mb-2">Start Date</Text>
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 8 }}>Start Date</Text>
                             <TouchableOpacity
                                 onPress={() => setShowStartPicker(true)}
-                                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl p-4"
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.background.input,
+                                    borderWidth: 1,
+                                    borderColor: colors.border.medium,
+                                    borderRadius: 12,
+                                    padding: 16
+                                }}
                             >
                                 <Calendar size={20} color={colors.primary[600]} />
-                                <Text className="ml-3 text-base text-slate-900 font-medium">
+                                <Text style={{ marginLeft: 12, fontSize: 16, color: colors.text.primary, fontWeight: '500' }}>
                                     {formatDate(startDate)}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* End Date */}
-                        <View className="mb-4">
-                            <Text className="text-sm font-semibold text-slate-700 mb-2">End Date</Text>
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 8 }}>End Date</Text>
                             <TouchableOpacity
                                 onPress={() => setShowEndPicker(true)}
-                                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl p-4"
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.background.input,
+                                    borderWidth: 1,
+                                    borderColor: colors.border.medium,
+                                    borderRadius: 12,
+                                    padding: 16
+                                }}
                             >
                                 <Calendar size={20} color={colors.primary[600]} />
-                                <Text className="ml-3 text-base text-slate-900 font-medium">
+                                <Text style={{ marginLeft: 12, fontSize: 16, color: colors.text.primary, fontWeight: '500' }}>
                                     {formatDate(endDate)}
                                 </Text>
                             </TouchableOpacity>
@@ -227,33 +256,57 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
 
                         {/* Error Message */}
                         {dateError ? (
-                            <View className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                                <Text className="text-sm text-red-600 font-medium">{dateError}</Text>
+                            <View style={{
+                                backgroundColor: colors.status.errorLight,
+                                borderWidth: 1,
+                                borderColor: colors.border.error,
+                                borderRadius: 12,
+                                padding: 12,
+                                marginBottom: 16
+                            }}>
+                                <Text style={{ fontSize: 14, color: colors.status.error, fontWeight: '500' }}>{dateError}</Text>
                             </View>
                         ) : null}
 
                         {/* Info */}
-                        <View className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-6">
-                            <Text className="text-xs text-blue-700">
+                        <View style={{
+                            backgroundColor: colors.status.infoLight,
+                            borderWidth: 1,
+                            borderColor: colors.border.medium,
+                            borderRadius: 12,
+                            padding: 12,
+                            marginBottom: 24
+                        }}>
+                            <Text style={{ fontSize: 12, color: colors.status.info }}>
                                 Select a date range between 1 day and 1 year
                             </Text>
                         </View>
 
                         {/* Action Buttons */}
-                        <View className="flex-row gap-3">
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
                             <TouchableOpacity
                                 onPress={() => setShowCustomModal(false)}
-                                className="flex-1 py-4 rounded-xl border border-slate-200"
-                                style={{ backgroundColor: colors.neutral[100] }}
+                                style={{ 
+                                    flex: 1, 
+                                    paddingVertical: 16, 
+                                    borderRadius: 12, 
+                                    borderWidth: 1, 
+                                    borderColor: colors.border.medium,
+                                    backgroundColor: colors.neutral[100] 
+                                }}
                             >
-                                <Text className="text-center text-slate-700 font-semibold">Cancel</Text>
+                                <Text style={{ textAlign: 'center', color: colors.text.secondary, fontWeight: '600' }}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleApplyCustomDates}
-                                className="flex-1 py-4 rounded-xl"
-                                style={{ backgroundColor: colors.primary[600] }}
+                                style={{ 
+                                    flex: 1, 
+                                    paddingVertical: 16, 
+                                    borderRadius: 12,
+                                    backgroundColor:  colors.primary[200] 
+                                }}
                             >
-                                <Text className="text-center text-white font-semibold">Apply</Text>
+                                <Text style={{ textAlign: 'center', color: colors.text.white, fontWeight: '600' }}>Apply</Text>
                             </TouchableOpacity>
                         </View>
 

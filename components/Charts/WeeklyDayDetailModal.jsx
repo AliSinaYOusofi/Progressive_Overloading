@@ -260,12 +260,12 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                             borderRadius: 12,
                                                             alignItems: "center",
                                                             justifyContent: "center",
-                                                            backgroundColor: colors.primary[100],
+                                                            backgroundColor: colors.background.primary,
                                                             marginRight: 12,
                                                             borderWidth: 1,
-                                                            borderColor: colors.primary[200],
+                                                            borderColor: colors.border.light,
                                                         }}>
-                                                            <Dumbbell size={20} color={colors.primary[600]} />
+                                                            <Dumbbell size={20} color={colors.text.tertiary} />
                                                         </View>
                                                         <View style={{ flex: 1 }}>
                                                             <Text style={{ 
@@ -395,7 +395,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                                         flex: 1,
                                                                         minWidth: "30%",
                                                                     }}>
-                                                                        <Dumbbell size={16} color={colors.primary[600]} />
+                                                                        <Dumbbell size={16} color={colors.text.tertiary} />
                                                                         <View style={{ marginLeft: 8, flex: 1 }}>
                                                                             <Text style={{ 
                                                                                 fontSize: 16, 
@@ -429,7 +429,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                                         flex: 1,
                                                                         minWidth: "30%",
                                                                     }}>
-                                                                        <Repeat size={16} color={colors.primary[600]} />
+                                                                        <Repeat size={16} color={colors.text.tertiary} />
                                                                         <View style={{ marginLeft: 8, flex: 1 }}>
                                                                             <Text style={{ 
                                                                                 fontSize: 16, 
@@ -469,7 +469,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                                             flex: 1,
                                                                             minWidth: "30%",
                                                                         }}>
-                                                                            <TrendingUp size={16} color={colors.primary[600]} />
+                                                                            <TrendingUp size={16} color={colors.text.tertiary} />
                                                                             <View style={{ marginLeft: 8, flex: 1 }}>
                                                                                 <Text style={{ 
                                                                                     fontSize: 16, 
