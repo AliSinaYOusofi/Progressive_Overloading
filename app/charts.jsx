@@ -84,13 +84,13 @@ export default function ChartsScreen() {
                 rpe,
                 overloadInsights
             ] = await Promise.all([
-                getUserStats(currentUser.id),
+                getUserStats(currentUser.id, timeframeValue),
                 getExerciseProgressionData(currentUser.id, null, timeframeValue),
                 getVolumeProgressionData(currentUser.id, timeframeValue),
-                getStrengthStandards(currentUser.id),
-                getMonthlyStats(currentUser.id, timeframe === 'all' ? 120 : 6), // 10 years of months for all time
-                getPersonalRecords(currentUser.id, timeframe === 'all' ? 100 : 10), // More records for all time
-                getWeeklyProgress(currentUser.id),
+                getStrengthStandards(currentUser.id, timeframeValue),
+                getMonthlyStats(currentUser.id, timeframeValue),
+                getPersonalRecords(currentUser.id, timeframe === 'all' ? 100 : 10, timeframeValue),
+                getWeeklyProgress(currentUser.id, timeframeValue),
                 getRPEAnalysis(currentUser.id, timeframeValue),
                 getProgressiveOverloadInsights(currentUser.id, timeframeValue)
             ]);
@@ -123,12 +123,12 @@ export default function ChartsScreen() {
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
-        // Calculate days difference
+        // Calculate days difference from start to end date
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        setSelectedTimeframe('custom');
-        // You can pass the custom date range to loadChartsData if needed
-        // For now, we'll use the daysDiff as the timeframe
-        loadChartsData();
+        // Use daysDiff as the timeframe - this will calculate from today backwards
+        // Note: This means custom ranges are relative to today, not absolute dates
+        setSelectedTimeframe(daysDiff);
+        loadChartsData(false, daysDiff);
     };
 
     if (isLoading) {

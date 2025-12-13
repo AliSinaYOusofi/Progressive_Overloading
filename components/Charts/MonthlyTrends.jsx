@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { TrendingUp, TrendingDown, Minus, Activity, Dumbbell, Repeat, Filter, GitCompare } from "lucide-react-native"
 import { useState, useEffect } from "react"
 import { useThemedColors } from "../../hooks/useThemedColors"
+import { useTheme } from "../../contexts/ThemeContext"
 import { BarChart } from "react-native-gifted-charts"
 import MonthlyTrendsFilterModal from "./MonthlyTrendsFilterModal"
 import { sortMonthlyStats } from "./utils/monthlyTrendsUtils"
@@ -11,6 +12,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -105,7 +107,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             topLabelComponent: () => (
               <Text style={{ 
                 fontSize: 9, 
-                color: colors.text.secondary, 
+                color: isDarkMode ? colors.text.white : colors.text.primary, 
                 fontWeight: '600',
                 marginBottom: 2 
               }}>
@@ -143,7 +145,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             topLabelComponent: () => (
               <Text style={{ 
                 fontSize: 9, 
-                color: colors.text.secondary, 
+                color: isDarkMode ? colors.text.white : colors.text.primary, 
                 fontWeight: '600',
                 marginBottom: 2 
               }}>
@@ -417,6 +419,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             capThickness={3}
             capRadius={3}
             showValuesAsTopLabel
+            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
             topLabelContainerStyle={{ marginBottom: 6 }}
             rulesColor={colors.border.light}
             rulesType="solid"
@@ -469,6 +472,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             capThickness={3}
             capRadius={3}
             showValuesAsTopLabel
+            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
             topLabelContainerStyle={{ marginBottom: 6 }}
             rulesColor={colors.border.light}
             rulesType="solid"
