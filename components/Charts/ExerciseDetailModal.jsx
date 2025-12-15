@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { 
   View, 
   Text, 
@@ -12,6 +12,7 @@ import { Dumbbell, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { BarChart } from "react-native-gifted-charts"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
 import { getExerciseDetailedAnalytics } from "../../lib/database"
 import TrendInfoModal from "./TrendInfoModal"
 import ExerciseMetricCard from "./ExerciseMetricCard"
@@ -25,6 +26,7 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
 export default function ExerciseDetailModal({ visible, onClose, exerciseName, userId, initialTimeframe = 30 }) {
   const colors = useThemedColors();
+  const { isDarkMode } = useTheme();
   const [selectedTimeframe, setSelectedTimeframe] = useState(initialTimeframe)
   const [analyticsData, setAnalyticsData] = useState(null)
   const [allTimeData, setAllTimeData] = useState(null)
@@ -162,7 +164,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
         topLabelComponent: () => (
           <Text style={{ 
             fontSize: 9, 
-            color: colors.text.secondary, 
+            color: isDarkMode ? colors.text.white : colors.text.primary, 
             fontWeight: '600',
             marginBottom: 2 
           }}>
@@ -196,7 +198,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
       topLabelComponent: () => (
         <Text style={{ 
           fontSize: 9, 
-          color: colors.text.secondary, 
+          color: isDarkMode ? colors.text.white : colors.text.primary, 
           fontWeight: '600',
           marginBottom: 2 
         }}>
@@ -209,6 +211,36 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
   const chartData = formatChartData()
   const repsData = formatSecondaryData('reps')
   const setsData = formatSecondaryData('sets')
+
+  // Calculate numeric trend values (actual change, not just percentage)
+  const trendValues = useMemo(() => {
+    if (!analyticsData || !analyticsData.timeSeriesData || analyticsData.timeSeriesData.length < 2) {
+      return { weight: 0, reps: 0, sets: 0 };
+    }
+
+    const timeSeriesData = analyticsData.timeSeriesData;
+    const midPoint = Math.floor(timeSeriesData.length / 2);
+    const firstHalf = timeSeriesData.slice(0, midPoint);
+    const secondHalf = timeSeriesData.slice(midPoint);
+
+    const firstHalfAvgWeight = firstHalf.reduce((sum, d) => sum + d.avgWeight, 0) / firstHalf.length;
+    const secondHalfAvgWeight = secondHalf.reduce((sum, d) => sum + d.avgWeight, 0) / secondHalf.length;
+    const weightChange = secondHalfAvgWeight - firstHalfAvgWeight;
+
+    const firstHalfAvgReps = firstHalf.reduce((sum, d) => sum + d.avgReps, 0) / firstHalf.length;
+    const secondHalfAvgReps = secondHalf.reduce((sum, d) => sum + d.avgReps, 0) / secondHalf.length;
+    const repsChange = secondHalfAvgReps - firstHalfAvgReps;
+
+    const firstHalfAvgSets = firstHalf.reduce((sum, d) => sum + d.totalSets, 0) / firstHalf.length;
+    const secondHalfAvgSets = secondHalf.reduce((sum, d) => sum + d.totalSets, 0) / secondHalf.length;
+    const setsChange = secondHalfAvgSets - firstHalfAvgSets;
+
+    return {
+      weight: weightChange,
+      reps: repsChange,
+      sets: setsChange
+    };
+  }, [analyticsData]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -261,10 +293,10 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   alignItems: "center", 
                   justifyContent: "center", 
                   marginRight: 12,
-                  backgroundColor: colors.primary[50] 
+                  backgroundColor: colors.background.secondary || colors.neutral[100]
                 }}
               >
-                <Dumbbell size={20} color={colors.primary[600]} />
+                <Dumbbell size={20} color={colors.icon?.primary || colors.primary[600]} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }} numberOfLines={1}>
@@ -284,10 +316,12 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   borderRadius: 16, 
                   alignItems: "center", 
                   justifyContent: "center",
-                  backgroundColor: colors.primary[100] 
+                  backgroundColor: colors.background.primary,
+                  borderWidth: 1,
+                  borderColor: colors.border.light,
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "500", color: colors.primary[600] }}>
+                <Text style={{ fontSize: 16, fontWeight: "500", color: colors.icon?.primary || colors.primary[600] }}>
                   ↻
                 </Text>
               </TouchableOpacity>
@@ -299,7 +333,9 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   borderRadius: 16, 
                   alignItems: "center", 
                   justifyContent: "center",
-                  backgroundColor: colors.background.primary 
+                  backgroundColor: colors.background.primary,
+                  borderWidth: 1,
+                  borderColor: colors.border.light,
                 }}
               >
                 <Text style={{ fontSize: 20, fontWeight: "500", color: colors.text.tertiary }}>
@@ -389,31 +425,27 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
                   <ExerciseMetricCard
                     icon="barbell"
-                    iconColor={colors.primary[600]}
+                    iconColor={colors.icon?.primary || colors.primary[600]}
                     value={analyticsData.peakWeight.toFixed(1)}
-                    label="Peak Weight (kg)"
-                    backgroundColor={colors.primary[50]}
+                    label="Peak Weight"
                   />
                   <ExerciseMetricCard
                     icon="repeat"
-                    iconColor={colors.neutral[600]}
+                    iconColor={colors.icon?.primary || colors.primary[600]}
                     value={analyticsData.peakReps}
                     label="Peak Reps"
-                    backgroundColor={colors.neutral[50]}
                   />
                   <ExerciseMetricCard
                     icon="stats-chart"
-                    iconColor={colors.status.info}
+                    iconColor={colors.icon?.primary || colors.primary[600]}
                     value={analyticsData.totalVolume.toFixed(0)}
                     label="Total Volume (kg)"
-                    backgroundColor={colors.status.infoLight}
                   />
                   <ExerciseMetricCard
                     icon="layers"
-                    iconColor={colors.status.warning}
+                    iconColor={colors.icon?.primary || colors.primary[600]}
                     value={analyticsData.avgSetsPerWorkout.toFixed(1)}
-                    label="Avg Sets/Workout"
-                    backgroundColor={colors.status.warningLight}
+                    label="Avg Sets/Wk"
                   />
                 </View>
               </View>
@@ -523,6 +555,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           capThickness={3}
                           capRadius={3}
                           showValuesAsTopLabel
+                          topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
                           topLabelContainerStyle={{ marginBottom: 6 }}
                           rulesColor={colors.border.light}
                           rulesType="solid"
@@ -563,6 +596,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           capThickness={3}
                           capRadius={3}
                           showValuesAsTopLabel
+                          topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
                           topLabelContainerStyle={{ marginBottom: 6 }}
                           rulesColor={colors.border.light}
                           rulesType="solid"
@@ -603,6 +637,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           capThickness={3}
                           capRadius={3}
                           showValuesAsTopLabel
+                          topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
                           topLabelContainerStyle={{ marginBottom: 6 }}
                           rulesColor={colors.border.light}
                           rulesType="solid"
@@ -623,15 +658,17 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   <TouchableOpacity
                     onPress={() => setShowTrendInfoModal(true)}
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.primary[100],
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
                       alignItems: "center",
-                      justifyContent: "center"
+                      justifyContent: "center",
+                      backgroundColor: colors.background.primary,
+                      borderWidth: 1,
+                      borderColor: colors.border.light,
                     }}
                   >
-                    <Ionicons name="information" size={16} color={colors.primary[600]} />
+                    <Ionicons name="information-circle" size={18} color={colors.icon.primary || colors.primary[600]} />
                   </TouchableOpacity>
                 </View>
                 
@@ -639,28 +676,34 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   label="Weight"
                   trend={analyticsData.weightTrend}
                   trendPercent={analyticsData.weightTrendPercent}
+                  trendValue={trendValues.weight}
+                  unit=" kg"
                 />
                 
                 <TrendCard
                   label="Reps"
                   trend={analyticsData.repsTrend}
                   trendPercent={analyticsData.repsTrendPercent}
+                  trendValue={trendValues.reps}
+                  unit=" reps"
                 />
                 
                 <TrendCard
                   label="Sets"
                   trend={analyticsData.setsTrend}
                   trendPercent={analyticsData.setsTrendPercent}
+                  trendValue={trendValues.sets}
+                  unit=" sets"
                 />
 
                 {/* Consistency */}
                 <View 
                   style={{ 
-                    backgroundColor: colors.primary[50],
+                    backgroundColor: colors.background.card,
                     borderRadius: 12,
                     padding: 16,
                     borderWidth: 1,
-                    borderColor: colors.primary[200]
+                    borderColor: colors.border.light
                   }}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -670,13 +713,13 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           width: 40,
                           height: 40,
                           borderRadius: 20,
-                          backgroundColor: colors.background.card,
+                          backgroundColor: colors.background.secondary || colors.neutral[100],
                           alignItems: "center",
                           justifyContent: "center",
                           marginRight: 12
                         }}
                       >
-                        <Calendar size={16} color={colors.primary[600]} />
+                        <Calendar size={16} color={colors.icon?.primary || colors.primary[600]} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.primary }}>
@@ -690,8 +733,9 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                     <Text 
                       style={{ 
                         fontSize: 24, 
-                        fontWeight: "bold", 
-                        color: colors.primary[600] 
+                        fontWeight: "800", 
+                        color: colors.text.primary,
+                        letterSpacing: -0.5,
                       }}
                     >
                       {analyticsData.workoutsPerWeek.toFixed(1)}x

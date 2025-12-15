@@ -236,12 +236,12 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                     <View>
                                         {/* Summary Card */}
                                         <View style={{
-                                            backgroundColor: colors.primary[50],
+                                            backgroundColor: colors.background.input || colors.neutral[50],
                                             borderRadius: 16,
                                             padding: 20,
                                             marginBottom: 24,
                                             borderWidth: 1,
-                                            borderColor: colors.primary[100],
+                                            borderColor: colors.border.light,
                                         }}>
                                             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
                                                 <View style={{
@@ -250,10 +250,10 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                     borderRadius: 12,
                                                     alignItems: "center",
                                                     justifyContent: "center",
-                                                    backgroundColor: colors.primary[100],
+                                                    backgroundColor: colors.background.secondary || colors.neutral[100],
                                                     marginRight: 12,
                                                 }}>
-                                                    <TrendingUp size={22} color={colors.primary[600]} />
+                                                    <TrendingUp size={22} color={colors.icon.primary} />
                                                 </View>
                                                 <View style={{ flex: 1 }}>
                                                     <Text style={{ 
@@ -280,10 +280,10 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                 alignItems: "center",
                                                 paddingTop: 16,
                                                 borderTopWidth: 1,
-                                                borderTopColor: colors.primary[100],
+                                                borderTopColor: colors.border.light,
                                             }}>
                                                 <View style={{ flexDirection: "row", alignItems: "center", marginRight: 24 }}>
-                                                    <Activity size={16} color={colors.primary[600]} />
+                                                    <Activity size={16} color={colors.icon.primary} />
                                                     <Text style={{ 
                                                         fontSize: 14, 
                                                         fontWeight: "600", 
@@ -335,7 +335,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                             <View
                                                 key={exercise.name}
                                                 style={{
-                                                    backgroundColor: colors.background.primary,
+                                                    backgroundColor: colors.background.card,
                                                     borderRadius: 14,
                                                     padding: 16,
                                                     marginBottom: 10,
@@ -356,35 +356,16 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                         borderRadius: 8,
                                                         alignItems: "center",
                                                         justifyContent: "center",
-                                                        backgroundColor: index === 0 
-                                                            ? colors.primary[100] 
-                                                            : index === 1 
-                                                            ? colors.primary[50] 
-                                                            : colors.background.secondary || colors.background.primary,
+                                                        backgroundColor: colors.background.secondary || colors.neutral[100],
                                                         marginRight: 12,
                                                     }}>
                                                         <Text style={{ 
                                                             fontSize: 14, 
                                                             fontWeight: "700", 
-                                                            color: index === 0 
-                                                                ? colors.primary[700] 
-                                                                : colors.text.secondary 
+                                                            color: colors.text.secondary 
                                                         }}>
                                                             #{index + 1}
                                                         </Text>
-                                                    </View>
-                                                    
-                                                    {/* Exercise Icon */}
-                                                    <View style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 10,
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        backgroundColor: colors.primary[50],
-                                                        marginRight: 12,
-                                                    }}>
-                                                        <Dumbbell size={20} color={colors.primary[600]} />
                                                     </View>
                                                     
                                                     {/* Exercise Name */}
@@ -397,7 +378,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                         }}>
                                                             {exercise.name}
                                                         </Text>
-                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 }}>
+                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
                                                             {/* Sets */}
                                                             {exerciseStats[exercise.name]?.totalSets > 0 && (
                                                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -424,12 +405,36 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                                     </Text>
                                                                 </View>
                                                             )}
-                                                            {/* Percentage */}
+                                                        </View>
+                                                        {/* Volume and Percentage - Redesigned */}
+                                                        <View style={{ 
+                                                            flexDirection: "row", 
+                                                            alignItems: "center", 
+                                                            gap: 8, 
+                                                            marginTop: 6,
+                                                            paddingTop: 6,
+                                                            borderTopWidth: 1,
+                                                            borderTopColor: colors.border.light,
+                                                        }}>
+                                                            <Text style={{ 
+                                                                fontSize: 13, 
+                                                                color: colors.text.secondary,
+                                                                fontWeight: "600",
+                                                            }}>
+                                                                {formatVolume(exercise.volume)} kg
+                                                            </Text>
                                                             <Text style={{ 
                                                                 fontSize: 12, 
                                                                 color: colors.text.tertiary,
                                                             }}>
-                                                                • {exercise.percentage.toFixed(1)}%
+                                                                •
+                                                            </Text>
+                                                            <Text style={{ 
+                                                                fontSize: 12, 
+                                                                color: colors.text.tertiary,
+                                                                fontWeight: "500",
+                                                            }}>
+                                                                {exercise.percentage.toFixed(1)}% of total
                                                             </Text>
                                                         </View>
                                                     </View>
@@ -464,7 +469,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                     <View style={{
                                                         height: "100%",
                                                         width: `${exercise.percentage}%`,
-                                                        backgroundColor: colors.primary[500],
+                                                        backgroundColor: colors.icon.primary,
                                                         borderRadius: 3,
                                                     }} />
                                                 </View>
@@ -483,7 +488,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                             borderRadius: 32,
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            backgroundColor: colors.background.secondary || colors.primary[50],
+                                            backgroundColor: colors.background.secondary || colors.neutral[50],
                                             marginBottom: 16,
                                         }}>
                                             <Dumbbell size={32} color={colors.text.tertiary} />

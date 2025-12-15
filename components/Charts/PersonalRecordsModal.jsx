@@ -143,7 +143,7 @@ export default function PersonalRecordsModal({ visible, onClose, personalRecords
                                             borderColor: colors.border.light,
                                         }}
                                     >
-                                        <Info size={18} color={colors.primary[600]} />
+                                        <Info size={18} color={colors.icon.primary || colors.primary[600]} />
                                     </TouchableOpacity>
                                     <ModalCloseButton onPress={onClose} />
                                 </View>

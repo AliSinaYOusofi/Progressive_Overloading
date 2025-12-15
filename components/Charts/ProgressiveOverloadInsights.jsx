@@ -329,15 +329,17 @@ export default function ProgressiveOverloadInsights({
           <TouchableOpacity
             onPress={() => setShowInfoModal(true)}
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: colors.primary[100],
+              width: 36,
+              height: 36,
+              borderRadius: 18,
               alignItems: "center",
-              justifyContent: "center"
+              justifyContent: "center",
+              backgroundColor: colors.background.primary,
+              borderWidth: 1,
+              borderColor: colors.border.light,
             }}
           >
-            <Ionicons name="information" size={16} color={colors.primary[600]} />
+            <Ionicons name="information-circle" size={18} color={colors.icon.primary || colors.primary[600]} />
           </TouchableOpacity>
         </View>
         <TouchableOpacity

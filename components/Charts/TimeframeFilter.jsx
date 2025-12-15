@@ -1,9 +1,14 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, Modal, TextInput, Platform, ScrollView } from "react-native";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { View, Text, TouchableOpacity, Modal, TextInput, Platform, ScrollView, Dimensions } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, X, ChevronDown, Check } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { colorScheme } from "nativewind";
+import ModalCloseButton from "../ModalCloseButton";
+import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { format, differenceInDays } from "date-fns";
 
 export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, onCustomDateRange }) {
     const colors = useThemedColors();
@@ -14,6 +19,61 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
     const [showStartPicker, setShowStartPicker] = useState(false);
     const [showEndPicker, setShowEndPicker] = useState(false);
     const [dateError, setDateError] = useState('');
+    const [customDateRange, setCustomDateRange] = useState(null); // Store custom date range
+    const customDateRangeRef = useRef(null); // Ref to persist dates across re-renders
+    const screenHeight = Dimensions.get("window").height;
+    const translateY = useSharedValue(0);
+    const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
+
+    // Define close function in RN Runtime scope (required for scheduleOnRN)
+    const handleClose = useCallback(() => {
+        setShowCustomModal(false);
+    }, []);
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((event) => {
+            // Only allow downward swipes (positive translationY)
+            if (event.translationY > 0) {
+                translateY.value = event.translationY;
+            }
+        })
+        .onEnd((event) => {
+            if (event.translationY > SWIPE_THRESHOLD) {
+                // Swipe exceeded threshold, animate out then close modal
+                translateY.value = withTiming(screenHeight, { duration: 200 }, () => {
+                    'worklet';
+                    scheduleOnRN(handleClose);
+                });
+            } else {
+                // Snap back to original position
+                translateY.value = withTiming(0, { duration: 200 });
+            }
+        });
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateY: translateY.value }],
+        };
+    });
+
+    // Animated style for drag handle that changes color when swiping
+    const dragHandleAnimatedStyle = useAnimatedStyle(() => {
+        const backgroundColor = interpolateColor(
+            translateY.value,
+            [0, 50, 100],
+            [colors.border.light, colors.primary[400], colors.primary[600]]
+        );
+        return {
+            backgroundColor,
+        };
+    });
+
+    // Reset translateY when modal becomes visible
+    useEffect(() => {
+        if (showCustomModal) {
+            translateY.value = 0;
+        }
+    }, [showCustomModal, translateY]);
 
     const timeframeItems = [
         { label: "7 Days", value: 7 },
@@ -24,7 +84,15 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
         { label: "Custom", value: 'custom' }
     ];
 
+    const presetValues = [7, 30, 90, 180, 'all', 'custom'];
+
+    // Check if selectedTimeframe is a custom date range (not a preset value)
+    const isCustomDateRange = typeof selectedTimeframe === 'number' && !presetValues.includes(selectedTimeframe);
+
     const getSelectedLabel = () => {
+        if (isCustomDateRange) {
+            return "Custom";
+        }
         const option = timeframeItems.find(opt => opt.value === selectedTimeframe);
         return option ? option.label : "Select time period";
     };
@@ -34,6 +102,8 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
             setShowDropdown(false);
             setShowCustomModal(true);
         } else {
+            // Reset custom date range when selecting a preset
+            setCustomDateRange(null);
             onTimeframeChange(option.value);
             setShowDropdown(false);
         }
@@ -71,6 +141,15 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
 
     const handleApplyCustomDates = () => {
         if (validateDates()) {
+            // Store the custom date range for display - create new Date objects to avoid reference issues
+            const customRange = { 
+                startDate: new Date(startDate.getTime()), 
+                endDate: new Date(endDate.getTime()) 
+            };
+            // Store in both state and ref to ensure persistence
+            customDateRangeRef.current = customRange;
+            setCustomDateRange(customRange);
+            // Call parent callback after state is set
             onCustomDateRange?.(startDate, endDate);
             setShowCustomModal(false);
         }
@@ -112,6 +191,40 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                     </Text>
                     <ChevronDown size={20} color={colors.text.secondary} />
                 </TouchableOpacity>
+                
+                {/* Custom Date Range Display */}
+                {isCustomDateRange && (() => {
+                    // Use customDateRange state first, then ref as fallback, then startDate/endDate state
+                    const dateRange = customDateRange || customDateRangeRef.current || (startDate && endDate ? { startDate, endDate } : null);
+                    
+                    if (!dateRange || !dateRange.startDate || !dateRange.endDate) {
+                        return null;
+                    }
+                    
+                    try {
+                        const start = new Date(dateRange.startDate);
+                        const end = new Date(dateRange.endDate);
+                        // Check if dates are valid
+                        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                            return null;
+                        }
+                        const daysDiff = differenceInDays(end, start);
+                        const daysText = daysDiff === 1 ? 'day' : 'days';
+                        return (
+                            <Text style={{ 
+                                fontSize: 13, 
+                                color: colors.text.tertiary, 
+                                marginTop: 8,
+                                fontStyle: 'italic'
+                            }}>
+                                {format(start, 'MMM dd, yyyy')} - {format(end, 'MMM dd, yyyy')} ({daysDiff} {daysText})
+                            </Text>
+                        );
+                    } catch (error) {
+                        console.error('Error formatting custom date range:', error);
+                        return null;
+                    }
+                })()}
             </View>
 
             {/* Dropdown Modal */}
@@ -141,37 +254,44 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                             <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: "700" }}>Select Time Period</Text>
                         </View>
                         <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
-                            {timeframeItems.map((option, index) => (
-                                <TouchableOpacity
-                                    key={option.value}
-                                    onPress={() => handleOptionSelect(option)}
-                                    style={{
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 16,
-                                        borderBottomWidth: index < timeframeItems.length - 1 ? 1 : 0,
-                                        borderBottomColor: colors.border.light,
-                                        backgroundColor: selectedTimeframe === option.value ? colors.primary[50] : "transparent",
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                    }}
-                                >
-                                    <Text
+                            {timeframeItems.map((option, index) => {
+                                // Check if this option should be highlighted
+                                const isSelected = isCustomDateRange 
+                                    ? option.value === 'custom' 
+                                    : selectedTimeframe === option.value;
+                                
+                                return (
+                                    <TouchableOpacity
+                                        key={option.value}
+                                        onPress={() => handleOptionSelect(option)}
                                         style={{
-                                            fontSize: 16,
-                                            color: selectedTimeframe === option.value 
-                                                ? colors.primary[600] 
-                                                : colors.text.primary,
-                                            fontWeight: selectedTimeframe === option.value ? "600" : "400",
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 16,
+                                            borderBottomWidth: index < timeframeItems.length - 1 ? 1 : 0,
+                                            borderBottomColor: colors.border.light,
+                                            backgroundColor: isSelected ? colors.primary[50] : "transparent",
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
                                         }}
                                     >
-                                        {option.label}
-                                    </Text>
-                                    {selectedTimeframe === option.value && (
-                                        <Check size={18} color={colors.primary[600]} />
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                                        <Text
+                                            style={{
+                                                fontSize: 16,
+                                                color: isSelected
+                                                    ? colors.primary[600] 
+                                                    : colors.text.primary,
+                                                fontWeight: isSelected ? "600" : "400",
+                                            }}
+                                        >
+                                            {option.label}
+                                        </Text>
+                                        {isSelected && (
+                                            <Check size={18} color={colors.primary[600]} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </ScrollView>
                     </View>
                 </TouchableOpacity>
@@ -184,31 +304,43 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                 animationType="slide"
                 onRequestClose={() => setShowCustomModal(false)}
             >
-                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <View style={{ 
-                        backgroundColor: colors.background.card, 
-                        borderTopLeftRadius: 24, 
-                        borderTopRightRadius: 24, 
-                        padding: 24, 
-                        maxHeight: '80%' 
-                    }}>
-                        {/* Header */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>Custom Date Range</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowCustomModal(false)}
-                                style={{ 
-                                    width: 32, 
-                                    height: 32, 
-                                    borderRadius: 16, 
-                                    alignItems: 'center', 
-                                    justifyContent: 'center',
-                                    backgroundColor: colors.neutral[100] 
-                                }}
-                            >
-                                <X size={20} color={colors.neutral[600]} />
-                            </TouchableOpacity>
-                        </View>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+                        <TouchableOpacity activeOpacity={1} onPress={() => setShowCustomModal(false)} style={{ flex: 1 }} />
+                        <GestureDetector gesture={panGesture}>
+                            <Animated.View style={[
+                                { 
+                                    backgroundColor: colors.background.card, 
+                                    borderTopLeftRadius: 24, 
+                                    borderTopRightRadius: 24,
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: -2 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 8,
+                                    elevation: 10,
+                                    maxHeight: "90%",
+                                    padding: 24,
+                                },
+                                animatedStyle
+                            ]}>
+                                {/* Drag Handle */}
+                                <Animated.View style={[
+                                    { 
+                                        width: 48, 
+                                        height: 4, 
+                                        borderRadius: 2, 
+                                        alignSelf: "center", 
+                                        marginTop: 12, 
+                                        marginBottom: 16 
+                                    },
+                                    dragHandleAnimatedStyle
+                                ]} />
+
+                                {/* Header */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>Custom Date Range</Text>
+                                    <ModalCloseButton onPress={() => setShowCustomModal(false)} />
+                                </View>
 
                         {/* Start Date */}
                         <View style={{ marginBottom: 16 }}>
@@ -324,6 +456,8 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                                     }
                                 }}
                                 maximumDate={new Date()}
+                                textColor={colors.text.primary}
+                                accentColor={colors.primary[600]}
                             />
                         )}
 
@@ -341,10 +475,14 @@ export default function TimeframeFilter({ selectedTimeframe, onTimeframeChange, 
                                 }}
                                 maximumDate={new Date()}
                                 minimumDate={startDate}
+                                textColor={colors.text.primary}
+                                accentColor={colors.primary[600]}
                             />
                         )}
+                            </Animated.View>
+                        </GestureDetector>
                     </View>
-                </View>
+                </GestureHandlerRootView>
             </Modal>
         </>
     );

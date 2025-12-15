@@ -16,22 +16,41 @@ export default function ExerciseMetricCard({
       style={{ 
         flex: 1, 
         minWidth: "45%",
-        backgroundColor: backgroundColor, 
+        backgroundColor: colors.background.card, 
         padding: 16, 
-        borderRadius: 12 
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border.light,
       }}
     >
-      <Ionicons 
-        name={icon} 
-        size={24} 
-        color={iconColor} 
-        style={{ marginBottom: 8 }} 
-      />
-      <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.neutral[900] }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <Ionicons 
+          name={icon} 
+          size={18} 
+          color={iconColor || colors.icon?.primary || colors.primary[600]} 
+        />
+        <Text 
+          style={{ 
+            fontSize: 12, 
+            color: colors.text.tertiary,
+            fontWeight: "500",
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            flex: 1,
+            flexWrap: "wrap",
+          }}
+          numberOfLines={2}
+        >
+          {label}
+        </Text>
+      </View>
+      <Text style={{ 
+        fontSize: 24, 
+        fontWeight: "800", 
+        color: colors.text.primary,
+        letterSpacing: -0.5,
+      }}>
         {value}
-      </Text>
-      <Text style={{ fontSize: 12, color: colors.neutral[600], marginTop: 2 }}>
-        {label}
       </Text>
     </View>
   )

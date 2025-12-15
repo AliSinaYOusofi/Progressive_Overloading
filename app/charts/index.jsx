@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
 import { TrendingUp, BarChart3, Award, Trophy, Calendar, Target, Activity, Zap } from "lucide-react-native";
-import { useThemedColors } from "../hooks/useThemedColors";
+import { useThemedColors } from "../../hooks/useThemedColors";
+import { useRouter } from "expo-router";
 import { 
     getCurrentUser, 
     getUserStats, 
@@ -13,29 +14,19 @@ import {
     getWeeklyProgress,
     getRPEAnalysis,
     getProgressiveOverloadInsights
-} from "../lib/database";
+} from "../../lib/database";
 
 // Import chart components
-import QuickStats from "../components/Charts/QuickStats";
-import TimeframeFilter from "../components/Charts/TimeframeFilter";
-import CollapsibleSection from "../components/Charts/CollapsibleSection";
-import ExerciseProgression from "../components/Charts/ExerciseProgression";
-import ExerciseProgressionModal from "../components/Charts/ExerciseProgressionModal";
-import VolumeProgression from "../components/Charts/VolumeProgression";
-import VolumeProgressionModal from "../components/Charts/VolumeProgressionModal";
-import StrengthStandards from "../components/Charts/StrengthStandards";
-import PersonalRecords from "../components/Charts/PersonalRecords";
-import PersonalRecordsModal from "../components/Charts/PersonalRecordsModal";
-import WeeklyProgress from "../components/Charts/WeeklyProgress";
-import WeeklyProgressModal from "../components/Charts/WeeklyProgressModal";
-import MonthlyTrends from "../components/Charts/MonthlyTrends";
-import MonthlyTrendsModal from "../components/Charts/MonthlyTrendsModal";
-import ProgressiveOverloadInsightsModal from "../components/Charts/ProgressiveOverloadInsightsModal";
-import RPEAnalysis from "../components/Charts/RPEAnalysis";
+import QuickStats from "../../components/Charts/QuickStats";
+import TimeframeFilter from "../../components/Charts/TimeframeFilter";
+import CollapsibleSection from "../../components/Charts/CollapsibleSection";
+import StrengthStandards from "../../components/Charts/StrengthStandards";
+import RPEAnalysis from "../../components/Charts/RPEAnalysis";
 
 
 export default function ChartsScreen() {
     const colors = useThemedColors();
+    const router = useRouter();
     const [user, setUser] = useState(null);
     const [userStats, setUserStats] = useState(null);
     const [exerciseProgression, setExerciseProgression] = useState({});
@@ -49,13 +40,6 @@ export default function ChartsScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
-    const [selectedExercise, setSelectedExercise] = useState(null);
-    const [showExerciseProgressionModal, setShowExerciseProgressionModal] = useState(false);
-    const [showVolumeProgressionModal, setShowVolumeProgressionModal] = useState(false);
-    const [showWeeklyProgressModal, setShowWeeklyProgressModal] = useState(false);
-    const [showPersonalRecordsModal, setShowPersonalRecordsModal] = useState(false);
-    const [showMonthlyTrendsModal, setShowMonthlyTrendsModal] = useState(false);
-    const [showProgressiveOverloadModal, setShowProgressiveOverloadModal] = useState(false);
 
     useEffect(() => {
         loadChartsData();
@@ -172,7 +156,7 @@ export default function ChartsScreen() {
                 {/* Exercise Progression Charts */}
                 <View style={{ marginBottom: 24 }}>
                     <TouchableOpacity
-                        onPress={() => setShowExerciseProgressionModal(true)}
+                        onPress={() => router.push('/charts/exercise-progression')}
                         activeOpacity={0.7}
                         style={{
                             backgroundColor: colors.background.card,
@@ -225,7 +209,7 @@ export default function ChartsScreen() {
                 {/* Volume Progression */}
                 <View style={{ marginBottom: 24 }}>
                     <TouchableOpacity
-                        onPress={() => setShowVolumeProgressionModal(true)}
+                        onPress={() => router.push('/charts/volume-progression')}
                         activeOpacity={0.7}
                         style={{
                             backgroundColor: colors.background.card,
@@ -291,7 +275,7 @@ export default function ChartsScreen() {
                 {personalRecords && personalRecords.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <TouchableOpacity
-                            onPress={() => setShowPersonalRecordsModal(true)}
+                            onPress={() => router.push('/charts/personal-records')}
                             activeOpacity={0.7}
                             style={{
                                 backgroundColor: colors.background.card,
@@ -425,7 +409,7 @@ export default function ChartsScreen() {
                 {/* Weekly Progress */}
                 <View style={{ marginBottom: 24 }}>
                     <TouchableOpacity
-                        onPress={() => setShowWeeklyProgressModal(true)}
+                        onPress={() => router.push('/charts/weekly-progress')}
                         activeOpacity={0.7}
                         style={{
                             backgroundColor: colors.background.card,
@@ -477,7 +461,7 @@ export default function ChartsScreen() {
                 {monthlyStats && monthlyStats.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <TouchableOpacity
-                            onPress={() => setShowMonthlyTrendsModal(true)}
+                            onPress={() => router.push('/charts/monthly-trends')}
                             activeOpacity={0.7}
                             style={{
                                 backgroundColor: colors.background.card,
@@ -530,7 +514,7 @@ export default function ChartsScreen() {
                 {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
                     <View style={{ marginBottom: 24 }}>
                         <TouchableOpacity
-                            onPress={() => setShowProgressiveOverloadModal(true)}
+                            onPress={() => router.push('/charts/progressive-overload')}
                             activeOpacity={0.7}
                             style={{
                                 backgroundColor: colors.background.card,
@@ -604,50 +588,6 @@ export default function ChartsScreen() {
                 )}
 
             </ScrollView>
-
-            {/* Exercise Progression Modal */}
-            <ExerciseProgressionModal
-                visible={showExerciseProgressionModal}
-                onClose={() => setShowExerciseProgressionModal(false)}
-                exerciseProgression={exerciseProgression}
-            />
-
-            {/* Volume Progression Modal */}
-            <VolumeProgressionModal
-                visible={showVolumeProgressionModal}
-                onClose={() => setShowVolumeProgressionModal(false)}
-                volumeProgression={volumeProgression}
-            />
-
-            {/* Weekly Progress Modal */}
-            <WeeklyProgressModal
-                visible={showWeeklyProgressModal}
-                onClose={() => setShowWeeklyProgressModal(false)}
-                weeklyProgress={weeklyProgress}
-                userId={user?.id}
-            />
-
-            {/* Personal Records Modal */}
-            <PersonalRecordsModal
-                visible={showPersonalRecordsModal}
-                onClose={() => setShowPersonalRecordsModal(false)}
-                personalRecords={personalRecords}
-            />
-
-            {/* Monthly Trends Modal */}
-            <MonthlyTrendsModal
-                visible={showMonthlyTrendsModal}
-                onClose={() => setShowMonthlyTrendsModal(false)}
-                monthlyStats={monthlyStats}
-            />
-
-            {/* Progressive Overload Insights Modal */}
-            <ProgressiveOverloadInsightsModal
-                visible={showProgressiveOverloadModal}
-                onClose={() => setShowProgressiveOverloadModal(false)}
-                progressiveOverloadInsights={progressiveOverloadInsights}
-                parentTimeframe={selectedTimeframe}
-            />
         </View>
     );
 }
