@@ -15,8 +15,8 @@ export default function AllTimeStatsSection({
   return (
     <View style={{ paddingHorizontal: 24, marginBottom: 20 }}>
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-        <Target size={20} color={colors.primary[600]} style={{ marginRight: 8 }} />
-        <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.neutral[900] }}>
+        <Target size={20} color={colors.icon?.primary || colors.primary[600]} style={{ marginRight: 8 }} />
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary }}>
           {selectedTimeframe === null ? "Lifetime Performance" : "All-Time Records"}
         </Text>
       </View>
@@ -27,15 +27,15 @@ export default function AllTimeStatsSection({
           style={{ 
             flex: 1, 
             minWidth: "45%",
-            backgroundColor: "linear-gradient(135deg, " + colors.primary[600] + " 0%, " + colors.primary[700] + " 100%)",
+            backgroundColor: colors.background.card,
             borderRadius: 12,
             padding: 16,
             borderWidth: 1,
-            borderColor: colors.primary[300]
+            borderColor: colors.border.light
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <Ionicons name="trophy" size={20} color={colors.primary[600]} />
+            <Ionicons name="trophy" size={18} color={colors.icon?.primary || colors.primary[600]} />
             {selectedTimeframe !== null && analyticsData && allTimeData.peakWeight > analyticsData.peakWeight && (
               <View 
                 style={{ 
@@ -51,10 +51,10 @@ export default function AllTimeStatsSection({
               </View>
             )}
           </View>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.neutral[900], marginBottom: 2 }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text.primary, letterSpacing: -0.5, marginBottom: 2 }}>
             {allTimeData.peakWeight.toFixed(1)} kg
           </Text>
-          <Text style={{ fontSize: 11, color: colors.neutral[600] }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
             Peak Weight Ever
           </Text>
         </View>
@@ -64,15 +64,15 @@ export default function AllTimeStatsSection({
           style={{ 
             flex: 1, 
             minWidth: "45%",
-            backgroundColor: colors.status.successLight,
+            backgroundColor: colors.background.card,
             borderRadius: 12,
             padding: 16,
             borderWidth: 1,
-            borderColor: colors.status.success + "40"
+            borderColor: colors.border.light
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <Ionicons name="flame" size={20} color={colors.status.success} />
+            <Ionicons name="flame" size={18} color={colors.icon?.primary || colors.primary[600]} />
             {selectedTimeframe !== null && analyticsData && allTimeData.peakReps > analyticsData.peakReps && (
               <View 
                 style={{ 
@@ -88,10 +88,10 @@ export default function AllTimeStatsSection({
               </View>
             )}
           </View>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.neutral[900], marginBottom: 2 }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text.primary, letterSpacing: -0.5, marginBottom: 2 }}>
             {allTimeData.peakReps}
           </Text>
-          <Text style={{ fontSize: 11, color: colors.neutral[600] }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
             Peak Reps Ever
           </Text>
         </View>
@@ -101,20 +101,20 @@ export default function AllTimeStatsSection({
           style={{ 
             flex: 1, 
             minWidth: "45%",
-            backgroundColor: colors.status.infoLight,
+            backgroundColor: colors.background.card,
             borderRadius: 12,
             padding: 16,
             borderWidth: 1,
-            borderColor: colors.status.info + "40"
+            borderColor: colors.border.light
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-            <Ionicons name="analytics" size={20} color={colors.status.info} />
+            <Ionicons name="analytics" size={18} color={colors.icon?.primary || colors.primary[600]} />
           </View>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.neutral[900], marginBottom: 2 }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text.primary, letterSpacing: -0.5, marginBottom: 2 }}>
             {(allTimeData.totalVolume / 1000).toFixed(1)}t
           </Text>
-          <Text style={{ fontSize: 11, color: colors.neutral[600] }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
             Lifetime Volume
           </Text>
         </View>
@@ -124,20 +124,20 @@ export default function AllTimeStatsSection({
           style={{ 
             flex: 1, 
             minWidth: "45%",
-            backgroundColor: colors.status.warningLight,
+            backgroundColor: colors.background.card,
             borderRadius: 12,
             padding: 16,
             borderWidth: 1,
-            borderColor: colors.status.warning + "40"
+            borderColor: colors.border.light
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-            <Ionicons name="calendar" size={20} color={colors.status.warning} />
+            <Ionicons name="calendar" size={18} color={colors.icon?.primary || colors.primary[600]} />
           </View>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.neutral[900], marginBottom: 2 }}>
+          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text.primary, letterSpacing: -0.5, marginBottom: 2 }}>
             {allTimeData.timeSeriesData.length}
           </Text>
-          <Text style={{ fontSize: 11, color: colors.neutral[600] }}>
+          <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
             Total Workouts
           </Text>
         </View>

@@ -28,11 +28,11 @@ const getTrendColor = (trend, colors) => {
 const getTrendBgColor = (trend, colors) => {
   switch (trend) {
     case "up":
-      return colors.status.successLight
+      return colors.status.success + "15"
     case "down":
-      return colors.status.errorLight
+      return colors.status.error + "15"
     default:
-      return colors.status.warningLight
+      return colors.status.warning + "15"
   }
 }
 
@@ -50,7 +50,9 @@ const getTrendLabel = (trend) => {
 export default function TrendCard({ 
   label, 
   trend, 
-  trendPercent 
+  trendPercent,
+  trendValue,
+  unit = ""
 }) {
   const colors = useThemedColors();
   return (
@@ -61,7 +63,7 @@ export default function TrendCard({
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: getTrendColor(trend, colors) + "40"
+        borderColor: getTrendColor(trend, colors) + "25"
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -88,16 +90,31 @@ export default function TrendCard({
             </Text>
           </View>
         </View>
-        <Text 
-          style={{ 
-            fontSize: 24, 
-            fontWeight: "bold", 
-            color: getTrendColor(trend, colors) 
-          }}
-        >
-          {trend === "up" ? "+" : trend === "down" ? "-" : ""}
-          {trendPercent.toFixed(1)}%
-        </Text>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text 
+            style={{ 
+              fontSize: 24, 
+              fontWeight: "bold", 
+              color: getTrendColor(trend, colors) 
+            }}
+          >
+            {trend === "up" ? "+" : trend === "down" ? "-" : ""}
+            {trendPercent.toFixed(1)}%
+          </Text>
+          {trendValue !== undefined && trendValue !== null && (
+            <Text 
+              style={{ 
+                fontSize: 13, 
+                fontWeight: "600", 
+                color: colors.text.secondary,
+                marginTop: 4,
+              }}
+            >
+              {trend === "up" ? "+" : trend === "down" ? "-" : ""}
+              {Math.abs(trendValue).toFixed(1)}{unit}
+            </Text>
+          )}
+        </View>
       </View>
     </View>
   )

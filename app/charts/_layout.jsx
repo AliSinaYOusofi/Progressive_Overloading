@@ -1,0 +1,96 @@
+import { Stack } from "expo-router";
+import { useTheme } from "../../contexts/ThemeContext";
+import { getColors } from "../../constants/ui_colors";
+import { Platform } from "react-native";
+
+export default function ChartsLayout() {
+    const { isDarkMode } = useTheme();
+    const colors = getColors(isDarkMode);
+
+    return (
+        <Stack
+            screenOptions={{
+                headerStyle: {
+                    backgroundColor: colors.background.card,
+                },
+                headerTintColor: colors.text.primary,
+                headerTitleStyle: {
+                    fontWeight: "bold",
+                    fontSize: 18,
+                },
+                headerShadowVisible: true,
+                headerBackTitleVisible: false,
+                presentation: "card",
+                animation: "slide_from_right",
+            }}
+        >
+            <Stack.Screen
+                name="index"
+                options={{
+                    headerShown: false,
+                }}
+            />
+            <Stack.Screen
+                name="exercise-progression"
+                options={{
+                    title: "Exercise Progression",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
+                name="volume-progression"
+                options={{
+                    title: "Volume Progression",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
+                name="weekly-progress"
+                options={{
+                    title: "Weekly Progress",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
+                name="personal-records"
+                options={{
+                    title: "Personal Records",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
+                name="monthly-trends"
+                options={{
+                    title: "Monthly Trends",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
+                name="progressive-overload"
+                options={{
+                    title: "Progressive Overload Insights",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+        </Stack>
+    );
+}
+
