@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getCurrentUser } from '../lib/database';
+import { useState, useEffect } from 'react';
+import { getCurrentUser, getProfile } from '../lib/database';
 import Toast from 'react-native-toast-message';
 
 /**
@@ -16,8 +16,49 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
   const [selectedSet, setSelectedSet] = useState(null);
   const [deleteLoadingSetId, setDeleteLoadingSetId] = useState(null);
   const [modalDeleteLoadingSetId, setModalDeleteLoadingSetId] = useState(null);
+  const [userDefaults, setUserDefaults] = useState(null);
 
-  const handleOpenLogSet = () => setIsLogSetVisible(true);
+  // Fetch user defaults when hook initializes
+  useEffect(() => {
+    const fetchDefaults = async () => {
+      try {
+        const currentUser = user || (await getCurrentUser());
+        if (currentUser) {
+          const profile = await getProfile(currentUser.id);
+          if (profile) {
+            setUserDefaults({
+              default_sets: profile.default_sets,
+              default_reps: profile.default_reps,
+              default_weight_unit: profile.default_weight_unit,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user defaults:', error);
+      }
+    };
+    fetchDefaults();
+  }, [user]);
+
+  const handleOpenLogSet = async () => {
+    // Refresh defaults before opening modal to ensure we have latest values
+    try {
+      const currentUser = user || (await getCurrentUser());
+      if (currentUser) {
+        const profile = await getProfile(currentUser.id);
+        if (profile) {
+          setUserDefaults({
+            default_sets: profile.default_sets,
+            default_reps: profile.default_reps,
+            default_weight_unit: profile.default_weight_unit,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user defaults:', error);
+    }
+    setIsLogSetVisible(true);
+  };
   const handleCloseLogSet = () => setIsLogSetVisible(false);
 
   const handleSubmitLogSet = async ({ exerciseName, weight, reps, sets, unit }) => {
@@ -238,6 +279,7 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
     selectedSet,
     deleteLoadingSetId,
     modalDeleteLoadingSetId,
+    userDefaults,
     handleOpenLogSet,
     handleCloseLogSet,
     handleSubmitLogSet,

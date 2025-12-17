@@ -7,8 +7,9 @@ import ModalCloseButton from "../ModalCloseButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { getCurrentUser, updateProfile } from "../../lib/database";
 
-export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, defaults }) {
+export default function SetDefaultsModal({ visible, onClose, currentDefaults }) {
     const colors = useThemedColors();
     const { isDarkMode } = useTheme();
     const screenHeight = Dimensions.get("window").height;
@@ -58,14 +59,13 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         };
     });
 
-    const [exerciseName, setExerciseName] = useState("");
-    const [weight, setWeight] = useState("");
+    const [sets, setSets] = useState("");
     const [reps, setReps] = useState("");
     const [unit, setUnit] = useState("lb");
-    const [sets, setSets] = useState("");
     const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Weight units only for logging sets
+    // Weight units
     const weightUnits = [
         { label: "lb", value: "lb" },
         { label: "kg", value: "kg" },
@@ -73,37 +73,24 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         { label: "g", value: "g" },
     ];
 
+    // Load defaults when modal opens or when currentDefaults changes
+    useEffect(() => {
+        if (visible && currentDefaults) {
+            setSets(currentDefaults.default_sets ? String(currentDefaults.default_sets) : "");
+            setReps(currentDefaults.default_reps ? String(currentDefaults.default_reps) : "");
+            setUnit(currentDefaults.default_weight_unit || "lb");
+        }
+    }, [visible, currentDefaults]);
+
+    // Reset form when modal closes
     useEffect(() => {
         if (!visible) {
-            setExerciseName("");
-            setWeight("");
+            setSets("");
             setReps("");
             setUnit("lb");
-            setSets("");
             setShowUnitDropdown(false);
         }
     }, [visible]);
-
-    // Apply defaults when modal becomes visible
-    useEffect(() => {
-        if (visible && defaults) {
-            // Apply defaults when modal opens (only if fields are empty or just reset)
-            if (defaults.default_sets) {
-                setSets(String(defaults.default_sets));
-            }
-            if (defaults.default_reps) {
-                setReps(String(defaults.default_reps));
-            }
-            if (defaults.default_weight_unit) {
-                setUnit(defaults.default_weight_unit);
-            } else {
-                setUnit("lb");
-            }
-        } else if (visible && !defaults) {
-            // Reset to defaults if no defaults are set
-            setUnit("lb");
-        }
-    }, [visible, defaults]);
 
     // Reset translateY when modal becomes visible
     useEffect(() => {
@@ -112,29 +99,47 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         }
     }, [visible, translateY]);
 
-    const handleSubmit = () => {
-        const name = exerciseName.trim();
-        if (!name) {
-            Alert.alert("Exercise required", "Please enter an exercise name.");
-            return;
-        }
-        const w = parseFloat(weight);
-        const r = parseInt(reps, 10);
-        if (isNaN(w) || w < 0) {
-            Alert.alert("Invalid weight", "Please enter a valid weight.");
-            return;
-        }
-        if (isNaN(r) || r <= 0 || r > 100) {
-            Alert.alert("Invalid reps", "Reps must be between 1 and 100.");
-            return;
-        }
-        const s = parseInt(sets, 10);
-        if (isNaN(s) || s <= 0 || s > 30) {
+    const handleSave = async () => {
+        // Validate inputs
+        const s = sets.trim() ? parseInt(sets, 10) : null;
+        const r = reps.trim() ? parseInt(reps, 10) : null;
+
+        if (s !== null && (isNaN(s) || s <= 0 || s > 30)) {
             Alert.alert("Invalid sets", "Sets must be between 1 and 30.");
             return;
         }
-        const u = (unit || "lb").trim(); // Default to "lb" if no unit is selected
-        onSubmit({ exerciseName: name, weight: w, reps: r, sets: s, unit: u });
+
+        if (r !== null && (isNaN(r) || r <= 0 || r > 100)) {
+            Alert.alert("Invalid reps", "Reps must be between 1 and 100.");
+            return;
+        }
+
+        const u = (unit || "lb").trim();
+
+        try {
+            setIsSaving(true);
+            const currentUser = await getCurrentUser();
+            if (!currentUser) {
+                Alert.alert("Error", "User not found. Please try again.");
+                return;
+            }
+
+            // Update profile with defaults
+            await updateProfile(currentUser.id, {
+                default_sets: s,
+                default_reps: r,
+                default_weight_unit: u,
+            });
+
+            Alert.alert("Success", "Workout defaults saved successfully!", [
+                { text: "OK", onPress: onClose }
+            ]);
+        } catch (error) {
+            console.error("Error saving defaults:", error);
+            Alert.alert("Error", "Failed to save defaults. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -185,71 +190,22 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                         >
                             {/* Header */}
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                                <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Log Set</Text>
-                                <ModalCloseButton onPress={onClose} disabled={isSubmitting} size={20} />
+                                <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Workout Defaults</Text>
+                                <ModalCloseButton onPress={onClose} disabled={isSaving} size={20} />
                             </View>
 
-                            {/* Exercise Input */}
-                            <View style={{ marginBottom: 20 }}>
-                                <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Exercise</Text>
-                                <TextInput
-                                    editable={!isSubmitting}
-                                    value={exerciseName}
-                                    onChangeText={setExerciseName}
-                                    placeholder="e.g., Bench Press"
-                                    placeholderTextColor={colors.text.tertiary}
-                                    style={{ 
-                                        borderWidth: 1, 
-                                        borderColor: "#E5E7EB", 
-                                        borderRadius: 12, 
-                                        paddingHorizontal: 16, 
-                                        paddingVertical: 14,
-                                        fontSize: 16,
-                                        color: colors.text.primary,
-                                        backgroundColor: colors.background.card || "white",
-                                        shadowColor: colors.shadow?.light || "#000",
-                                        shadowOffset: { width: 0, height: 1 },
-                                        shadowOpacity: 0.05,
-                                        shadowRadius: 2,
-                                        elevation: 1,
-                                    }}
-                                />
-                            </View>
+                            <Text style={{ fontSize: 14, color: colors.text.secondary, marginBottom: 24, lineHeight: 20 }}>
+                                Set your default values for sets, reps, and weight unit. These will be pre-filled when logging new sets.
+                            </Text>
 
-                            {/* Weight, Reps, Sets, Unit Row */}
+                            {/* Sets, Reps, Unit Row */}
                             <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Weight</Text>
+                                    <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Sets</Text>
                                     <TextInput
-                                        editable={!isSubmitting}
-                                        value={weight}
-                                        onChangeText={setWeight}
-                                        keyboardType="numeric"
-                                        placeholder="0"
-                                        placeholderTextColor={colors.text.tertiary}
-                                        style={{ 
-                                            borderWidth: 1, 
-                                            borderColor: "#E5E7EB", 
-                                            borderRadius: 12, 
-                                            paddingHorizontal: 16, 
-                                            paddingVertical: 14,
-                                            fontSize: 16,
-                                            color: colors.text.primary,
-                                            backgroundColor: colors.background.card || "white",
-                                            shadowColor: colors.shadow?.light || "#000",
-                                            shadowOffset: { width: 0, height: 1 },
-                                            shadowOpacity: 0.05,
-                                            shadowRadius: 2,
-                                            elevation: 1,
-                                        }}
-                                    />
-                                </View>
-                                <View style={{ width: 80 }}>
-                                    <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Reps</Text>
-                                    <TextInput
-                                        editable={!isSubmitting}
-                                        value={reps}
-                                        onChangeText={setReps}
+                                        editable={!isSaving}
+                                        value={sets}
+                                        onChangeText={setSets}
                                         keyboardType="number-pad"
                                         placeholder="0"
                                         placeholderTextColor={colors.text.tertiary}
@@ -271,12 +227,12 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                         }}
                                     />
                                 </View>
-                                <View style={{ width: 80 }}>
-                                    <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Sets</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Reps</Text>
                                     <TextInput
-                                        editable={!isSubmitting}
-                                        value={sets}
-                                        onChangeText={setSets}
+                                        editable={!isSaving}
+                                        value={reps}
+                                        onChangeText={setReps}
                                         keyboardType="number-pad"
                                         placeholder="0"
                                         placeholderTextColor={colors.text.tertiary}
@@ -301,8 +257,8 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                 <View style={{ width: 90 }}>
                                     <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Unit</Text>
                                     <TouchableOpacity
-                                        onPress={() => !isSubmitting && setShowUnitDropdown(true)}
-                                        disabled={isSubmitting}
+                                        onPress={() => !isSaving && setShowUnitDropdown(true)}
+                                        disabled={isSaving}
                                         style={{
                                             borderWidth: 1,
                                             borderColor: "#E5E7EB",
@@ -312,7 +268,7 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                             flexDirection: "row",
                                             alignItems: "center",
                                             justifyContent: "space-between",
-                                            opacity: isSubmitting ? 0.6 : 1,
+                                            opacity: isSaving ? 0.6 : 1,
                                             minHeight: 48,
                                             backgroundColor: colors.background.card || "white",
                                             shadowColor: colors.shadow?.light || "#000",
@@ -330,10 +286,10 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                 </View>
                             </View>
 
-                            {/* Submit Button */}
+                            {/* Save Button */}
                             <TouchableOpacity
-                                onPress={handleSubmit}
-                                disabled={isSubmitting}
+                                onPress={handleSave}
+                                disabled={isSaving}
                                 style={{ 
                                     backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
                                     borderRadius: 12, 
@@ -345,13 +301,13 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                     shadowOpacity: 0.3,
                                     shadowRadius: 8,
                                     elevation: 4,
-                                    opacity: isSubmitting ? 0.7 : 1,
+                                    opacity: isSaving ? 0.7 : 1,
                                 }}
                             >
-                                {isSubmitting ? (
+                                {isSaving ? (
                                     <ActivityIndicator color="#fff" size="small" />
                                 ) : (
-                                    <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>Save Set</Text>
+                                    <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>Save Defaults</Text>
                                 )}
                             </TouchableOpacity>
                         </ScrollView>
@@ -421,5 +377,4 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         </Modal>
     );
 }
-
 

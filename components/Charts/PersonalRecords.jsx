@@ -15,7 +15,14 @@ const { width: screenWidth } = Dimensions.get('window');
 const INITIAL_DISPLAY_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
 
-export default function PersonalRecords({ personalRecords }) {
+// Helper to remove floating point noise (e.g. 13.200000000000001) at a given precision
+const normalizeNumber = (num, decimals = 1) => {
+    const n = Number(num);
+    if (!Number.isFinite(n)) return 0;
+    return Number(n.toFixed(decimals));
+};
+
+export default function PersonalRecords({ personalRecords, onInfoPress }) {
   const colors = useThemedColors();
   const { isDarkMode } = useTheme();
   const [selectedExercise, setSelectedExercise] = useState(null)
@@ -218,8 +225,11 @@ export default function PersonalRecords({ personalRecords }) {
         ? item.exercise.substring(0, 10) + '...' 
         : item.exercise;
       
+      // Clean up any floating point noise so gifted-charts doesn't render long decimals in the top label
+      const clean1RM = normalizeNumber(item.best1RM, 1);
+      
       return {
-        value: item.best1RM,
+        value: clean1RM,
         label: name,
         labelTextStyle: { 
           color: colors.text.tertiary, 
@@ -234,7 +244,7 @@ export default function PersonalRecords({ personalRecords }) {
             fontWeight: '600',
             marginBottom: 2 
           }}>
-            {item.best1RM.toFixed(1).replace(/\.?0+$/, '')}
+            {clean1RM.toFixed(1).replace(/\.?0+$/, '')}
           </Text>
         ),
       };
@@ -251,6 +261,32 @@ export default function PersonalRecords({ personalRecords }) {
 
   return (
     <View>
+      {/* Header with Info Icon and Filter */}
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
+            Personal Records
+          </Text>
+          {onInfoPress && (
+            <TouchableOpacity
+              onPress={onInfoPress}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.background.primary,
+                borderWidth: 1,
+                borderColor: colors.border.light,
+              }}
+            >
+              <Ionicons name="information-circle" size={18} color={colors.icon.primary || colors.primary[600]} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Summary Statistics */}
       <View style={{ 
         flexDirection: "row", 
@@ -573,6 +609,7 @@ export default function PersonalRecords({ personalRecords }) {
           marginBottom: 24,
           borderWidth: 1,
           borderColor: colors.border.light,
+          overflow: 'hidden' // Prevent chart from extending beyond container
         }}>
           <Text style={{ 
             fontSize: 16, 
@@ -582,38 +619,40 @@ export default function PersonalRecords({ personalRecords }) {
           }}>
             Best 1RM by Exercise
           </Text>
-          <BarChart
-            data={barChartData}
-            width={screenWidth - 100}
-            height={200}
-            barWidth={25}
-            initialSpacing={10}
-            spacing={12}
-            barBorderRadius={6}
-            showGradient
-            gradientColor={colors.primary[400]}
-            yAxisThickness={1}
-            xAxisThickness={1}
-            xAxisColor={colors.border.medium}
-            yAxisColor={colors.border.medium}
-            yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-            xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
-            yAxisLabelWidth={40}
-            maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 100}
-            noOfSections={4}
-            isAnimated
-            animationDuration={1000}
-            cappedBars
-            capColor={colors.primary[700]}
-            capThickness={3}
-            capRadius={3}
-            showValuesAsTopLabel
-            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-            topLabelContainerStyle={{ marginBottom: 6 }}
-            rulesColor={colors.border.light}
-            rulesType="solid"
-            dashGap={0}
-          />
+          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <BarChart
+              data={barChartData}
+              width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+              height={200}
+              barWidth={25}
+              initialSpacing={20} // Increased to prevent first bar clipping
+              spacing={12}
+              barBorderRadius={6}
+              showGradient
+              gradientColor={colors.primary[400]}
+              yAxisThickness={1}
+              xAxisThickness={1}
+              xAxisColor={colors.border.medium}
+              yAxisColor={colors.border.medium}
+              yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+              xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+              yAxisLabelWidth={40}
+              maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 100}
+              noOfSections={4}
+              isAnimated
+              animationDuration={1000}
+              cappedBars
+              capColor={colors.primary[700]}
+              capThickness={3}
+              capRadius={3}
+              showValuesAsTopLabel
+              topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
+              topLabelContainerStyle={{ marginBottom: 6 }}
+              rulesColor={colors.border.light}
+              rulesType="solid"
+              dashGap={0}
+            />
+          </View>
         </View>
       )}
 

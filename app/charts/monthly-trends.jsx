@@ -4,6 +4,7 @@ import { useThemedColors } from "../../hooks/useThemedColors";
 import { getCurrentUser, getMonthlyStats } from "../../lib/database";
 import MonthlyTrends from "../../components/Charts/MonthlyTrends";
 import MonthlyCrossCheckModal from "../../components/Charts/MonthlyCrossCheckModal";
+import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 
 export default function MonthlyTrendsScreen() {
     const colors = useThemedColors();
@@ -11,20 +12,21 @@ export default function MonthlyTrendsScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showCrossCheckModal, setShowCrossCheckModal] = useState(false);
+    const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
 
     useEffect(() => {
         loadData();
     }, []);
 
-    const loadData = async (isRefresh = false) => {
+    const loadData = async (isRefresh = false, timeframe = selectedTimeframe) => {
         try {
             if (!isRefresh) setIsLoading(true);
             
             const currentUser = await getCurrentUser();
             if (!currentUser) return;
 
-            // Default to 30 days timeframe
-            const timeframeValue = 30;
+            // For "All Time", use a very large number to get all data
+            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
             const stats = await getMonthlyStats(currentUser.id, timeframeValue);
             setMonthlyStats(stats);
         } catch (error) {
@@ -33,6 +35,20 @@ export default function MonthlyTrendsScreen() {
             setIsLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const handleTimeframeChange = (newTimeframe) => {
+        setSelectedTimeframe(newTimeframe);
+        loadData(false, newTimeframe);
+    };
+
+    const handleCustomDateRange = (startDate, endDate) => {
+        // Calculate days difference from start to end date
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        // Use daysDiff as the timeframe - this will calculate from today backwards
+        // Note: This means custom ranges are relative to today, not absolute dates
+        setSelectedTimeframe(daysDiff);
+        loadData(false, daysDiff);
     };
 
     const onRefresh = () => {
@@ -59,6 +75,13 @@ export default function MonthlyTrendsScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
+                {/* Timeframe Filter */}
+                <TimeframeFilter 
+                    selectedTimeframe={selectedTimeframe}
+                    onTimeframeChange={handleTimeframeChange}
+                    onCustomDateRange={handleCustomDateRange}
+                />
+
                 <MonthlyTrends 
                     monthlyStats={monthlyStats} 
                     onCrossCheckPress={() => setShowCrossCheckModal(true)}

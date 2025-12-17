@@ -29,6 +29,7 @@ import { signOut, getUser } from "../lib/auth";
 import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../lib/database";
 import EditProfileModal from "../components/HomeScreen/EditProfileModal";
 import BMIInfoModal from "../components/Profile/BMIInfoModal";
+import SetDefaultsModal from "../components/HomeScreen/SetDefaultsModal";
 
 export default function ProfileScreen() {
     const colors = useThemedColors();
@@ -43,6 +44,7 @@ export default function ProfileScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showBMIModal, setShowBMIModal] = useState(false);
+    const [showDefaultsModal, setShowDefaultsModal] = useState(false);
     const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
@@ -499,6 +501,15 @@ export default function ProfileScreen() {
                         </View>
                         <Text style={styles.actionText}>Edit Profile</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={styles.actionButton}
+                        onPress={() => setShowDefaultsModal(true)}
+                    >
+                        <View style={styles.actionIcon}>
+                            <Target size={20} color={colors.primary[600]} />
+                        </View>
+                        <Text style={styles.actionText}>Workout Defaults</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
                         <View style={styles.actionIcon}>
                             <Settings size={20} color={colors.primary[600]} />
@@ -558,6 +569,21 @@ export default function ProfileScreen() {
                 onClose={() => setShowEditModal(false)}
                 currentProfile={userProfile}
                 onProfileUpdate={handleProfileUpdate}
+            />
+
+            {/* Workout Defaults Modal */}
+            <SetDefaultsModal
+                visible={showDefaultsModal}
+                onClose={() => {
+                    setShowDefaultsModal(false);
+                    // Reload profile to get updated defaults
+                    loadUserData(true);
+                }}
+                currentDefaults={userProfile ? {
+                    default_sets: userProfile.default_sets,
+                    default_reps: userProfile.default_reps,
+                    default_weight_unit: userProfile.default_weight_unit,
+                } : null}
             />
         </View>
     );

@@ -1,45 +1,18 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
-import { Info } from "lucide-react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { getCurrentUser, getPersonalRecords } from "../../lib/database";
 import PersonalRecords from "../../components/Charts/PersonalRecords";
 import PersonalRecordsInfoModal from "../../components/Charts/PersonalRecordsInfoModal";
 import TimeframeFilter from "../../components/Charts/TimeframeFilter";
-import { useNavigation } from "expo-router";
 
 export default function PersonalRecordsScreen() {
     const colors = useThemedColors();
-    const navigation = useNavigation();
     const [personalRecords, setPersonalRecords] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
-
-    useLayoutEffect(() => {
-        // Configure header with info button
-        navigation.setOptions({
-            headerRight: () => (
-                <TouchableOpacity
-                    onPress={() => setShowInfoModal(true)}
-                    style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: colors.background.primary,
-                        borderWidth: 1,
-                        borderColor: colors.border.light,
-                        marginRight: 8,
-                    }}
-                >
-                    <Info size={18} color={colors.icon.primary || colors.primary[600]} />
-                </TouchableOpacity>
-            ),
-        });
-    }, [navigation, colors]);
 
     useEffect(() => {
         loadData();
@@ -109,7 +82,10 @@ export default function PersonalRecordsScreen() {
                     onCustomDateRange={handleCustomDateRange}
                 />
 
-                <PersonalRecords personalRecords={personalRecords} />
+                <PersonalRecords 
+                    personalRecords={personalRecords}
+                    onInfoPress={() => setShowInfoModal(true)}
+                />
             </ScrollView>
             
             <PersonalRecordsInfoModal

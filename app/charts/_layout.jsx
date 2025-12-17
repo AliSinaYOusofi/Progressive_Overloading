@@ -81,6 +81,16 @@ export default function ChartsLayout() {
                 }}
             />
             <Stack.Screen
+                name="monthly-trends-detail"
+                options={{
+                    title: "Monthly Breakdown",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                }}
+            />
+            <Stack.Screen
                 name="progressive-overload"
                 options={{
                     title: "Progressive Overload Insights",
