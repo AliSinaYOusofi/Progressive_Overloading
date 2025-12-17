@@ -16,6 +16,13 @@ const { width: screenWidth } = Dimensions.get('window');
 const INITIAL_DISPLAY_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
 
+// Helper to remove floating point noise (e.g. 13.200000000000001) at a given precision
+const normalizeNumber = (num, decimals = 1) => {
+    const n = Number(num);
+    if (!Number.isFinite(n)) return 0;
+    return Number(n.toFixed(decimals));
+};
+
 // Helper function to format numbers with max 1 decimal place, removing trailing zeros
 const formatNumber = (num) => {
     // Round to 1 decimal place and convert to string
@@ -152,11 +159,14 @@ export default function ExerciseProgression({ exerciseProgression }) {
                 ? exercise.name.substring(0, 10) + '...' 
                 : exercise.name;
             
+            // Clean up any floating point noise so gifted-charts doesn't render long decimals in the top label
+            const clean1RM = normalizeNumber(exercise.last1RM, 1);
+
             // Format 1RM to show max 1 decimal place, removing trailing zeros
-            const formatted1RM = formatNumber(exercise.last1RM);
+            const formatted1RM = formatNumber(clean1RM);
             
             return {
-                value: exercise.last1RM,
+                value: clean1RM,
                 label: name,
                 labelTextStyle: { 
                     color: colors.text.tertiary, 
@@ -193,12 +203,15 @@ export default function ExerciseProgression({ exerciseProgression }) {
             
             const isPositive = exercise.progressionRate >= 0;
             const color = isPositive ? colors.status.success : colors.status.error;
+
+            // Clean up any floating point noise so gifted-charts doesn't render long decimals in the top label
+            const cleanRate = normalizeNumber(exercise.progressionRate, 1);
             
             // Format progression rate to show max 1 decimal place, removing trailing zeros
-            const formattedRate = formatNumber(exercise.progressionRate);
+            const formattedRate = formatNumber(cleanRate);
             
             return {
-                value: Math.abs(exercise.progressionRate),
+                value: Math.abs(cleanRate),
                 label: name,
                 labelTextStyle: { 
                     color: colors.text.tertiary, 
@@ -449,6 +462,7 @@ export default function ExerciseProgression({ exerciseProgression }) {
                             marginBottom: 24,
                             borderWidth: 1,
                             borderColor: colors.border.light,
+                            overflow: 'hidden' // Prevent chart from extending beyond container
                         }}>
                             <Text style={{ 
                                 fontSize: 16, 
@@ -458,38 +472,40 @@ export default function ExerciseProgression({ exerciseProgression }) {
                             }}>
                                 Top Exercises by 1RM
                             </Text>
-                            <BarChart
-                                data={topExercisesChartData}
-                                width={screenWidth - 100}
-                                height={200}
-                                barWidth={25}
-                                initialSpacing={10}
-                                spacing={12}
-                                barBorderRadius={6}
-                                showGradient
-                                gradientColor={colors.primary[400]}
-                                yAxisThickness={1}
-                                xAxisThickness={1}
-                                xAxisColor={colors.border.medium}
-                                yAxisColor={colors.border.medium}
-                                yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-                                xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
-                                yAxisLabelWidth={40}
-                                maxValue={Math.max(...topExercisesChartData.map(d => d.value)) * 1.1 || 100}
-                                noOfSections={4}
-                                isAnimated
-                                animationDuration={1000}
-                                cappedBars
-                                capColor={colors.primary[700]}
-                                capThickness={3}
-                                capRadius={3}
-                                showValuesAsTopLabel
-                                topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                                topLabelContainerStyle={{ marginBottom: 6 }}
-                                rulesColor={colors.border.light}
-                                rulesType="solid"
-                                dashGap={0}
-                            />
+                            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                                <BarChart
+                                    data={topExercisesChartData}
+                                    width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+                                    height={200}
+                                    barWidth={25}
+                                    initialSpacing={20} // Increased to prevent first bar clipping
+                                    spacing={12}
+                                    barBorderRadius={6}
+                                    showGradient
+                                    gradientColor={colors.primary[400]}
+                                    yAxisThickness={1}
+                                    xAxisThickness={1}
+                                    xAxisColor={colors.border.medium}
+                                    yAxisColor={colors.border.medium}
+                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+                                    yAxisLabelWidth={40}
+                                    maxValue={Math.max(...topExercisesChartData.map(d => d.value)) * 1.1 || 100}
+                                    noOfSections={4}
+                                    isAnimated
+                                    animationDuration={1000}
+                                    cappedBars
+                                    capColor={colors.primary[700]}
+                                    capThickness={3}
+                                    capRadius={3}
+                                    showValuesAsTopLabel
+                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
+                                    topLabelContainerStyle={{ marginBottom: 6 }}
+                                    rulesColor={colors.border.light}
+                                    rulesType="solid"
+                                    dashGap={0}
+                                />
+                            </View>
                         </View>
                     )}
 
@@ -502,6 +518,7 @@ export default function ExerciseProgression({ exerciseProgression }) {
                             marginBottom: 24,
                             borderWidth: 1,
                             borderColor: colors.border.light,
+                            overflow: 'hidden' // Prevent chart from extending beyond container
                         }}>
                             <Text style={{ 
                                 fontSize: 16, 
@@ -511,38 +528,40 @@ export default function ExerciseProgression({ exerciseProgression }) {
                             }}>
                                 Progression Rates
                             </Text>
-                            <BarChart
-                                data={progressionChartData}
-                                width={screenWidth - 100}
-                                height={200}
-                                barWidth={25}
-                                initialSpacing={10}
-                                spacing={12}
-                                barBorderRadius={6}
-                                showGradient
-                                gradientColor={colors.status.success}
-                                yAxisThickness={1}
-                                xAxisThickness={1}
-                                xAxisColor={colors.border.medium}
-                                yAxisColor={colors.border.medium}
-                                yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-                                xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
-                                yAxisLabelWidth={40}
-                                maxValue={Math.max(...progressionChartData.map(d => d.value)) * 1.1 || 50}
-                                noOfSections={4}
-                                isAnimated
-                                animationDuration={1000}
-                                cappedBars
-                                capColor={colors.status.success}
-                                capThickness={3}
-                                capRadius={3}
-                                showValuesAsTopLabel
-                                topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                                topLabelContainerStyle={{ marginBottom: 6 }}
-                                rulesColor={colors.border.light}
-                                rulesType="solid"
-                                dashGap={0}
-                            />
+                            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                                <BarChart
+                                    data={progressionChartData}
+                                    width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+                                    height={200}
+                                    barWidth={25}
+                                    initialSpacing={20} // Increased to prevent first bar clipping
+                                    spacing={12}
+                                    barBorderRadius={6}
+                                    showGradient
+                                    gradientColor={colors.status.success}
+                                    yAxisThickness={1}
+                                    xAxisThickness={1}
+                                    xAxisColor={colors.border.medium}
+                                    yAxisColor={colors.border.medium}
+                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+                                    yAxisLabelWidth={40}
+                                    maxValue={Math.max(...progressionChartData.map(d => d.value)) * 1.1 || 50}
+                                    noOfSections={4}
+                                    isAnimated
+                                    animationDuration={1000}
+                                    cappedBars
+                                    capColor={colors.status.success}
+                                    capThickness={3}
+                                    capRadius={3}
+                                    showValuesAsTopLabel
+                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
+                                    topLabelContainerStyle={{ marginBottom: 6 }}
+                                    rulesColor={colors.border.light}
+                                    rulesType="solid"
+                                    dashGap={0}
+                                />
+                            </View>
                         </View>
                     )}
 

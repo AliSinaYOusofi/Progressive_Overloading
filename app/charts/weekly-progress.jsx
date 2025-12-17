@@ -200,11 +200,11 @@ export default function WeeklyProgressScreen() {
                             <View style={{ 
                                 flex: 1,
                                 minWidth: "47%",
-                                backgroundColor: colors.primary[50],
+                                backgroundColor: colors.background.card,
                                 borderRadius: 12,
                                 padding: 16,
                                 borderWidth: 1,
-                                borderColor: colors.primary[200],
+                                borderColor: colors.border.light,
                             }}>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
                                     <Activity size={18} color={colors.primary[600]} />
@@ -221,7 +221,7 @@ export default function WeeklyProgressScreen() {
                                 <Text style={{ 
                                     fontSize: 24, 
                                     fontWeight: "800", 
-                                    color: colors.primary[700],
+                                    color: colors.text.primary,
                                     letterSpacing: -0.5,
                                 }}>
                                     {formatVolume(summaryStats.totalVolume)}
@@ -238,14 +238,14 @@ export default function WeeklyProgressScreen() {
                             <View style={{ 
                                 flex: 1,
                                 minWidth: "47%",
-                                backgroundColor: colors.status.success + '15',
+                                backgroundColor: colors.background.card,
                                 borderRadius: 12,
                                 padding: 16,
                                 borderWidth: 1,
-                                borderColor: colors.status.success + '30',
+                                borderColor: colors.border.light,
                             }}>
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                    <CheckCircle2 size={18} color={colors.status.success} />
+                                    <CheckCircle2 size={18} color={colors.primary[600]} />
                                     <Text style={{ 
                                         fontSize: 12, 
                                         color: colors.text.tertiary,
@@ -259,7 +259,7 @@ export default function WeeklyProgressScreen() {
                                 <Text style={{ 
                                     fontSize: 24, 
                                     fontWeight: "800", 
-                                    color: colors.status.success,
+                                    color: colors.text.primary,
                                     letterSpacing: -0.5,
                                 }}>
                                     {summaryStats.completedDays}
@@ -276,7 +276,7 @@ export default function WeeklyProgressScreen() {
                             <View style={{ 
                                 flex: 1,
                                 minWidth: "47%",
-                                backgroundColor: colors.background.primary,
+                                backgroundColor: colors.background.card,
                                 borderRadius: 12,
                                 padding: 16,
                                 borderWidth: 1,
@@ -314,7 +314,7 @@ export default function WeeklyProgressScreen() {
                             <View style={{ 
                                 flex: 1,
                                 minWidth: "47%",
-                                backgroundColor: colors.background.primary,
+                                backgroundColor: colors.background.card,
                                 borderRadius: 12,
                                 padding: 16,
                                 borderWidth: 1,
@@ -357,6 +357,7 @@ export default function WeeklyProgressScreen() {
                                 marginBottom: 24,
                                 borderWidth: 1,
                                 borderColor: colors.border.light,
+                                overflow: 'hidden' // Prevent chart from extending beyond container
                             }}>
                                 <Text style={{ 
                                     fontSize: 16, 
@@ -366,42 +367,44 @@ export default function WeeklyProgressScreen() {
                                 }}>
                                     Daily Volume
                                 </Text>
-                                <BarChart
-                                    data={barChartData}
-                                    width={Dimensions.get("window").width - 100}
-                                    height={200}
-                                    barWidth={30}
-                                    initialSpacing={10}
-                                    spacing={20}
-                                    barBorderRadius={6}
-                                    showGradient
-                                    gradientColor={colors.primary[400]}
-                                    yAxisThickness={1}
-                                    xAxisThickness={1}
-                                    xAxisColor={colors.border.medium}
-                                    yAxisColor={colors.border.medium}
-                                    yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-                                    xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-                                    yAxisLabelWidth={40}
-                                    maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 1000}
-                                    noOfSections={4}
-                                    isAnimated
-                                    animationDuration={1000}
-                                    cappedBars
-                                    capColor={colors.primary[700]}
-                                    capThickness={3}
-                                    capRadius={3}
-                                    showValuesAsTopLabel
-                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-                                    topLabelContainerStyle={{ marginBottom: 6 }}
-                                    rulesColor={colors.border.light}
-                                    rulesType="solid"
-                                    dashGap={0}
-                                    hideRules={false}
-                                    showXAxisLabel={true}
-                                    xAxisLabelRotation={0}
-                                    xAxisLabelPosition="bottom"
-                                />
+                                <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                                    <BarChart
+                                        data={barChartData}
+                                        width={Dimensions.get("window").width - 120} // Account for container padding (16*2) + screen margins (48*2)
+                                        height={200}
+                                        barWidth={30}
+                                        initialSpacing={20} // Increased to prevent first bar clipping
+                                        spacing={20}
+                                        barBorderRadius={6}
+                                        showGradient
+                                        gradientColor={colors.primary[400]}
+                                        yAxisThickness={1}
+                                        xAxisThickness={1}
+                                        xAxisColor={colors.border.medium}
+                                        yAxisColor={colors.border.medium}
+                                        yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
+                                        xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                                        yAxisLabelWidth={40}
+                                        maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 1000}
+                                        noOfSections={4}
+                                        isAnimated
+                                        animationDuration={1000}
+                                        cappedBars
+                                        capColor={colors.primary[700]}
+                                        capThickness={3}
+                                        capRadius={3}
+                                        showValuesAsTopLabel
+                                        topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
+                                        topLabelContainerStyle={{ marginBottom: 6 }}
+                                        rulesColor={colors.border.light}
+                                        rulesType="solid"
+                                        dashGap={0}
+                                        hideRules={false}
+                                        showXAxisLabel={true}
+                                        xAxisLabelRotation={0}
+                                        xAxisLabelPosition="bottom"
+                                    />
+                                </View>
                             </View>
                         )}
 

@@ -179,6 +179,7 @@ export default function HomeScreen() {
                 onClose={setActions.handleCloseLogSet}
                 onSubmit={setActions.handleSubmitLogSet}
                 isSubmitting={setActions.isLogSubmitting}
+                defaults={setActions.userDefaults}
             />
 
             <SetDetailsModal
