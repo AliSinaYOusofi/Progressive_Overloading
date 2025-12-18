@@ -5,9 +5,11 @@ import { useState, useEffect } from "react"
 import { useRouter } from "expo-router"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { useTheme } from "../../contexts/ThemeContext"
-import { BarChart } from "react-native-gifted-charts"
+import { LineChart } from "react-native-gifted-charts"
+import { useMemo } from "react"
 import MonthlyTrendsFilterModal from "./MonthlyTrendsFilterModal"
 import { sortMonthlyStats } from "./utils/monthlyTrendsUtils"
+import { formatShortNumber } from "../../utils/numberUtils"
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -47,16 +49,6 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
     )
   }
 
-  // Format volume
-  const formatVolume = (volume) => {
-    if (volume >= 1000000) {
-      return `${(volume / 1000000).toFixed(1)}M`;
-    }
-    if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}k`;
-    }
-    return volume.toFixed(0);
-  };
 
   // Calculate summary statistics
   const totalExercises = monthlyStats.reduce((sum, m) => sum + (m?.workouts || 0), 0);
@@ -88,34 +80,37 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
   // Sort monthly stats
   const sortedMonthlyStats = sortMonthlyStats(monthlyStats, sortBy, sortOrder);
 
-  // Prepare bar chart data for volume (always chronological for trend visualization)
-  const prepareVolumeBarData = () => {
+  // Calculate chart dimensions
+  const chartWidth = useMemo(() => {
+    const containerPadding = 16;
+    const screenMargins = 48;
+    return screenWidth - (screenMargins * 2) - (containerPadding * 2);
+  }, []);
+
+  // Prepare line chart data for volume (always chronological for trend visualization)
+  const volumeLineData = useMemo(() => {
     const chronologicalStats = sortMonthlyStats(monthlyStats, 'date', 'asc');
     return chronologicalStats
-      .map((m, idx) => {
+      .map((m, index) => {
         try {
           const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
           const date = new Date(dateStr);
           const label = date.toLocaleDateString("en", { month: "short" });
+          // Only show every nth label to prevent overlap
+          const showLabel = index % Math.max(1, Math.ceil(chronologicalStats.length / 6)) === 0;
           return {
             value: m?.totalVolume || 0,
-            label: label,
+            label: showLabel ? label : '',
             labelTextStyle: { 
               color: colors.text.tertiary, 
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: '500',
             },
-            frontColor: colors.primary[600],
-            topLabelComponent: () => (
-              <Text style={{ 
-                fontSize: 9, 
-                color: isDarkMode ? colors.text.white : colors.text.primary, 
-                fontWeight: '600',
-                marginBottom: 2 
-              }}>
-                {formatVolume(m?.totalVolume || 0)}
-              </Text>
-            ),
+            dataPointText: formatShortNumber(m?.totalVolume || 0),
+            textShiftY: -10,
+            textShiftX: -5,
+            textColor: colors.text.primary,
+            textFontSize: 9,
           };
         } catch (err) {
           console.error('Error formatting month data:', m, err);
@@ -123,37 +118,32 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
         }
       })
       .filter(item => item !== null);
-      // Show chronological order (oldest to newest, left to right)
-  };
+  }, [monthlyStats, colors]);
 
-  // Prepare bar chart data for sets (always chronological for trend visualization)
-  const prepareSetsBarData = () => {
+  // Prepare line chart data for sets (always chronological for trend visualization)
+  const setsLineData = useMemo(() => {
     const chronologicalStats = sortMonthlyStats(monthlyStats, 'date', 'asc');
     return chronologicalStats
-      .map((m, idx) => {
+      .map((m, index) => {
         try {
           const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
           const date = new Date(dateStr);
           const label = date.toLocaleDateString("en", { month: "short" });
+          // Only show every nth label to prevent overlap
+          const showLabel = index % Math.max(1, Math.ceil(chronologicalStats.length / 6)) === 0;
           return {
             value: m?.totalSets || 0,
-            label: label,
+            label: showLabel ? label : '',
             labelTextStyle: { 
               color: colors.text.tertiary, 
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: '500',
             },
-            frontColor: colors.status.success,
-            topLabelComponent: () => (
-              <Text style={{ 
-                fontSize: 9, 
-                color: isDarkMode ? colors.text.white : colors.text.primary, 
-                fontWeight: '600',
-                marginBottom: 2 
-              }}>
-                {m?.totalSets || 0}
-              </Text>
-            ),
+            dataPointText: String(m?.totalSets || 0),
+            textShiftY: -10,
+            textShiftX: -5,
+            textColor: colors.text.primary,
+            textFontSize: 9,
           };
         } catch (err) {
           console.error('Error formatting month data:', m, err);
@@ -161,13 +151,36 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
         }
       })
       .filter(item => item !== null);
-      // Show chronological order (oldest to newest, left to right)
-  };
+  }, [monthlyStats, colors]);
 
-  const volumeBarData = prepareVolumeBarData();
-  const setsBarData = prepareSetsBarData();
-  const maxVolume = Math.max(...volumeBarData.map(d => d.value), 1);
-  const maxSets = Math.max(...setsBarData.map(d => d.value), 1);
+  // Calculate min/max for y-axis
+  const volumeMinMax = useMemo(() => {
+    if (!volumeLineData || volumeLineData.length === 0) return { min: 0, max: 1000 };
+    const values = volumeLineData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const padding = (maxValue - minValue) * 0.1 || 100;
+    return { min: Math.max(0, minValue - padding), max: maxValue + padding };
+  }, [volumeLineData]);
+
+  const setsMinMax = useMemo(() => {
+    if (!setsLineData || setsLineData.length === 0) return { min: 0, max: 100 };
+    const values = setsLineData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const padding = (maxValue - minValue) * 0.1 || 10;
+    return { min: Math.max(0, minValue - padding), max: maxValue + padding };
+  }, [setsLineData]);
+
+  // Calculate spacing for line charts
+  const initialSpacing = 20;
+  const endSpacing = 20;
+  const volumeChartSpacing = volumeLineData.length > 1 
+    ? (chartWidth - initialSpacing - endSpacing) / (volumeLineData.length - 1)
+    : chartWidth;
+  const setsChartSpacing = setsLineData.length > 1 
+    ? (chartWidth - initialSpacing - endSpacing) / (setsLineData.length - 1)
+    : chartWidth;
 
   // Calculate month-over-month changes for each month
   const getMonthChange = (current, previous) => {
@@ -213,7 +226,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             color: colors.text.primary,
             letterSpacing: -0.5,
           }}>
-            {formatVolume(totalVolume)}
+            {formatShortNumber(totalVolume)}
           </Text>
           <Text style={{ 
             fontSize: 14, 
@@ -325,7 +338,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             color: colors.text.primary,
             letterSpacing: -0.5,
           }}>
-            {formatVolume(averageVolumePerMonth)}
+            {formatShortNumber(averageVolumePerMonth)}
           </Text>
           <Text style={{ 
             fontSize: 12, 
@@ -377,8 +390,8 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
         </View>
       )}
 
-      {/* Volume Bar Chart */}
-      {volumeBarData.length > 0 && (
+      {/* Volume Line Chart */}
+      {volumeLineData.length > 0 && (
         <View style={{ 
           backgroundColor: colors.background.primary,
           borderRadius: 12,
@@ -386,7 +399,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
           marginBottom: 24,
           borderWidth: 1,
           borderColor: colors.border.light,
-          overflow: 'hidden' // Prevent chart from extending beyond container
+          overflow: 'hidden'
         }}>
           <Text style={{ 
             fontSize: 16, 
@@ -397,44 +410,48 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             Monthly Volume
           </Text>
           <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <BarChart
-              data={volumeBarData}
-              width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+            <LineChart
+              data={volumeLineData}
+              width={chartWidth}
               height={200}
-              barWidth={30}
-              initialSpacing={20} // Increased to prevent first bar clipping
-              spacing={20}
-              barBorderRadius={6}
-              showGradient
-              gradientColor={colors.primary[400]}
+              color={colors.primary[600]}
+              thickness={3}
+              dataPointsColor={colors.primary[600]}
+              dataPointsRadius={5}
+              hideDataPoints={false}
+              hideRules={false}
+              rulesType="solid"
+              rulesColor={colors.border.light}
+              yAxisColor={colors.border.light}
+              xAxisColor={colors.border.light}
+              yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+              xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+              showVerticalLines={false}
+              showHorizontalLines={true}
+              spacing={volumeChartSpacing}
+              initialSpacing={initialSpacing}
+              endSpacing={endSpacing}
+              maxValue={volumeMinMax.max}
+              minValue={volumeMinMax.min}
+              noOfSections={5}
+              yAxisSide="left"
+              xAxisSide="bottom"
+              curved={true}
+              areaChart={false}
               yAxisThickness={1}
               xAxisThickness={1}
-              xAxisColor={colors.border.medium}
-              yAxisColor={colors.border.medium}
-              yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-              xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
               yAxisLabelWidth={40}
-              maxValue={maxVolume * 1.1 || 1000}
-              noOfSections={4}
-              isAnimated
-              animationDuration={1000}
-              cappedBars
-              capColor={colors.primary[700]}
-              capThickness={3}
-              capRadius={3}
-              showValuesAsTopLabel
-              topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-              topLabelContainerStyle={{ marginBottom: 6 }}
-              rulesColor={colors.border.light}
-              rulesType="solid"
-              dashGap={0}
+              textColor={colors.text.primary}
+              textFontSize={9}
+              textShiftY={-10}
+              textShiftX={-5}
             />
           </View>
         </View>
       )}
 
-      {/* Sets Bar Chart */}
-      {setsBarData.length > 0 && (
+      {/* Sets Line Chart */}
+      {setsLineData.length > 0 && (
         <View style={{ 
           backgroundColor: colors.background.primary,
           borderRadius: 12,
@@ -442,7 +459,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
           marginBottom: 24,
           borderWidth: 1,
           borderColor: colors.border.light,
-          overflow: 'hidden' // Prevent chart from extending beyond container
+          overflow: 'hidden'
         }}>
           <Text style={{ 
             fontSize: 16, 
@@ -453,37 +470,41 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
             Monthly Sets
           </Text>
           <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <BarChart
-              data={setsBarData}
-              width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+            <LineChart
+              data={setsLineData}
+              width={chartWidth}
               height={200}
-              barWidth={30}
-              initialSpacing={20} // Increased to prevent first bar clipping
-              spacing={20}
-              barBorderRadius={6}
-              showGradient
-              gradientColor={colors.status.success}
+              color={colors.status.success}
+              thickness={3}
+              dataPointsColor={colors.status.success}
+              dataPointsRadius={5}
+              hideDataPoints={false}
+              hideRules={false}
+              rulesType="solid"
+              rulesColor={colors.border.light}
+              yAxisColor={colors.border.light}
+              xAxisColor={colors.border.light}
+              yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+              xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+              showVerticalLines={false}
+              showHorizontalLines={true}
+              spacing={setsChartSpacing}
+              initialSpacing={initialSpacing}
+              endSpacing={endSpacing}
+              maxValue={setsMinMax.max}
+              minValue={setsMinMax.min}
+              noOfSections={5}
+              yAxisSide="left"
+              xAxisSide="bottom"
+              curved={true}
+              areaChart={false}
               yAxisThickness={1}
               xAxisThickness={1}
-              xAxisColor={colors.border.medium}
-              yAxisColor={colors.border.medium}
-              yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-              xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
               yAxisLabelWidth={40}
-              maxValue={maxSets * 1.1 || 100}
-              noOfSections={4}
-              isAnimated
-              animationDuration={1000}
-              cappedBars
-              capColor={colors.status.success}
-              capThickness={3}
-              capRadius={3}
-              showValuesAsTopLabel
-              topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-              topLabelContainerStyle={{ marginBottom: 6 }}
-              rulesColor={colors.border.light}
-              rulesType="solid"
-              dashGap={0}
+              textColor={colors.text.primary}
+              textFontSize={9}
+              textShiftY={-10}
+              textShiftX={-5}
             />
           </View>
         </View>
@@ -639,7 +660,7 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
                         color: colors.primary[600],
                         letterSpacing: -0.5,
                       }}>
-                        {formatVolume(month.totalVolume || 0)}
+                        {formatShortNumber(month.totalVolume || 0)}
                       </Text>
                       <Text style={{ 
                         fontSize: 11, 

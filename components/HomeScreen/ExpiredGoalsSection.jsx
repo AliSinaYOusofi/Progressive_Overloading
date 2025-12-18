@@ -149,7 +149,7 @@ export default function ExpiredGoalsSection({
   };
 
   const handleLoadMore = () => {
-    setDisplayLimit(prev => Math.min(prev + 20, filteredGoals.length));
+    setDisplayLimit(prev => Math.min(prev + 10, filteredGoals.length));
   };
 
   return (

@@ -4,13 +4,14 @@ import { Filter, ChevronDown, GitCompare, TrendingUp, TrendingDown, Activity, Tr
 import { Ionicons } from "@expo/vector-icons"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { useTheme } from "../../contexts/ThemeContext"
-import { BarChart } from "react-native-gifted-charts"
+import { LineChart } from "react-native-gifted-charts"
 import VolumeCalculationInfoModal from "./VolumeCalculationInfoModal"
 import VolumeProgressionCard from "./VolumeProgressionCard"
 import VolumeProgressionEmptyState from "./VolumeProgressionEmptyState"
 import VolumeProgressionFilterModal from "./VolumeProgressionFilterModal"
 import VolumeDayDetailModal from "./VolumeDayDetailModal"
 import { getVolumeList, sortVolumeList, calculateVolumeTrend } from "./utils/volumeProgressionUtils"
+import { formatShortNumber } from "../../utils/numberUtils"
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -107,40 +108,68 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
     };
   }, [volumeList]);
 
-  // Prepare bar chart data (chronological order for trend visualization)
-  const barChartData = useMemo(() => {
+  // Calculate chart dimensions
+  const chartWidth = useMemo(() => {
+    const containerPadding = 16;
+    const screenMargins = 48;
+    return screenWidth - (screenMargins * 2) - (containerPadding * 2);
+  }, []);
+
+  // Prepare line chart data (chronological order for trend visualization)
+  const lineChartData = useMemo(() => {
     if (!volumeList || volumeList.length === 0) return [];
     
     const chronologicalList = sortVolumeList(volumeList, 'date', 'asc');
     // Show last 14 days or all if less
     const recentDays = chronologicalList.slice(-14);
     
-    return recentDays.map((day) => {
+    return recentDays.map((day, index) => {
       const date = new Date(day.date);
       const label = date.toLocaleDateString("en", { month: "short", day: "numeric" });
       
+      // Only show every nth label to prevent overlap (max 6-7 labels)
+      const showLabel = index % Math.max(1, Math.ceil(recentDays.length / 6)) === 0;
+      
       return {
         value: day.totalVolume || 0,
-        label: label,
+        label: showLabel ? label : '',
         labelTextStyle: { 
           color: colors.text.tertiary, 
           fontSize: 9,
           fontWeight: '500',
         },
-        frontColor: colors.primary[600],
-        topLabelComponent: () => (
-          <Text style={{ 
-            fontSize: 8, 
-            color: isDarkMode ? colors.text.white : colors.text.primary, 
-            fontWeight: '600',
-            marginBottom: 2 
-          }}>
-            {day.totalVolume >= 1000 ? `${(day.totalVolume / 1000).toFixed(1)}k` : day.totalVolume.toFixed(0)}
-          </Text>
-        ),
+        dataPointText: formatShortNumber(day.totalVolume || 0),
+        textShiftY: -10,
+        textShiftX: -5,
+        textColor: colors.text.primary,
+        textFontSize: 9,
       };
     });
-  }, [volumeList, colors, isDarkMode]);
+  }, [volumeList, colors]);
+
+  // Calculate min/max for y-axis
+  const lineChartMinMax = useMemo(() => {
+    if (!lineChartData || lineChartData.length === 0) {
+      return { min: 0, max: 1000 };
+    }
+    
+    const values = lineChartData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const padding = (maxValue - minValue) * 0.1 || 100;
+    
+    return {
+      min: Math.max(0, minValue - padding),
+      max: maxValue + padding
+    };
+  }, [lineChartData]);
+
+  // Calculate spacing for line chart
+  const initialSpacing = 20;
+  const endSpacing = 20;
+  const lineChartSpacing = lineChartData.length > 1 
+    ? (chartWidth - initialSpacing - endSpacing) / (lineChartData.length - 1)
+    : chartWidth;
 
   // Get top exercises by total volume contribution
   const topExercises = useMemo(() => {
@@ -165,13 +194,6 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
       .slice(0, 5);
   }, [volumeList]);
 
-  // Format volume helper
-  const formatVolume = (volume) => {
-    if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}k`;
-    }
-    return volume.toFixed(0);
-  };
 
   return (
     <View>
@@ -236,7 +258,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
                 color: colors.text.primary,
                 letterSpacing: -0.5,
               }}>
-                {formatVolume(summaryStats.totalVolume)}
+                {formatShortNumber(summaryStats.totalVolume)}
               </Text>
               <Text style={{ 
                 fontSize: 14, 
@@ -274,7 +296,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
                 color: colors.text.primary,
                 letterSpacing: -0.5,
               }}>
-                {formatVolume(summaryStats.averageVolume)}
+                {formatShortNumber(summaryStats.averageVolume)}
               </Text>
               <Text style={{ 
                 fontSize: 14, 
@@ -313,7 +335,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
                   color: colors.text.primary,
                   letterSpacing: -0.5,
                 }}>
-                  {formatVolume(summaryStats.bestDay.totalVolume)}
+                  {formatShortNumber(summaryStats.bestDay.totalVolume)}
                 </Text>
                 <Text style={{ 
                   fontSize: 12, 
@@ -408,7 +430,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
           )}
 
           {/* Volume Trend Chart */}
-          {barChartData.length > 0 && (
+          {lineChartData.length > 0 && (
             <View style={{ 
               backgroundColor: colors.background.primary,
               borderRadius: 12,
@@ -416,7 +438,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
               marginBottom: 24,
               borderWidth: 1,
               borderColor: colors.border.light,
-              overflow: 'hidden' // Prevent chart from extending beyond container
+              overflow: 'hidden'
             }}>
               <Text style={{ 
                 fontSize: 16, 
@@ -427,37 +449,41 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
                 Volume Trend (Last 14 Days)
               </Text>
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <BarChart
-                  data={barChartData}
-                  width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
+                <LineChart
+                  data={lineChartData}
+                  width={chartWidth}
                   height={200}
-                  barWidth={20}
-                  initialSpacing={20} // Increased to prevent first bar clipping
-                  spacing={12}
-                  barBorderRadius={6}
-                  showGradient
-                  gradientColor={colors.primary[400]}
-                  yAxisThickness={1}
-                  xAxisThickness={1}
-                  xAxisColor={colors.border.medium}
-                  yAxisColor={colors.border.medium}
+                  color={colors.primary[600]}
+                  thickness={3}
+                  dataPointsColor={colors.primary[600]}
+                  dataPointsRadius={5}
+                  hideDataPoints={false}
+                  hideRules={false}
+                  rulesType="solid"
+                  rulesColor={colors.border.light}
+                  yAxisColor={colors.border.light}
+                  xAxisColor={colors.border.light}
                   yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
                   xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+                  showVerticalLines={false}
+                  showHorizontalLines={true}
+                  spacing={lineChartSpacing}
+                  initialSpacing={initialSpacing}
+                  endSpacing={endSpacing}
+                  maxValue={lineChartMinMax.max}
+                  minValue={lineChartMinMax.min}
+                  noOfSections={5}
+                  yAxisSide="left"
+                  xAxisSide="bottom"
+                  curved={true}
+                  areaChart={false}
+                  yAxisThickness={1}
+                  xAxisThickness={1}
                   yAxisLabelWidth={40}
-                  maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 1000}
-                  noOfSections={4}
-                  isAnimated
-                  animationDuration={1000}
-                  cappedBars
-                  capColor={colors.primary[700]}
-                  capThickness={3}
-                  capRadius={3}
-                  showValuesAsTopLabel
-                  topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                  topLabelContainerStyle={{ marginBottom: 6 }}
-                  rulesColor={colors.border.light}
-                  rulesType="solid"
-                  dashGap={0}
+                  textColor={colors.text.primary}
+                  textFontSize={9}
+                  textShiftY={-10}
+                  textShiftX={-5}
                 />
               </View>
             </View>
@@ -570,7 +596,7 @@ export default function VolumeProgression({ volumeProgression, onCrossCheckPress
                           fontWeight: "700", 
                           color: colors.text.primary,
                         }}>
-                          {formatVolume(item.volume)} kg
+                          {formatShortNumber(item.volume)} kg
                         </Text>
                       </View>
                       <View style={{ alignItems: "flex-end" }}>

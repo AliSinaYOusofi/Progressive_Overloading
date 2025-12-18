@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { formatVolumeTrendData, calculateVolumeTrend } from "./utils/volumeProgressionUtils";
+import { formatShortNumber } from "../../utils/numberUtils";
 
 /**
  * Card component for displaying individual daily volume progression
@@ -22,13 +23,6 @@ export default function VolumeProgressionCard({
         year: "numeric"
     });
     
-    // Format volume with appropriate unit
-    const formatVolume = (volume) => {
-        if (volume >= 1000) {
-            return `${(volume / 1000).toFixed(1)}k`;
-        }
-        return volume.toFixed(0);
-    };
 
     return (
         <TouchableOpacity
@@ -102,7 +96,7 @@ export default function VolumeProgressionCard({
                                 color: colors.text.primary,
                                 letterSpacing: -0.5,
                             }}>
-                                {formatVolume(volumeEntry.totalVolume)}
+                                {formatShortNumber(volumeEntry.totalVolume)}
                             </Text>
                             <Text style={{ 
                                 fontSize: 16, 

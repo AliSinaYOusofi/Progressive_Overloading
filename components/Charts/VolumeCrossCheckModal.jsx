@@ -7,6 +7,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { getVolumeList, prepareComparisonData } from "./utils/volumeProgressionUtils";
+import { formatShortNumber } from "../../utils/numberUtils";
 
 export default function VolumeCrossCheckModal({ visible, onClose, volumeProgression }) {
     const colors = useThemedColors();
@@ -552,7 +553,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                         fontWeight: '500'
                                                                     }}
                                                                 >
-                                                                    {value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toFixed(0)}
+                                                                    {formatShortNumber(value)}
                                                                 </Text>
                                                             );
                                                         })}
@@ -596,9 +597,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                                 marginBottom: 4,
                                                                                 fontWeight: '600'
                                                                             }}>
-                                                                                {item.date1Volume >= 1000 
-                                                                                    ? `${(item.date1Volume / 1000).toFixed(1)}k` 
-                                                                                    : item.date1Volume.toFixed(0)}
+                                                                                {formatShortNumber(item.date1Volume)}
                                                                             </Text>
                                                                             <View style={{
                                                                                 width: 20,
@@ -618,9 +617,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                                 marginBottom: 4,
                                                                                 fontWeight: '600'
                                                                             }}>
-                                                                                {item.date2Volume >= 1000 
-                                                                                    ? `${(item.date2Volume / 1000).toFixed(1)}k` 
-                                                                                    : item.date2Volume.toFixed(0)}
+                                                                                {formatShortNumber(item.date2Volume)}
                                                                             </Text>
                                                                             <View style={{
                                                                                 width: 20,
@@ -690,12 +687,6 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                     ? ((change / item.date1Volume) * 100).toFixed(1)
                                                     : 0;
                                                 
-                                                const formatVolume = (volume) => {
-                                                    if (volume >= 1000) {
-                                                        return `${(volume / 1000).toFixed(1)}k`;
-                                                    }
-                                                    return volume.toFixed(0);
-                                                };
 
                                                 const ProgressIcon = isIncrease ? TrendingUp : isDecrease ? TrendingDown : Minus;
                                                 const progressColor = isIncrease ? colors.status.success : isDecrease ? colors.status.error : colors.text.tertiary;
@@ -794,7 +785,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                         color: colors.primary[700],
                                                                         letterSpacing: -0.5,
                                                                     }}>
-                                                                        {formatVolume(item.date1Volume)}
+                                                                        {formatShortNumber(item.date1Volume)}
                                                                     </Text>
                                                                     <Text style={{ 
                                                                         fontSize: 14, 
@@ -833,7 +824,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                         color: colors.status.info,
                                                                         letterSpacing: -0.5,
                                                                     }}>
-                                                                        {formatVolume(item.date2Volume)}
+                                                                        {formatShortNumber(item.date2Volume)}
                                                                     </Text>
                                                                     <Text style={{ 
                                                                         fontSize: 14, 
@@ -870,9 +861,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
                                                                     fontWeight: "700", 
                                                                     color: progressColor,
                                                                 }}>
-                                                                    {isIncrease ? "+" : ""}{change >= 1000 
-                                                                        ? `${(change / 1000).toFixed(1)}k` 
-                                                                        : change.toFixed(0)} kg
+                                                                    {isIncrease ? "+" : ""}{formatShortNumber(change)} kg
                                                                 </Text>
                                                             </View>
                                                             <Text style={{ 

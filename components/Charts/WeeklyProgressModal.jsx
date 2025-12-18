@@ -9,6 +9,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColo
 import { scheduleOnRN } from "react-native-worklets";
 import { BarChart } from "react-native-gifted-charts";
 import WeeklyDayDetailModal from "./WeeklyDayDetailModal";
+import { formatShortNumber } from "../../utils/numberUtils";
 
 export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, userId }) {
     const colors = useThemedColors();
@@ -134,13 +135,6 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
         };
     }, [weeklyProgress]);
 
-    // Format volume
-    const formatVolume = (volume) => {
-        if (volume >= 1000) {
-            return `${(volume / 1000).toFixed(1)}k`;
-        }
-        return volume.toFixed(0);
-    };
 
     // Handle day press
     const handleDayPress = (day) => {
@@ -172,7 +166,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                     fontWeight: '600',
                     marginBottom: 2 
                 }}>
-                    {day.weight >= 1000 ? `${(day.weight / 1000).toFixed(1)}k` : day.weight.toFixed(0)}
+                    {formatShortNumber(day.weight)}
                 </Text>
             ),
         }));
@@ -298,7 +292,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                     color: colors.primary[700],
                                                     letterSpacing: -0.5,
                                                 }}>
-                                                    {formatVolume(summaryStats.totalVolume)}
+                                                    {formatShortNumber(summaryStats.totalVolume)}
                                                 </Text>
                                                 <Text style={{ 
                                                     fontSize: 14, 
@@ -374,7 +368,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                     color: colors.text.primary,
                                                     letterSpacing: -0.5,
                                                 }}>
-                                                    {formatVolume(summaryStats.averageVolume)}
+                                                    {formatShortNumber(summaryStats.averageVolume)}
                                                 </Text>
                                                 <Text style={{ 
                                                     fontSize: 14, 
@@ -592,7 +586,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                                             color: colors.text.primary,
                                                                             letterSpacing: -0.5,
                                                                         }}>
-                                                                            {formatVolume(day.weight)}
+                                                                            {formatShortNumber(day.weight)}
                                                                         </Text>
                                                                         <Text style={{ 
                                                                             fontSize: 12, 
@@ -645,7 +639,7 @@ export default function WeeklyProgressModal({ visible, onClose, weeklyProgress, 
                                                     fontSize: 16, 
                                                     color: colors.text.secondary 
                                                 }}>
-                                                    {summaryStats.bestDay.day} - {formatVolume(summaryStats.bestDay.weight)} kg
+                                                    {summaryStats.bestDay.day} - {formatShortNumber(summaryStats.bestDay.weight)} kg
                                                 </Text>
                                             </View>
                                         )}

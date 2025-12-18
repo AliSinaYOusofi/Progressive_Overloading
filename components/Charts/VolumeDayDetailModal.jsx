@@ -8,6 +8,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColo
 import { scheduleOnRN } from "react-native-worklets";
 import { getExerciseSetsByDate } from "../../lib/database";
 import { getCurrentUser } from "../../lib/database";
+import { formatShortNumber } from "../../utils/numberUtils";
 
 export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) {
     const colors = useThemedColors();
@@ -126,13 +127,6 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
         year: "numeric"
     });
 
-    // Format volume with appropriate unit
-    const formatVolume = (volume) => {
-        if (volume >= 1000) {
-            return `${(volume / 1000).toFixed(1)}k`;
-        }
-        return volume.toFixed(0);
-    };
 
     // Get exercise volumes sorted by volume (descending)
     const exerciseVolumes = volumeEntry.exerciseVolumes || {};
@@ -271,7 +265,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                         color: colors.text.primary,
                                                         marginTop: 4,
                                                     }}>
-                                                        {formatVolume(totalVolume)} <Text style={{ fontSize: 18, color: colors.text.secondary }}>kg</Text>
+                                                        {formatShortNumber(totalVolume)} <Text style={{ fontSize: 18, color: colors.text.secondary }}>kg</Text>
                                                     </Text>
                                                 </View>
                                             </View>
@@ -421,7 +415,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                                 color: colors.text.secondary,
                                                                 fontWeight: "600",
                                                             }}>
-                                                                {formatVolume(exercise.volume)} kg
+                                                                {formatShortNumber(exercise.volume)} kg
                                                             </Text>
                                                             <Text style={{ 
                                                                 fontSize: 12, 
@@ -446,7 +440,7 @@ export default function VolumeDayDetailModal({ visible, onClose, volumeEntry }) 
                                                             fontWeight: "700", 
                                                             color: colors.text.primary 
                                                         }}>
-                                                            {formatVolume(exercise.volume)}
+                                                            {formatShortNumber(exercise.volume)}
                                                         </Text>
                                                         <Text style={{ 
                                                             fontSize: 12, 

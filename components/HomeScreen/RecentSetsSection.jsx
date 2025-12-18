@@ -116,7 +116,7 @@ export default function RecentSetsSection({
   };
 
   const handleLoadMore = () => {
-    setDisplayLimit(prev => Math.min(prev + 20, filteredSets.length));
+    setDisplayLimit(prev => Math.min(prev + 10, filteredSets.length));
   };
 
   return (

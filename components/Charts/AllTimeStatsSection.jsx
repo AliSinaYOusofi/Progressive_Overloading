@@ -3,6 +3,7 @@ import { View, Text } from "react-native"
 import { Target } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useThemedColors } from '../../hooks/useThemedColors'
+import { formatShortNumber } from '../../utils/numberUtils'
 
 export default function AllTimeStatsSection({ 
   allTimeData, 
@@ -112,7 +113,7 @@ export default function AllTimeStatsSection({
             <Ionicons name="analytics" size={18} color={colors.icon?.primary || colors.primary[600]} />
           </View>
           <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text.primary, letterSpacing: -0.5, marginBottom: 2 }}>
-            {(allTimeData.totalVolume / 1000).toFixed(1)}t
+            {formatShortNumber(allTimeData.totalVolume)}
           </Text>
           <Text style={{ fontSize: 12, color: colors.text.tertiary }}>
             Lifetime Volume

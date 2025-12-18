@@ -1,11 +1,13 @@
 import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from "react-native";
-import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity, ChevronRight } from "lucide-react-native";
+import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity, ChevronRight, GitCompare } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
-import { getCurrentUser, getWeeklyProgress } from "../../lib/database";
-import { BarChart } from "react-native-gifted-charts";
+import { getCurrentUser, getWeeklyProgress, getWeeklyStats } from "../../lib/database";
+import { LineChart } from "react-native-gifted-charts";
+import { formatShortNumber } from "../../utils/numberUtils";
 import WeeklyDayDetailModal from "../../components/Charts/WeeklyDayDetailModal";
+import WeeklyCrossCheckModal from "../../components/Charts/WeeklyCrossCheckModal";
 
 export default function WeeklyProgressScreen() {
     const colors = useThemedColors();
@@ -16,6 +18,8 @@ export default function WeeklyProgressScreen() {
     const [showDayDetailModal, setShowDayDetailModal] = useState(false);
     const [selectedDayDate, setSelectedDayDate] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [showCrossCheckModal, setShowCrossCheckModal] = useState(false);
+    const [weeklyStats, setWeeklyStats] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -34,6 +38,10 @@ export default function WeeklyProgressScreen() {
             const timeframeValue = 30;
             const progress = await getWeeklyProgress(currentUser.id, timeframeValue);
             setWeeklyProgress(progress);
+            
+            // Load weekly stats for cross-check (use 84 days to get ~12 weeks)
+            const stats = await getWeeklyStats(currentUser.id, 84);
+            setWeeklyStats(stats);
         } catch (error) {
             console.error("Error loading weekly progress:", error);
         } finally {
@@ -112,14 +120,6 @@ export default function WeeklyProgressScreen() {
         };
     }, [weeklyProgress]);
 
-    // Format volume
-    const formatVolume = (volume) => {
-        if (volume >= 1000) {
-            return `${(volume / 1000).toFixed(1)}k`;
-        }
-        return volume.toFixed(0);
-    };
-
     // Handle day press
     const handleDayPress = (day) => {
         if (day.completed && day.date) {
@@ -128,33 +128,62 @@ export default function WeeklyProgressScreen() {
         }
     };
 
-    // Prepare bar chart data
-    const barChartData = useMemo(() => {
+    // Calculate chart dimensions
+    const chartWidth = useMemo(() => {
+        const containerPadding = 16;
+        const screenMargins = 48;
+        return Dimensions.get("window").width - (screenMargins * 2) - (containerPadding * 2);
+    }, []);
+
+    // Prepare line chart data (only up to today, exclude future days)
+    const lineChartData = useMemo(() => {
         if (!weekData || weekData.length === 0) return [];
         
-        const maxVolume = Math.max(...weekData.map(d => d.weight || 0), 1);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        return weekData.map((day, index) => ({
+        // Filter to only include days up to today
+        const daysUpToToday = weekData.filter(day => {
+            if (!day.date) return false;
+            const dayDate = new Date(day.date);
+            dayDate.setHours(0, 0, 0, 0);
+            return dayDate <= today;
+        });
+        
+        return daysUpToToday.map((day, index) => ({
             value: day.weight || 0,
             label: day.day.substring(0, 3),
             labelTextStyle: { 
                 color: colors.text.tertiary, 
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: '500',
             },
-            frontColor: day.completed ? colors.primary[600] : colors.border.light,
-            topLabelComponent: () => (
-                <Text style={{ 
-                    fontSize: 9, 
-                    color: isDarkMode ? colors.text.white : colors.text.primary, 
-                    fontWeight: '600',
-                    marginBottom: 2 
-                }}>
-                    {day.weight >= 1000 ? `${(day.weight / 1000).toFixed(1)}k` : day.weight.toFixed(0)}
-                </Text>
-            ),
+            dataPointText: formatShortNumber(day.weight || 0),
+            textShiftY: -8,
+            textShiftX: -10,
+            textColor: colors.text.primary,
+            textFontSize: 13,
+            dataPointColor: day.completed ? colors.primary[600] : colors.border.light,
         }));
-    }, [weekData, colors, isDarkMode]);
+    }, [weekData, colors]);
+
+    // Calculate min/max for y-axis (extra top padding for data point labels)
+    const lineChartMinMax = useMemo(() => {
+        if (!lineChartData || lineChartData.length === 0) return { min: 0, max: 1000 };
+        const values = lineChartData.map(d => d.value);
+        const minValue = Math.min(...values);
+        const maxValue = Math.max(...values);
+        const topPadding = (maxValue - minValue) * 0.15 || 150; // Extra padding for labels
+        const bottomPadding = (maxValue - minValue) * 0.1 || 100;
+        return { min: Math.max(0, minValue - bottomPadding), max: maxValue + topPadding };
+    }, [lineChartData]);
+
+    // Calculate spacing for line chart
+    const initialSpacing = 20;
+    const endSpacing = 20;
+    const lineChartSpacing = lineChartData.length > 1 
+        ? (chartWidth - initialSpacing - endSpacing) / (lineChartData.length - 1)
+        : chartWidth;
 
     if (isLoading) {
         return (
@@ -224,7 +253,7 @@ export default function WeeklyProgressScreen() {
                                     color: colors.text.primary,
                                     letterSpacing: -0.5,
                                 }}>
-                                    {formatVolume(summaryStats.totalVolume)}
+                                    {formatShortNumber(summaryStats.totalVolume)}
                                 </Text>
                                 <Text style={{ 
                                     fontSize: 14, 
@@ -300,7 +329,7 @@ export default function WeeklyProgressScreen() {
                                     color: colors.text.primary,
                                     letterSpacing: -0.5,
                                 }}>
-                                    {formatVolume(summaryStats.averageVolume)}
+                                    {formatShortNumber(summaryStats.averageVolume)}
                                 </Text>
                                 <Text style={{ 
                                     fontSize: 14, 
@@ -348,8 +377,8 @@ export default function WeeklyProgressScreen() {
                             </View>
                         </View>
 
-                        {/* Volume Bar Chart */}
-                        {barChartData.length > 0 && (
+                        {/* Volume Line Chart */}
+                        {lineChartData.length > 0 && (
                             <View style={{ 
                                 backgroundColor: colors.background.primary,
                                 borderRadius: 12,
@@ -357,7 +386,7 @@ export default function WeeklyProgressScreen() {
                                 marginBottom: 24,
                                 borderWidth: 1,
                                 borderColor: colors.border.light,
-                                overflow: 'hidden' // Prevent chart from extending beyond container
+                                overflow: 'hidden'
                             }}>
                                 <Text style={{ 
                                     fontSize: 16, 
@@ -368,41 +397,41 @@ export default function WeeklyProgressScreen() {
                                     Daily Volume
                                 </Text>
                                 <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                                    <BarChart
-                                        data={barChartData}
-                                        width={Dimensions.get("window").width - 120} // Account for container padding (16*2) + screen margins (48*2)
+                                    <LineChart
+                                        data={lineChartData}
+                                        width={chartWidth}
                                         height={200}
-                                        barWidth={30}
-                                        initialSpacing={20} // Increased to prevent first bar clipping
-                                        spacing={20}
-                                        barBorderRadius={6}
-                                        showGradient
-                                        gradientColor={colors.primary[400]}
+                                        color={colors.primary[600]}
+                                        thickness={3}
+                                        dataPointsColor={colors.primary[600]}
+                                        dataPointsRadius={5}
+                                        hideDataPoints={false}
+                                        hideRules={false}
+                                        rulesType="solid"
+                                        rulesColor={colors.border.light}
+                                        yAxisColor={colors.border.light}
+                                        xAxisColor={colors.border.light}
+                                        yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                                        xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+                                        showVerticalLines={false}
+                                        showHorizontalLines={true}
+                                        spacing={lineChartSpacing}
+                                        initialSpacing={initialSpacing}
+                                        endSpacing={endSpacing}
+                                        maxValue={lineChartMinMax.max}
+                                        minValue={lineChartMinMax.min}
+                                        noOfSections={5}
+                                        yAxisSide="left"
+                                        xAxisSide="bottom"
+                                        curved={true}
+                                        areaChart={false}
                                         yAxisThickness={1}
                                         xAxisThickness={1}
-                                        xAxisColor={colors.border.medium}
-                                        yAxisColor={colors.border.medium}
-                                        yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-                                        xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
                                         yAxisLabelWidth={40}
-                                        maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 1000}
-                                        noOfSections={4}
-                                        isAnimated
-                                        animationDuration={1000}
-                                        cappedBars
-                                        capColor={colors.primary[700]}
-                                        capThickness={3}
-                                        capRadius={3}
-                                        showValuesAsTopLabel
-                                        topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-                                        topLabelContainerStyle={{ marginBottom: 6 }}
-                                        rulesColor={colors.border.light}
-                                        rulesType="solid"
-                                        dashGap={0}
-                                        hideRules={false}
-                                        showXAxisLabel={true}
-                                        xAxisLabelRotation={0}
-                                        xAxisLabelPosition="bottom"
+                                        textColor={colors.text.primary}
+                                        textFontSize={13}
+                                        textShiftY={-8}
+                                        textShiftX={-10}
                                     />
                                 </View>
                             </View>
@@ -410,16 +439,52 @@ export default function WeeklyProgressScreen() {
 
                         {/* Day-by-Day Breakdown */}
                         <View>
-                            <Text style={{ 
-                                fontSize: 18, 
-                                fontWeight: "bold", 
-                                color: colors.text.primary,
+                            <View style={{ 
+                                flexDirection: "row", 
+                                alignItems: "center", 
+                                justifyContent: "space-between",
                                 marginBottom: 16 
                             }}>
-                                Day-by-Day Breakdown
-                            </Text>
+                                <Text style={{ 
+                                    fontSize: 18, 
+                                    fontWeight: "bold", 
+                                    color: colors.text.primary,
+                                }}>
+                                    Day-by-Day Breakdown
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setShowCrossCheckModal(true)}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 6,
+                                        backgroundColor: colors.background.primary,
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: colors.border.light,
+                                    }}
+                                >
+                                    <GitCompare size={16} color={colors.primary[600]} />
+                                    <Text style={{
+                                        fontSize: 13,
+                                        fontWeight: '600',
+                                        color: colors.primary[600],
+                                    }}>
+                                        Cross Check
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                             {weekData.map((day, index) => {
-                                const isToday = day.date.toDateString() === new Date().toDateString();
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const dayDate = new Date(day.date);
+                                dayDate.setHours(0, 0, 0, 0);
+                                
+                                const isToday = dayDate.toDateString() === today.toDateString();
+                                const isFuture = dayDate > today;
                                 
                                 return (
                                     <TouchableOpacity
@@ -521,7 +586,7 @@ export default function WeeklyProgressScreen() {
                                                             color: colors.text.primary,
                                                             letterSpacing: -0.5,
                                                         }}>
-                                                            {formatVolume(day.weight)}
+                                                            {formatShortNumber(day.weight)}
                                                         </Text>
                                                         <Text style={{ 
                                                             fontSize: 12, 
@@ -538,9 +603,9 @@ export default function WeeklyProgressScreen() {
                                                     <Text style={{ 
                                                         fontSize: 13, 
                                                         color: colors.text.tertiary,
-                                                        fontStyle: "italic",
+                                                        fontStyle: isFuture ? "normal" : "italic",
                                                     }}>
-                                                        No workout
+                                                        {isFuture ? "Upcoming" : "No workout"}
                                                     </Text>
                                                 </View>
                                             )}
@@ -574,7 +639,7 @@ export default function WeeklyProgressScreen() {
                                     fontSize: 16, 
                                     color: colors.text.secondary 
                                 }}>
-                                    {summaryStats.bestDay.day} - {formatVolume(summaryStats.bestDay.weight)} kg
+                                    {summaryStats.bestDay.day} - {formatShortNumber(summaryStats.bestDay.weight)} kg
                                 </Text>
                             </View>
                         )}
@@ -587,6 +652,12 @@ export default function WeeklyProgressScreen() {
                 onClose={() => setShowDayDetailModal(false)}
                 dayDate={selectedDayDate}
                 userId={userId}
+            />
+            
+            <WeeklyCrossCheckModal
+                visible={showCrossCheckModal}
+                onClose={() => setShowCrossCheckModal(false)}
+                weeklyStats={weeklyStats}
             />
         </View>
     );
