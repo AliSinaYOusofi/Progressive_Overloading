@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { getCurrentUser, getVolumeAnalysis } from "../../lib/database"
 import VolumeAnalysisInfoModal from "./VolumeAnalysisInfoModal"
+import { formatShortNumber } from "../../utils/numberUtils"
 
 export default function VolumeAnalysis({ 
   volumeAnalysis: initialData,
@@ -296,7 +297,7 @@ export default function VolumeAnalysis({
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 }}>
           <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginRight: 8 }}>
             <Ionicons name="fitness" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{volumeData.totalVolume?.toFixed(0) || '0'}</Text>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{formatShortNumber(volumeData.totalVolume || 0)}</Text>
             <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Total Volume</Text>
             <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
           </View>
@@ -304,7 +305,7 @@ export default function VolumeAnalysis({
           <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginHorizontal: 4 }}>
             <Ionicons name="barbell" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>
-              {volumeData.avgVolumePerWorkout?.toFixed(0) || '0'}
+              {formatShortNumber(volumeData.avgVolumePerWorkout || 0)}
             </Text>
             <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Avg/Workout</Text>
             <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
@@ -312,7 +313,7 @@ export default function VolumeAnalysis({
 
           <View style={{ flex: 1, alignItems: 'center', backgroundColor: colors.background.primary, borderRadius: 12, padding: 16, marginLeft: 8 }}>
             <Ionicons name="trophy" size={20} color={colors.primary[600]} style={{ marginBottom: 8 }} />
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{volumeData.maxVolume?.toFixed(0) || '0'}</Text>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text.primary, marginBottom: 4 }}>{formatShortNumber(volumeData.maxVolume || 0)}</Text>
             <Text style={{ fontSize: 12, color: colors.text.secondary, fontWeight: '500' }}>Peak Day</Text>
             <Text style={{ fontSize: 12, color: colors.text.tertiary }}>(kg)</Text>
           </View>

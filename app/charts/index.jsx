@@ -13,12 +13,12 @@ import {
     getPersonalRecords,
     getWeeklyProgress,
     getRPEAnalysis,
-    getProgressiveOverloadInsights
+    getProgressiveOverloadInsights,
+    getMuscleGroupHeatmapData
 } from "../../lib/database";
 
 // Import chart components
 import QuickStats from "../../components/Charts/QuickStats";
-import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 import CollapsibleSection from "../../components/Charts/CollapsibleSection";
 import StrengthStandards from "../../components/Charts/StrengthStandards";
 import RPEAnalysis from "../../components/Charts/RPEAnalysis";
@@ -37,15 +37,15 @@ export default function ChartsScreen() {
     const [weeklyProgress, setWeeklyProgress] = useState([]);
     const [rpeAnalysis, setRpeAnalysis] = useState([]);
     const [progressiveOverloadInsights, setProgressiveOverloadInsights] = useState([]);
+    const [muscleGroupHeatmap, setMuscleGroupHeatmap] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
 
     useEffect(() => {
         loadChartsData();
     }, []);
 
-    const loadChartsData = async (isRefresh = false, timeframe = selectedTimeframe) => {
+    const loadChartsData = async (isRefresh = false) => {
         try {
             if (!isRefresh) setIsLoading(true);
             
@@ -54,8 +54,8 @@ export default function ChartsScreen() {
             
             setUser(currentUser);
 
-            // For "All Time", use a very large number or null to get all data
-            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
+            // Always fetch all-time data (36500 days = ~100 years)
+            const allTimeValue = 36500;
 
             const [
                 stats,
@@ -66,17 +66,19 @@ export default function ChartsScreen() {
                 records,
                 weekly,
                 rpe,
-                overloadInsights
+                overloadInsights,
+                heatmap
             ] = await Promise.all([
-                getUserStats(currentUser.id, timeframeValue),
-                getExerciseProgressionData(currentUser.id, null, timeframeValue),
-                getVolumeProgressionData(currentUser.id, timeframeValue),
-                getStrengthStandards(currentUser.id, timeframeValue),
-                getMonthlyStats(currentUser.id, timeframeValue),
-                getPersonalRecords(currentUser.id, timeframe === 'all' ? 100 : 10, timeframeValue),
-                getWeeklyProgress(currentUser.id, timeframeValue),
-                getRPEAnalysis(currentUser.id, timeframeValue),
-                getProgressiveOverloadInsights(currentUser.id, timeframeValue)
+                getUserStats(currentUser.id, allTimeValue),
+                getExerciseProgressionData(currentUser.id, null, allTimeValue),
+                getVolumeProgressionData(currentUser.id, allTimeValue),
+                getStrengthStandards(currentUser.id, allTimeValue),
+                getMonthlyStats(currentUser.id, allTimeValue),
+                getPersonalRecords(currentUser.id, 100, allTimeValue),
+                getWeeklyProgress(currentUser.id, allTimeValue),
+                getRPEAnalysis(currentUser.id, allTimeValue),
+                getProgressiveOverloadInsights(currentUser.id, allTimeValue),
+                getMuscleGroupHeatmapData(currentUser.id, allTimeValue)
             ]);
 
             setUserStats(stats);
@@ -88,6 +90,7 @@ export default function ChartsScreen() {
             setWeeklyProgress(weekly);
             setRpeAnalysis(rpe);
             setProgressiveOverloadInsights(overloadInsights);
+            setMuscleGroupHeatmap(heatmap);
         } catch (error) {
             console.error("Error loading charts data:", error);
         } finally {
@@ -99,20 +102,6 @@ export default function ChartsScreen() {
     const onRefresh = () => {
         setRefreshing(true);
         loadChartsData(true);
-    };
-
-    const handleTimeframeChange = (newTimeframe) => {
-        setSelectedTimeframe(newTimeframe);
-        loadChartsData(false, newTimeframe);
-    };
-
-    const handleCustomDateRange = (startDate, endDate) => {
-        // Calculate days difference from start to end date
-        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        // Use daysDiff as the timeframe - this will calculate from today backwards
-        // Note: This means custom ranges are relative to today, not absolute dates
-        setSelectedTimeframe(daysDiff);
-        loadChartsData(false, daysDiff);
     };
 
     if (isLoading) {
@@ -139,13 +128,6 @@ export default function ChartsScreen() {
                     <Text style={{ fontSize: 30, fontWeight: 'bold', color: colors.text.primary, marginBottom: 8, textAlign: 'center' }}>Progressive Overload Analytics</Text>
                     <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center' }}>Track your strength gains and performance</Text>
                 </View>
-
-                {/* Timeframe Filter */}
-                <TimeframeFilter 
-                    selectedTimeframe={selectedTimeframe}
-                    onTimeframeChange={handleTimeframeChange}
-                    onCustomDateRange={handleCustomDateRange}
-                />
 
                 {/* Quick Stats - Always Visible */}
                 <QuickStats 
@@ -585,6 +567,59 @@ export default function ChartsScreen() {
                     >
                         <RPEAnalysis rpeAnalysis={rpeAnalysis} />
                     </CollapsibleSection>
+                )}
+
+                {/* Muscle Group Heatmap */}
+                {muscleGroupHeatmap && muscleGroupHeatmap.length > 0 && (
+                    <View style={{ marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/charts/muscle-groups-heatmap')}
+                            activeOpacity={0.7}
+                            style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 12,
+                                padding: 16,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 2
+                            }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 12,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: colors.primary[100]
+                                        }}
+                                    >
+                                        <Activity size={20} color={colors.primary[600]} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Muscle Group</Text>
+                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Volume by muscle group</Text>
+                                    </View>
+                                </View>
+                                <View 
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: colors.background.primary
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
             </ScrollView>

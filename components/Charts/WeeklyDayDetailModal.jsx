@@ -3,11 +3,16 @@ import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions, ActivityIn
 import { Calendar, Dumbbell, Repeat, Layers, Clock, TrendingUp } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
+import LoadMoreButton from "../HomeScreen/LoadMoreButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { getExerciseSetsByDate } from "../../lib/database";
 import { getCurrentUser } from "../../lib/database";
+import { formatShortNumber } from "../../utils/numberUtils";
+
+const INITIAL_DISPLAY_COUNT = 10;
+const LOAD_MORE_COUNT = 10;
 
 export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId }) {
     const colors = useThemedColors();
@@ -17,6 +22,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
     const [sets, setSets] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [groupedSets, setGroupedSets] = useState([]);
+    const [displayLimit, setDisplayLimit] = useState(INITIAL_DISPLAY_COUNT);
 
     // Define close function in RN Runtime scope (required for scheduleOnRN)
     const handleClose = useCallback(() => {
@@ -54,19 +60,26 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
         const backgroundColor = interpolateColor(
             translateY.value,
             [0, 50, 100],
-            [colors.border.light, colors.primary[400], colors.primary[600]]
+            [colors.border.light, colors.text.tertiary, colors.text.secondary]
         );
         return {
             backgroundColor,
         };
     });
 
-    // Reset translateY when modal becomes visible
+    // Reset translateY and display limit when modal becomes visible
     useEffect(() => {
         if (visible) {
             translateY.value = 0;
+            setDisplayLimit(INITIAL_DISPLAY_COUNT);
         }
     }, [visible, translateY]);
+
+    // Get unique key for a set (exercise + weight + reps + sets)
+    const getSetKey = (set) => {
+        const exerciseName = set.exercises?.name || 'Unknown';
+        return `${exerciseName}_${set.weight || 0}_${set.reps || 0}_${set.sets || 1}`;
+    };
 
     // Fetch sets when modal opens
     useEffect(() => {
@@ -84,8 +97,19 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                 const daySets = await getExerciseSetsByDate(currentUserId, dayDate);
                 setSets(daySets);
 
-                // Group sets by exercise
-                const grouped = daySets.reduce((acc, set) => {
+                // Get distinct sets based on exercise + weight + reps + sets
+                const distinctSetsMap = new Map();
+                daySets.forEach(set => {
+                    const key = getSetKey(set);
+                    if (!distinctSetsMap.has(key)) {
+                        distinctSetsMap.set(key, set);
+                    }
+                });
+
+                const distinctSets = Array.from(distinctSetsMap.values());
+
+                // Group distinct sets by exercise
+                const grouped = distinctSets.reduce((acc, set) => {
                     const exerciseName = set.exercises?.name || 'Unknown';
                     if (!acc[exerciseName]) {
                         acc[exerciseName] = [];
@@ -94,7 +118,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                     return acc;
                 }, {});
 
-                // Convert to array and sort by exercise name
+                // Convert to array and sort by total volume
                 const groupedArray = Object.entries(grouped)
                     .map(([exerciseName, exerciseSets]) => ({
                         exerciseName,
@@ -104,6 +128,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                         totalVolume: exerciseSets.reduce((sum, s) => 
                             sum + (s.weight || 0) * (s.reps || 0) * (s.sets || 1), 0
                         ),
+                        totalSets: exerciseSets.reduce((sum, s) => sum + (s.sets || 1), 0),
                     }))
                     .sort((a, b) => b.totalVolume - a.totalVolume);
 
@@ -132,13 +157,6 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
         year: "numeric"
     });
 
-    // Format volume
-    const formatVolume = (volume) => {
-        if (volume >= 1000) {
-            return `${(volume / 1000).toFixed(1)}k`;
-        }
-        return volume.toFixed(0);
-    };
 
     // Format time
     const formatTime = (dateString) => {
@@ -193,33 +211,43 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                 borderBottomWidth: 1,
                                 borderBottomColor: colors.border.light,
                             }}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, marginRight: 12 }}>
                                     <View style={{
                                         width: 40,
                                         height: 40,
                                         borderRadius: 12,
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        backgroundColor: colors.primary[100]
+                                        backgroundColor: colors.background.card,
+                                        borderWidth: 1,
+                                        borderColor: colors.border.light,
                                     }}>
-                                        <Calendar size={20} color={colors.primary[600]} />
+                                        <Calendar size={20} color={colors.text.tertiary} />
                                     </View>
-                                    <View>
-                                        <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }}>
+                                    <View style={{ flex: 1, minWidth: 0 }}>
+                                        <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }} numberOfLines={1}>
                                             Workout Details
                                         </Text>
-                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>
+                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }} numberOfLines={1}>
                                             {formattedDate}
                                         </Text>
+                                        {groupedSets.length > 0 && (
+                                            <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={1}>
+                                                {groupedSets.length} {groupedSets.length === 1 ? 'exercise' : 'exercises'} • {groupedSets.reduce((sum, g) => sum + g.totalSets, 0)} {groupedSets.reduce((sum, g) => sum + g.totalSets, 0) === 1 ? 'set' : 'sets'}
+                                            </Text>
+                                        )}
                                     </View>
                                 </View>
-                                <ModalCloseButton onPress={onClose} />
+                                <View style={{ marginLeft: 8 }}>
+                                    <ModalCloseButton onPress={onClose} />
+                                </View>
                             </View>
 
                             {/* Content */}
                             <ScrollView 
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+                                style={{ backgroundColor: colors.background.card }}
                             >
                                 {isLoading ? (
                                     <View style={{ 
@@ -227,15 +255,15 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                         justifyContent: "center", 
                                         paddingVertical: 60 
                                     }}>
-                                        <ActivityIndicator size="large" color={colors.primary[600]} />
+                                        <ActivityIndicator size="large" color={colors.text.tertiary} />
                                     </View>
                                 ) : groupedSets.length > 0 ? (
                                     <View>
-                                        {groupedSets.map((group, groupIndex) => (
+                                        {groupedSets.slice(0, displayLimit).map((group, groupIndex) => (
                                             <View
                                                 key={group.exerciseName}
                                                 style={{
-                                                    backgroundColor: colors.background.primary,
+                                                    backgroundColor: colors.background.card,
                                                     borderRadius: 12,
                                                     padding: 16,
                                                     marginBottom: 16,
@@ -260,7 +288,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                             borderRadius: 12,
                                                             alignItems: "center",
                                                             justifyContent: "center",
-                                                            backgroundColor: colors.background.primary,
+                                                            backgroundColor: colors.background.card,
                                                             marginRight: 12,
                                                             borderWidth: 1,
                                                             borderColor: colors.border.light,
@@ -281,282 +309,113 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                                                 color: colors.text.tertiary,
                                                                 fontWeight: "500",
                                                             }}>
-                                                                {group.sets.length} {group.sets.length === 1 ? 'set' : 'sets'}
+                                                                {group.totalSets} {group.totalSets === 1 ? 'set' : 'sets'}
                                                             </Text>
                                                         </View>
                                                     </View>
-                                                    <View style={{ 
-                                                        alignItems: "flex-end",
-                                                        backgroundColor: colors.primary[50],
-                                                        paddingHorizontal: 14,
-                                                        paddingVertical: 10,
-                                                        borderRadius: 12,
-                                                        borderWidth: 1,
-                                                        borderColor: colors.primary[200],
-                                                    }}>
-                                                        <Text style={{ 
-                                                            fontSize: 18, 
-                                                            fontWeight: "800", 
-                                                            color: colors.primary[700],
-                                                            lineHeight: 22,
-                                                        }}>
-                                                            {formatVolume(group.totalVolume)}
-                                                        </Text>
-                                                        <Text style={{ 
-                                                            fontSize: 11, 
-                                                            color: colors.text.tertiary,
-                                                            fontWeight: "600",
-                                                            marginTop: 2,
-                                                        }}>
-                                                            kg total
-                                                        </Text>
-                                                    </View>
+                                    <View style={{ 
+                                        alignItems: "flex-end",
+                                        backgroundColor: colors.background.card,
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 10,
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: colors.border.light,
+                                    }}>
+                                        <Text style={{ 
+                                            fontSize: 18, 
+                                            fontWeight: "800", 
+                                            color: colors.text.primary,
+                                            lineHeight: 22,
+                                        }}>
+                                            {formatShortNumber(group.totalVolume)}
+                                        </Text>
+                                        <Text style={{ 
+                                            fontSize: 11, 
+                                            color: colors.text.tertiary,
+                                            fontWeight: "600",
+                                            marginTop: 2,
+                                        }}>
+                                            kg total
+                                        </Text>
+                                    </View>
                                                 </View>
 
-                                                {/* Sets List */}
-                                                <View style={{ gap: 10 }}>
+                                                {/* Distinct Sets List */}
+                                                <View style={{ gap: 8, marginTop: 8 }}>
                                                     {group.sets.map((set, setIndex) => {
                                                         const setVolume = (set.weight || 0) * (set.reps || 0) * (set.sets || 1);
-                                                        const isLastSet = setIndex === group.sets.length - 1;
                                                         
                                                         return (
                                                             <View
-                                                                key={set.id || setIndex}
+                                                                key={set.id || `${group.exerciseName}_${setIndex}`}
                                                                 style={{
                                                                     backgroundColor: colors.background.card,
-                                                                    borderRadius: 12,
-                                                                    padding: 14,
+                                                                    borderRadius: 8,
+                                                                    padding: 12,
                                                                     borderWidth: 1,
                                                                     borderColor: colors.border.light,
-                                                                    marginBottom: isLastSet ? 0 : 0,
                                                                 }}
                                                             >
-                                                                {/* Set Header */}
                                                                 <View style={{ 
                                                                     flexDirection: "row", 
                                                                     alignItems: "center", 
                                                                     justifyContent: "space-between",
-                                                                    marginBottom: 12,
+                                                                    marginBottom: 8,
                                                                 }}>
-                                                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                                                        <View style={{
-                                                                            width: 32,
-                                                                            height: 32,
-                                                                            borderRadius: 8,
-                                                                            backgroundColor: colors.primary[100],
-                                                                            alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                        }}>
-                                                                            <Text style={{ 
-                                                                                fontSize: 14, 
-                                                                                fontWeight: "800", 
-                                                                                color: colors.primary[700],
-                                                                            }}>
-                                                                                {setIndex + 1}
+                                                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+                                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                                                            <Layers size={14} color={colors.text.tertiary} />
+                                                                            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text.primary }}>
+                                                                                {set.sets || 1}
                                                                             </Text>
                                                                         </View>
+                                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                                                            <Repeat size={14} color={colors.text.tertiary} />
+                                                                            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text.primary }}>
+                                                                                {set.reps || 0}
+                                                                            </Text>
+                                                                        </View>
+                                                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                                                            <Dumbbell size={14} color={colors.text.tertiary} />
+                                                                            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text.primary }}>
+                                                                                {set.weight || 0} kg
+                                                                            </Text>
+                                                                        </View>
+                                                                    </View>
+                                                                    <View style={{ alignItems: "flex-end" }}>
                                                                         <Text style={{ 
-                                                                            fontSize: 15, 
+                                                                            fontSize: 14, 
                                                                             fontWeight: "700", 
                                                                             color: colors.text.primary,
                                                                         }}>
-                                                                            Set {setIndex + 1}
-                                                                        </Text>
-                                                                    </View>
-                                                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                                                        <Clock size={12} color={colors.text.tertiary} />
-                                                                        <Text style={{ 
-                                                                            fontSize: 11, 
-                                                                            color: colors.text.tertiary,
-                                                                            fontWeight: "500",
-                                                                        }}>
-                                                                            {formatTime(set.performed_at)}
+                                                                            {formatShortNumber(setVolume)} kg
                                                                         </Text>
                                                                     </View>
                                                                 </View>
-
-                                                                {/* Set Stats */}
-                                                                <View style={{ 
-                                                                    flexDirection: "row", 
-                                                                    flexWrap: "wrap", 
-                                                                    gap: 8,
-                                                                    marginBottom: 8,
-                                                                }}>
-                                                                    {/* Weight Badge */}
-                                                                    <View style={{
-                                                                        flexDirection: "row",
-                                                                        alignItems: "center",
-                                                                        backgroundColor: colors.background.primary,
-                                                                        paddingHorizontal: 12,
-                                                                        paddingVertical: 8,
-                                                                        borderRadius: 10,
-                                                                        borderWidth: 1,
-                                                                        borderColor: colors.border.light,
-                                                                        flex: 1,
-                                                                        minWidth: "30%",
+                                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                                                    <Clock size={12} color={colors.text.tertiary} />
+                                                                    <Text style={{ 
+                                                                        fontSize: 10, 
+                                                                        color: colors.text.tertiary,
+                                                                        fontWeight: "500",
                                                                     }}>
-                                                                        <Dumbbell size={16} color={colors.text.tertiary} />
-                                                                        <View style={{ marginLeft: 8, flex: 1 }}>
-                                                                            <Text style={{ 
-                                                                                fontSize: 16, 
-                                                                                fontWeight: "800", 
-                                                                                color: colors.text.primary,
-                                                                                lineHeight: 20,
-                                                                            }}>
-                                                                                {set.weight?.toFixed(1) || '0'}
-                                                                            </Text>
-                                                                            <Text style={{ 
-                                                                                fontSize: 10, 
-                                                                                color: colors.text.tertiary,
-                                                                                fontWeight: "500",
-                                                                                marginTop: 1,
-                                                                            }}>
-                                                                                kg
-                                                                            </Text>
-                                                                        </View>
-                                                                    </View>
-
-                                                                    {/* Reps Badge */}
-                                                                    <View style={{
-                                                                        flexDirection: "row",
-                                                                        alignItems: "center",
-                                                                        backgroundColor: colors.background.primary,
-                                                                        paddingHorizontal: 12,
-                                                                        paddingVertical: 8,
-                                                                        borderRadius: 10,
-                                                                        borderWidth: 1,
-                                                                        borderColor: colors.border.light,
-                                                                        flex: 1,
-                                                                        minWidth: "30%",
-                                                                    }}>
-                                                                        <Repeat size={16} color={colors.text.tertiary} />
-                                                                        <View style={{ marginLeft: 8, flex: 1 }}>
-                                                                            <Text style={{ 
-                                                                                fontSize: 16, 
-                                                                                fontWeight: "800", 
-                                                                                color: colors.text.primary,
-                                                                                lineHeight: 20,
-                                                                            }}>
-                                                                                {set.reps || 0}
-                                                                                {set.sets && set.sets > 1 && (
-                                                                                    <Text style={{ fontSize: 12, fontWeight: "600" }}>
-                                                                                        {' '}× {set.sets}
-                                                                                    </Text>
-                                                                                )}
-                                                                            </Text>
-                                                                            <Text style={{ 
-                                                                                fontSize: 10, 
-                                                                                color: colors.text.tertiary,
-                                                                                fontWeight: "500",
-                                                                                marginTop: 1,
-                                                                            }}>
-                                                                                reps
-                                                                            </Text>
-                                                                        </View>
-                                                                    </View>
-
-                                                                    {/* RPE Badge (if available) */}
-                                                                    {set.rpe ? (
-                                                                        <View style={{
-                                                                            flexDirection: "row",
-                                                                            alignItems: "center",
-                                                                            backgroundColor: colors.background.primary,
-                                                                            paddingHorizontal: 12,
-                                                                            paddingVertical: 8,
-                                                                            borderRadius: 10,
-                                                                            borderWidth: 1,
-                                                                            borderColor: colors.border.light,
-                                                                            flex: 1,
-                                                                            minWidth: "30%",
-                                                                        }}>
-                                                                            <TrendingUp size={16} color={colors.text.tertiary} />
-                                                                            <View style={{ marginLeft: 8, flex: 1 }}>
-                                                                                <Text style={{ 
-                                                                                    fontSize: 16, 
-                                                                                    fontWeight: "800", 
-                                                                                    color: colors.text.primary,
-                                                                                    lineHeight: 20,
-                                                                                }}>
-                                                                                    {set.rpe}
-                                                                                </Text>
-                                                                                <Text style={{ 
-                                                                                    fontSize: 10, 
-                                                                                    color: colors.text.tertiary,
-                                                                                    fontWeight: "500",
-                                                                                    marginTop: 1,
-                                                                                }}>
-                                                                                    RPE
-                                                                                </Text>
-                                                                            </View>
-                                                                        </View>
-                                                                    ) : (
-                                                                        <View style={{
-                                                                            flexDirection: "row",
-                                                                            alignItems: "center",
-                                                                            backgroundColor: colors.background.primary,
-                                                                            paddingHorizontal: 12,
-                                                                            paddingVertical: 8,
-                                                                            borderRadius: 10,
-                                                                            borderWidth: 1,
-                                                                            borderColor: colors.border.light,
-                                                                            flex: 1,
-                                                                            minWidth: "30%",
-                                                                        }}>
-                                                                            <Layers size={16} color={colors.text.tertiary} />
-                                                                            <View style={{ marginLeft: 8, flex: 1 }}>
-                                                                                <Text style={{ 
-                                                                                    fontSize: 16, 
-                                                                                    fontWeight: "800", 
-                                                                                    color: colors.text.primary,
-                                                                                    lineHeight: 20,
-                                                                                }}>
-                                                                                    {set.sets || 1}
-                                                                                </Text>
-                                                                                <Text style={{ 
-                                                                                    fontSize: 10, 
-                                                                                    color: colors.text.tertiary,
-                                                                                    fontWeight: "500",
-                                                                                    marginTop: 1,
-                                                                                }}>
-                                                                                    sets
-                                                                                </Text>
-                                                                            </View>
-                                                                        </View>
-                                                                    )}
+                                                                        {formatTime(set.performed_at)}
+                                                                    </Text>
                                                                 </View>
-
-                                                                {/* Set Volume (if multiple sets or significant volume) */}
-                                                                {setVolume > 0 && (
-                                                                    <View style={{
-                                                                        flexDirection: "row",
-                                                                        alignItems: "center",
-                                                                        justifyContent: "space-between",
-                                                                        paddingTop: 10,
-                                                                        borderTopWidth: 1,
-                                                                        borderTopColor: colors.border.light,
-                                                                    }}>
-                                                                        <Text style={{ 
-                                                                            fontSize: 11, 
-                                                                            color: colors.text.tertiary,
-                                                                            fontWeight: "500",
-                                                                        }}>
-                                                                            Set Volume
-                                                                        </Text>
-                                                                        <Text style={{ 
-                                                                            fontSize: 13, 
-                                                                            fontWeight: "700", 
-                                                                            color: colors.text.secondary,
-                                                                        }}>
-                                                                            {formatVolume(setVolume)} kg
-                                                                        </Text>
-                                                                    </View>
-                                                                )}
                                                             </View>
                                                         );
                                                     })}
                                                 </View>
                                             </View>
                                         ))}
+                                        {groupedSets.length > displayLimit && (
+                                            <LoadMoreButton
+                                                remaining={groupedSets.length - displayLimit}
+                                                onLoadMore={() => setDisplayLimit(prev => Math.min(prev + LOAD_MORE_COUNT, groupedSets.length))}
+                                                fullWidth={true}
+                                            />
+                                        )}
                                     </View>
                                 ) : (
                                     <View style={{ 

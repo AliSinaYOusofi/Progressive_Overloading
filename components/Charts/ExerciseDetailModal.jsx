@@ -6,7 +6,7 @@ import {
   TouchableOpacity, 
   ScrollView, 
   Dimensions,
-  ActivityIndicator 
+  ActivityIndicator
 } from "react-native"
 import { Dumbbell, Calendar } from "lucide-react-native"
 import { Ionicons } from "@expo/vector-icons"
@@ -21,6 +21,7 @@ import AllTimeStatsSection from "./AllTimeStatsSection"
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler"
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated"
 import { scheduleOnRN } from "react-native-worklets"
+import { formatShortNumber } from "../../utils/numberUtils"
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
@@ -278,6 +279,20 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
     }
   }, [analyticsData])
 
+  // Calculate chart width and spacing (same approach as ProgressiveOverloadChart)
+  const chartWidth = useMemo(() => {
+    const containerPadding = 16;
+    const screenMargins = 48; // Approximate padding from parent ScrollView
+    const availableWidth = screenWidth - (screenMargins * 2) - (containerPadding * 2);
+    return availableWidth;
+  }, []);
+
+  const initialSpacing = 20;
+  const endSpacing = 20;
+  const chartSpacing = weightLineChartData.length > 1 
+    ? (chartWidth - initialSpacing - endSpacing) / (weightLineChartData.length - 1)
+    : chartWidth;
+
   // Calculate numeric trend values (actual change, not just percentage)
   const trendValues = useMemo(() => {
     if (!analyticsData || !analyticsData.timeSeriesData || analyticsData.timeSeriesData.length < 2) {
@@ -504,7 +519,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   <ExerciseMetricCard
                     icon="stats-chart"
                     iconColor={colors.icon?.primary || colors.primary[600]}
-                    value={analyticsData.totalVolume.toFixed(0)}
+                    value={formatShortNumber(analyticsData.totalVolume)}
                     label="Total Volume (kg)"
                   />
                   <ExerciseMetricCard
@@ -518,8 +533,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
               {/* Weight Progression Line Chart */}
               {weightLineChartData.length > 1 && (
-                <View style={{ marginBottom: 20 }}>
-                  <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
+                <View style={{ marginBottom: 20, paddingHorizontal: 24 }}>
+                  <View style={{ marginBottom: 12 }}>
                     <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary }}>
                       Weight Progression
                     </Text>
@@ -528,267 +543,240 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                     </Text>
                   </View>
                   
-                  <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 24 }}
-                  >
-                    <View style={{ 
-                      backgroundColor: colors.background.primary, 
-                      borderRadius: 12, 
-                      padding: 16,
-                      borderWidth: 1,
-                      borderColor: colors.border.light,
-                      overflow: 'hidden',
-                      minWidth: screenWidth - 48, // Ensure minimum width to fill screen
-                    }}>
-                      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                        <LineChart
-                          data={weightLineChartData}
-                          width={Math.max(screenWidth - 120, weightLineChartData.length * 50)}
-                          height={200}
-                          color={colors.primary[600]}
-                          thickness={3}
-                          dataPointsColor={colors.primary[600]}
-                          dataPointsRadius={5}
-                          textColor={colors.text.tertiary}
-                          textFontSize={9}
-                          spacing={weightLineChartData.length > 1 
-                            ? Math.max(20, (Math.max(screenWidth - 120, weightLineChartData.length * 50) - 40) / Math.max(weightLineChartData.length - 1, 1))
-                            : 0
-                          }
-                          initialSpacing={20}
-                          endSpacing={20}
-                          maxValue={weightLineChartMinMax.max}
-                          minValue={weightLineChartMinMax.min}
-                          noOfSections={5}
-                          yAxisSide="left"
-                          xAxisSide="bottom"
-                          curved={true}
-                          areaChart={false}
-                          startFillColor={colors.primary[600] + "20"}
-                          endFillColor={colors.primary[600] + "05"}
-                          yAxisThickness={1}
-                          xAxisThickness={1}
-                          xAxisColor={colors.border.medium}
-                          yAxisColor={colors.border.medium}
-                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500', textAlign: 'center' }}
-                          yAxisLabelWidth={40}
-                          rulesColor={colors.border.light}
-                          rulesType="solid"
-                          dashGap={0}
-                          isAnimated
-                          animationDuration={1000}
-                        />
-                      </View>
+                  <View style={{ 
+                    backgroundColor: colors.background.primary, 
+                    borderRadius: 12, 
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border.light,
+                    overflow: 'hidden'
+                  }}>
+                    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                      <LineChart
+                        data={weightLineChartData}
+                        width={chartWidth}
+                        height={200}
+                        color={colors.primary[600]}
+                        thickness={3}
+                        dataPointsColor={colors.primary[600]}
+                        dataPointsRadius={5}
+                        hideDataPoints={false}
+                        hideRules={false}
+                        rulesType="solid"
+                        rulesColor={colors.border.light}
+                        yAxisColor={colors.border.light}
+                        xAxisColor={colors.border.light}
+                        yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                        xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
+                        showVerticalLines={false}
+                        showHorizontalLines={true}
+                        spacing={chartSpacing}
+                        initialSpacing={initialSpacing}
+                        endSpacing={endSpacing}
+                        maxValue={weightLineChartMinMax.max}
+                        minValue={weightLineChartMinMax.min}
+                        noOfSections={5}
+                        yAxisSide="left"
+                        xAxisSide="bottom"
+                        curved={true}
+                        areaChart={false}
+                        startFillColor={colors.primary[600] + "20"}
+                        endFillColor={colors.primary[600] + "05"}
+                        yAxisThickness={1}
+                        xAxisThickness={1}
+                        yAxisLabelWidth={40}
+                      />
                     </View>
-                  </ScrollView>
+                  </View>
                 </View>
               )}
 
               {/* Multi-Metric Chart */}
               {chartData.length > 0 && (
-                <View style={{ marginBottom: 20 }}>
-                  <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
+                <View style={{ marginBottom: 20, paddingHorizontal: 24 }}>
+                  <View style={{ marginBottom: 12 }}>
                     <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text.primary }}>
                       Progression Over Time
                     </Text>
-                    <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }}>
-                      Swipe to see all data points
-                    </Text>
                   </View>
                   
-                  <ScrollView 
-                    horizontal 
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 24 }}
+                  <View 
+                    style={{ 
+                      backgroundColor: colors.background.primary, 
+                      borderRadius: 12, 
+                      padding: 16,
+                      paddingTop: 20,
+                      paddingBottom: 20,
+                      borderWidth: 1,
+                      borderColor: colors.border.light,
+                      overflow: 'hidden'
+                    }}
                   >
-                    <View 
-                      style={{ 
-                        backgroundColor: colors.background.primary, 
-                        borderRadius: 12, 
-                        padding: 16,
-                        paddingTop: 20,
-                        paddingBottom: 20
-                      }}
-                    >
-                      {/* Chart Legend */}
-                      <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 20, flexWrap: "wrap" }}>
-                        <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
-                          <View style={{ 
-                            width: 16, 
-                            height: 16, 
-                            borderRadius: 4, 
-                            backgroundColor: colors.primary[600], 
-                            marginRight: 8,
-                            shadowColor: colors.primary[600],
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 3,
-                            elevation: 3
-                          }} />
-                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Weight (kg)</Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
-                          <View style={{ 
-                            width: 16, 
-                            height: 16, 
-                            borderRadius: 4, 
-                            backgroundColor: colors.status.info, 
-                            marginRight: 8,
-                            shadowColor: colors.status.info,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 3,
-                            elevation: 3
-                          }} />
-                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Reps</Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                          <View style={{ 
-                            width: 16, 
-                            height: 16, 
-                            borderRadius: 4, 
-                            backgroundColor: colors.status.warning, 
-                            marginRight: 8,
-                            shadowColor: colors.status.warning,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 3,
-                            elevation: 3
-                          }} />
-                          <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Sets</Text>
-                        </View>
+                    {/* Chart Legend */}
+                    <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 20, flexWrap: "wrap" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
+                        <View style={{ 
+                          width: 16, 
+                          height: 16, 
+                          borderRadius: 4, 
+                          backgroundColor: colors.primary[600], 
+                          marginRight: 8,
+                          shadowColor: colors.primary[600],
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 3,
+                          elevation: 3
+                        }} />
+                        <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Weight (kg)</Text>
                       </View>
-
-                      {/* Weight Chart */}
-                      <View style={{ marginBottom: 24, overflow: 'hidden' }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
-                          Weight Progression
-                        </Text>
-                        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                          <BarChart
-                            data={chartData}
-                            width={Math.max(screenWidth - 120, chartData.length * 60)} // Account for container padding (16*2) + screen margins (48*2)
-                            height={180}
-                            barWidth={22}
-                            initialSpacing={20} // Increased to prevent first bar clipping
-                            spacing={chartData.length > 5 ? 35 : 45}
-                            barBorderRadius={6}
-                            showGradient
-                            gradientColor={colors.primary[400]}
-                            yAxisThickness={1}
-                            xAxisThickness={1}
-                            xAxisColor={colors.border.medium}
-                            yAxisColor={colors.border.medium}
-                            yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-                            xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
-                            yAxisLabelWidth={40}
-                            noOfSections={5}
-                            isAnimated
-                            animationDuration={1000}
-                            cappedBars
-                            capColor={colors.primary[700]}
-                            capThickness={3}
-                            capRadius={3}
-                            showValuesAsTopLabel
-                            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-                            topLabelContainerStyle={{ marginBottom: 6 }}
-                            rulesColor={colors.border.light}
-                            rulesType="solid"
-                            dashGap={0}
-                          />
-                        </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
+                        <View style={{ 
+                          width: 16, 
+                          height: 16, 
+                          borderRadius: 4, 
+                          backgroundColor: colors.status.info, 
+                          marginRight: 8,
+                          shadowColor: colors.status.info,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 3,
+                          elevation: 3
+                        }} />
+                        <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Reps</Text>
                       </View>
-
-                      {/* Reps Chart */}
-                      <View style={{ marginBottom: 24, overflow: 'hidden' }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
-                          Reps Progression
-                        </Text>
-                        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                          <BarChart
-                            data={repsData.map((item, index) => ({
-                              ...item,
-                              label: chartData[index]?.label || ''
-                            }))}
-                            width={Math.max(screenWidth - 120, chartData.length * 60)} // Account for container padding (16*2) + screen margins (48*2)
-                            height={180}
-                            barWidth={22}
-                            initialSpacing={20} // Increased to prevent first bar clipping
-                            spacing={chartData.length > 5 ? 35 : 45}
-                            barBorderRadius={6}
-                            showGradient
-                            gradientColor={colors.status.info + 'CC'}
-                            yAxisThickness={1}
-                            xAxisThickness={1}
-                            xAxisColor={colors.border.medium}
-                            yAxisColor={colors.border.medium}
-                            yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-                            xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
-                            yAxisLabelWidth={40}
-                            noOfSections={5}
-                            isAnimated
-                            animationDuration={1000}
-                            cappedBars
-                            capColor={colors.status.info}
-                            capThickness={3}
-                            capRadius={3}
-                            showValuesAsTopLabel
-                            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-                            topLabelContainerStyle={{ marginBottom: 6 }}
-                            rulesColor={colors.border.light}
-                            rulesType="solid"
-                            dashGap={0}
-                          />
-                        </View>
-                      </View>
-
-                      {/* Sets Chart */}
-                      <View style={{ overflow: 'hidden' }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
-                          Sets Progression
-                        </Text>
-                        <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                          <BarChart
-                            data={setsData.map((item, index) => ({
-                              ...item,
-                              label: chartData[index]?.label || ''
-                            }))}
-                            width={Math.max(screenWidth - 120, chartData.length * 60)} // Account for container padding (16*2) + screen margins (48*2)
-                            height={180}
-                            barWidth={22}
-                            initialSpacing={20} // Increased to prevent first bar clipping
-                            spacing={chartData.length > 5 ? 35 : 45}
-                            barBorderRadius={6}
-                            showGradient
-                            gradientColor={colors.status.warning + 'CC'}
-                            yAxisThickness={1}
-                            xAxisThickness={1}
-                            xAxisColor={colors.border.medium}
-                            yAxisColor={colors.border.medium}
-                            yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '500' }}
-                            xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500', textAlign: 'center' }}
-                            yAxisLabelWidth={40}
-                            noOfSections={5}
-                            isAnimated
-                            animationDuration={1000}
-                            cappedBars
-                            capColor={colors.status.warning}
-                            capThickness={3}
-                            capRadius={3}
-                            showValuesAsTopLabel
-                            topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 9, fontWeight: '600' }}
-                            topLabelContainerStyle={{ marginBottom: 6 }}
-                            rulesColor={colors.border.light}
-                            rulesType="solid"
-                            dashGap={0}
-                          />
-                        </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                        <View style={{ 
+                          width: 16, 
+                          height: 16, 
+                          borderRadius: 4, 
+                          backgroundColor: colors.status.warning, 
+                          marginRight: 8,
+                          shadowColor: colors.status.warning,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 3,
+                          elevation: 3
+                        }} />
+                        <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Sets</Text>
                       </View>
                     </View>
-                  </ScrollView>
+
+                    {/* Weight Chart */}
+                    <View style={{ marginBottom: 24 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
+                        Weight Progression
+                      </Text>
+                      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                        <BarChart
+                          data={chartData.map((item, index) => ({
+                            ...item,
+                            // Only show every nth label to prevent overlap
+                            label: index % Math.max(1, Math.ceil(chartData.length / 6)) === 0 ? item.label : ''
+                          }))}
+                          width={chartWidth}
+                          height={180}
+                          barWidth={Math.max(8, Math.min(16, (chartWidth - 80) / chartData.length - 15))}
+                          initialSpacing={20}
+                          spacing={Math.max(20, (chartWidth - 80) / chartData.length - Math.max(8, Math.min(16, (chartWidth - 80) / chartData.length - 15)))}
+                          barBorderRadius={4}
+                          showGradient
+                          gradientColor={colors.primary[400]}
+                          yAxisThickness={1}
+                          xAxisThickness={1}
+                          xAxisColor={colors.border.medium}
+                          yAxisColor={colors.border.medium}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 7, fontWeight: '500' }}
+                          yAxisLabelWidth={35}
+                          noOfSections={4}
+                          cappedBars
+                          capColor={colors.primary[700]}
+                          capThickness={2}
+                          capRadius={2}
+                          rulesColor={colors.border.light}
+                          rulesType="solid"
+                          dashGap={0}
+                          labelWidth={45}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Reps Chart */}
+                    <View style={{ marginBottom: 24 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
+                        Reps Progression
+                      </Text>
+                      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                        <BarChart
+                          data={repsData.map((item, index) => ({
+                            ...item,
+                            label: chartData[index]?.label || ''
+                          }))}
+                          width={chartWidth}
+                          height={180}
+                          barWidth={Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10))}
+                          initialSpacing={15}
+                          spacing={Math.max(8, (chartWidth - 60) / chartData.length - Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10)))}
+                          barBorderRadius={6}
+                          showGradient
+                          gradientColor={colors.status.info + 'CC'}
+                          yAxisThickness={1}
+                          xAxisThickness={1}
+                          xAxisColor={colors.border.medium}
+                          yAxisColor={colors.border.medium}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 8, fontWeight: '500' }}
+                          yAxisLabelWidth={35}
+                          noOfSections={4}
+                          cappedBars
+                          capColor={colors.status.info}
+                          capThickness={2}
+                          capRadius={2}
+                          rulesColor={colors.border.light}
+                          rulesType="solid"
+                          dashGap={0}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Sets Chart */}
+                    <View>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
+                        Sets Progression
+                      </Text>
+                      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                        <BarChart
+                          data={setsData.map((item, index) => ({
+                            ...item,
+                            label: chartData[index]?.label || ''
+                          }))}
+                          width={chartWidth}
+                          height={180}
+                          barWidth={Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10))}
+                          initialSpacing={15}
+                          spacing={Math.max(8, (chartWidth - 60) / chartData.length - Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10)))}
+                          barBorderRadius={6}
+                          showGradient
+                          gradientColor={colors.status.warning + 'CC'}
+                          yAxisThickness={1}
+                          xAxisThickness={1}
+                          xAxisColor={colors.border.medium}
+                          yAxisColor={colors.border.medium}
+                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
+                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 8, fontWeight: '500' }}
+                          yAxisLabelWidth={35}
+                          noOfSections={4}
+                          cappedBars
+                          capColor={colors.status.warning}
+                          capThickness={2}
+                          capRadius={2}
+                          rulesColor={colors.border.light}
+                          rulesType="solid"
+                          dashGap={0}
+                        />
+                      </View>
+                    </View>
+                  </View>
                 </View>
               )}
 
@@ -1003,7 +991,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                               fontWeight: "700",
                               color: colors.text.primary,
                             }}>
-                              {lift.volume.toFixed(0)}
+                              {formatShortNumber(lift.volume)}
                             </Text>
                           </View>
                         </View>

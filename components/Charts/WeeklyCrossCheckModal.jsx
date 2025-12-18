@@ -6,10 +6,10 @@ import ModalCloseButton from "../ModalCloseButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { prepareMonthlyComparisonData } from "./utils/monthlyTrendsUtils";
+import { prepareWeeklyComparisonData } from "./utils/weeklyProgressUtils";
 import { formatShortNumber } from "../../utils/numberUtils";
 
-export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats }) {
+export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats }) {
     const colors = useThemedColors();
     const screenHeight = Dimensions.get("window").height;
     const screenWidth = Dimensions.get("window").width;
@@ -17,13 +17,13 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
     const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
 
     // State
-    const [selectedMonth1, setSelectedMonth1] = useState(null);
-    const [selectedMonth2, setSelectedMonth2] = useState(null);
-    const [showMonthPicker1, setShowMonthPicker1] = useState(false);
-    const [showMonthPicker2, setShowMonthPicker2] = useState(false);
+    const [selectedWeek1, setSelectedWeek1] = useState(null);
+    const [selectedWeek2, setSelectedWeek2] = useState(null);
+    const [showWeekPicker1, setShowWeekPicker1] = useState(false);
+    const [showWeekPicker2, setShowWeekPicker2] = useState(false);
     const [comparisonData, setComparisonData] = useState([]);
-    const [month1Display, setMonth1Display] = useState(null);
-    const [month2Display, setMonth2Display] = useState(null);
+    const [week1Display, setWeek1Display] = useState(null);
+    const [week2Display, setWeek2Display] = useState(null);
     const [hasCompared, setHasCompared] = useState(false);
 
     // Define close function in RN Runtime scope (required for scheduleOnRN)
@@ -69,29 +69,39 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
         };
     });
 
-    // Get available months from monthlyStats
-    const availableMonths = monthlyStats 
-        ? monthlyStats
-            .filter(m => m && m.month && typeof m.month === 'string')
-            .map(m => m.month)
+    // Get available weeks from weeklyStats
+    const availableWeeks = weeklyStats 
+        ? weeklyStats
+            .filter(w => w && w.week && typeof w.week === 'string')
+            .map(w => w.week)
             .sort((a, b) => {
-                const dateA = new Date(a + "-01");
-                const dateB = new Date(b + "-01");
+                const dateA = new Date(a);
+                const dateB = new Date(b);
                 return dateB - dateA; // Most recent first
             })
         : [];
 
-    // Format month for display
-    const formatMonthDisplay = (monthStr) => {
-        if (!monthStr) return "Select Month";
+    // Format week for display
+    const formatWeekDisplay = (weekStr) => {
+        if (!weekStr) return "Select Week";
         try {
-            const date = new Date(monthStr + "-01");
-            return date.toLocaleDateString("en", { 
-                month: "long", 
-                year: "numeric"
-            });
+            const date = new Date(weekStr);
+            const endDate = new Date(date);
+            endDate.setDate(date.getDate() + 6);
+            
+            const startMonth = date.toLocaleDateString("en", { month: "short" });
+            const startDay = date.getDate();
+            const endMonth = endDate.toLocaleDateString("en", { month: "short" });
+            const endDay = endDate.getDate();
+            const year = date.getFullYear();
+            
+            if (startMonth === endMonth) {
+                return `${startMonth} ${startDay}-${endDay}, ${year}`;
+            } else {
+                return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+            }
         } catch {
-            return monthStr;
+            return weekStr;
         }
     };
 
@@ -99,40 +109,40 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
     useEffect(() => {
         if (visible) {
             translateY.value = 0;
-            setSelectedMonth1(null);
-            setSelectedMonth2(null);
+            setSelectedWeek1(null);
+            setSelectedWeek2(null);
             setComparisonData([]);
-            setMonth1Display(null);
-            setMonth2Display(null);
+            setWeek1Display(null);
+            setWeek2Display(null);
             setHasCompared(false);
         }
     }, [visible, translateY]);
 
-    // Handle month selection from dropdown
-    const handleMonth1Select = (monthStr) => {
-        setSelectedMonth1(monthStr);
-        setMonth1Display(formatMonthDisplay(monthStr));
-        setShowMonthPicker1(false);
-        // Clear second month if it matches the newly selected first month
-        if (selectedMonth2 === monthStr) {
-            setSelectedMonth2(null);
-            setMonth2Display(null);
+    // Handle week selection from dropdown
+    const handleWeek1Select = (weekStr) => {
+        setSelectedWeek1(weekStr);
+        setWeek1Display(formatWeekDisplay(weekStr));
+        setShowWeekPicker1(false);
+        // Clear second week if it matches the newly selected first week
+        if (selectedWeek2 === weekStr) {
+            setSelectedWeek2(null);
+            setWeek2Display(null);
         }
     };
 
-    const handleMonth2Select = (monthStr) => {
-        setSelectedMonth2(monthStr);
-        setMonth2Display(formatMonthDisplay(monthStr));
-        setShowMonthPicker2(false);
+    const handleWeek2Select = (weekStr) => {
+        setSelectedWeek2(weekStr);
+        setWeek2Display(formatWeekDisplay(weekStr));
+        setShowWeekPicker2(false);
     };
 
     // Handle compare button
     const handleCompare = () => {
-        if (!selectedMonth1 || !selectedMonth2 || !monthlyStats) {
+        if (!selectedWeek1 || !selectedWeek2 || !weeklyStats) {
             return;
         }
 
-        const comparison = prepareMonthlyComparisonData(monthlyStats, selectedMonth1, selectedMonth2);
+        const comparison = prepareWeeklyComparisonData(weeklyStats, selectedWeek1, selectedWeek2);
         setComparisonData(comparison);
         setHasCompared(true);
     };
@@ -143,7 +153,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
             return 1000;
         }
         const maxVolume = Math.max(
-            ...comparisonData.map(d => Math.max(d.month1Volume, d.month2Volume))
+            ...comparisonData.map(d => Math.max(d.week1Volume, d.week2Volume))
         );
         return maxVolume * 1.1;
     };
@@ -207,7 +217,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                     </View>
                                     <View>
                                         <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text.primary }}>
-                                            Monthly Cross Check
+                                            Weekly Cross Check
                                         </Text>
                                         <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>
                                             Compare exercise volumes
@@ -222,7 +232,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
                             >
-                                {/* Month Selection UI */}
+                                {/* Week Selection UI */}
                                 <View style={{ marginBottom: 24 }}>
                                     <Text style={{ 
                                         fontSize: 16, 
@@ -230,11 +240,11 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                         color: colors.text.primary,
                                         marginBottom: 16 
                                     }}>
-                                        Select Two Months to Compare
+                                        Select Two Weeks to Compare
                                     </Text>
                                     
                                     <View style={{ gap: 12, marginBottom: 16 }}>
-                                        {/* Month 1 Picker */}
+                                        {/* Week 1 Picker */}
                                         <View>
                                             <Text style={{ 
                                                 fontSize: 12, 
@@ -242,11 +252,11 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                 marginBottom: 6,
                                                 fontWeight: "500"
                                             }}>
-                                                First Month
+                                                First Week
                                             </Text>
                                             <View style={{ position: "relative" }}>
                                                 <TouchableOpacity
-                                                    onPress={() => setShowMonthPicker1(!showMonthPicker1)}
+                                                    onPress={() => setShowWeekPicker1(!showWeekPicker1)}
                                                     style={{
                                                         flexDirection: "row",
                                                         alignItems: "center",
@@ -256,24 +266,24 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                         backgroundColor: colors.background.primary,
                                                         borderRadius: 12,
                                                         borderWidth: 1,
-                                                        borderColor: showMonthPicker1 ? colors.primary[600] : colors.border.light,
+                                                        borderColor: showWeekPicker1 ? colors.primary[600] : colors.border.light,
                                                     }}
                                                 >
                                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                                                         <Calendar size={18} color={colors.primary[600]} />
                                                         <Text style={{ 
                                                             fontSize: 15, 
-                                                            color: month1Display ? colors.text.primary : colors.text.tertiary,
-                                                            fontWeight: month1Display ? "600" : "400"
+                                                            color: week1Display ? colors.text.primary : colors.text.tertiary,
+                                                            fontWeight: week1Display ? "600" : "400"
                                                         }}>
-                                                            {month1Display || "Select Month"}
+                                                            {week1Display || "Select Week"}
                                                         </Text>
                                                     </View>
                                                     <ChevronDown size={18} color={colors.text.tertiary} />
                                                 </TouchableOpacity>
 
-                                                {/* Month Dropdown */}
-                                                {showMonthPicker1 && (
+                                                {/* Week Dropdown */}
+                                                {showWeekPicker1 && (
                                                     <>
                                                         <TouchableOpacity
                                                             style={{
@@ -285,7 +295,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                 zIndex: 999,
                                                             }}
                                                             activeOpacity={1}
-                                                            onPress={() => setShowMonthPicker1(false)}
+                                                            onPress={() => setShowWeekPicker1(false)}
                                                         />
                                                         <View style={{
                                                             position: "absolute",
@@ -309,21 +319,21 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                 nestedScrollEnabled
                                                                 style={{ maxHeight: 200 }}
                                                             >
-                                                                {availableMonths
-                                                                    .filter(monthStr => monthStr !== selectedMonth2)
-                                                                    .map((monthStr, index) => {
-                                                                        const formatted = formatMonthDisplay(monthStr);
-                                                                        const isSelected = selectedMonth1 === monthStr;
-                                                                        const filteredMonths = availableMonths.filter(m => m !== selectedMonth2);
+                                                                {availableWeeks
+                                                                    .filter(weekStr => weekStr !== selectedWeek2)
+                                                                    .map((weekStr, index) => {
+                                                                        const formatted = formatWeekDisplay(weekStr);
+                                                                        const isSelected = selectedWeek1 === weekStr;
+                                                                        const filteredWeeks = availableWeeks.filter(w => w !== selectedWeek2);
                                                                         return (
                                                                             <TouchableOpacity
                                                                                 key={index}
-                                                                                onPress={() => handleMonth1Select(monthStr)}
+                                                                                onPress={() => handleWeek1Select(weekStr)}
                                                                                 style={{
                                                                                     paddingHorizontal: 16,
                                                                                     paddingVertical: 12,
                                                                                     backgroundColor: isSelected ? colors.primary[50] : "transparent",
-                                                                                    borderBottomWidth: index < filteredMonths.length - 1 ? 1 : 0,
+                                                                                    borderBottomWidth: index < filteredWeeks.length - 1 ? 1 : 0,
                                                                                     borderBottomColor: colors.border.light,
                                                                                 }}
                                                                             >
@@ -344,7 +354,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                             </View>
                                         </View>
 
-                                        {/* Month 2 Picker */}
+                                        {/* Week 2 Picker */}
                                         <View>
                                             <Text style={{ 
                                                 fontSize: 12, 
@@ -352,11 +362,11 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                 marginBottom: 6,
                                                 fontWeight: "500"
                                             }}>
-                                                Second Month
+                                                Second Week
                                             </Text>
                                             <View style={{ position: "relative" }}>
                                                 <TouchableOpacity
-                                                    onPress={() => setShowMonthPicker2(!showMonthPicker2)}
+                                                    onPress={() => setShowWeekPicker2(!showWeekPicker2)}
                                                     style={{
                                                         flexDirection: "row",
                                                         alignItems: "center",
@@ -366,24 +376,24 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                         backgroundColor: colors.background.primary,
                                                         borderRadius: 12,
                                                         borderWidth: 1,
-                                                        borderColor: showMonthPicker2 ? colors.primary[600] : colors.border.light,
+                                                        borderColor: showWeekPicker2 ? colors.primary[600] : colors.border.light,
                                                     }}
                                                 >
                                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                                                         <Calendar size={18} color={colors.primary[600]} />
                                                         <Text style={{ 
                                                             fontSize: 15, 
-                                                            color: month2Display ? colors.text.primary : colors.text.tertiary,
-                                                            fontWeight: month2Display ? "600" : "400"
+                                                            color: week2Display ? colors.text.primary : colors.text.tertiary,
+                                                            fontWeight: week2Display ? "600" : "400"
                                                         }}>
-                                                            {month2Display || "Select Month"}
+                                                            {week2Display || "Select Week"}
                                                         </Text>
                                                     </View>
                                                     <ChevronDown size={18} color={colors.text.tertiary} />
                                                 </TouchableOpacity>
 
-                                                {/* Month Dropdown */}
-                                                {showMonthPicker2 && (
+                                                {/* Week Dropdown */}
+                                                {showWeekPicker2 && (
                                                     <>
                                                         <TouchableOpacity
                                                             style={{
@@ -395,7 +405,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                 zIndex: 999,
                                                             }}
                                                             activeOpacity={1}
-                                                            onPress={() => setShowMonthPicker2(false)}
+                                                            onPress={() => setShowWeekPicker2(false)}
                                                         />
                                                         <View style={{
                                                             position: "absolute",
@@ -419,21 +429,21 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                 nestedScrollEnabled
                                                                 style={{ maxHeight: 200 }}
                                                             >
-                                                                {availableMonths
-                                                                    .filter(monthStr => monthStr !== selectedMonth1)
-                                                                    .map((monthStr, index) => {
-                                                                        const formatted = formatMonthDisplay(monthStr);
-                                                                        const isSelected = selectedMonth2 === monthStr;
-                                                                        const filteredMonths = availableMonths.filter(m => m !== selectedMonth1);
+                                                                {availableWeeks
+                                                                    .filter(weekStr => weekStr !== selectedWeek1)
+                                                                    .map((weekStr, index) => {
+                                                                        const formatted = formatWeekDisplay(weekStr);
+                                                                        const isSelected = selectedWeek2 === weekStr;
+                                                                        const filteredWeeks = availableWeeks.filter(w => w !== selectedWeek1);
                                                                         return (
                                                                             <TouchableOpacity
                                                                                 key={index}
-                                                                                onPress={() => handleMonth2Select(monthStr)}
+                                                                                onPress={() => handleWeek2Select(weekStr)}
                                                                                 style={{
                                                                                     paddingHorizontal: 16,
                                                                                     paddingVertical: 12,
                                                                                     backgroundColor: isSelected ? colors.primary[50] : "transparent",
-                                                                                    borderBottomWidth: index < filteredMonths.length - 1 ? 1 : 0,
+                                                                                    borderBottomWidth: index < filteredWeeks.length - 1 ? 1 : 0,
                                                                                     borderBottomColor: colors.border.light,
                                                                                 }}
                                                                             >
@@ -458,26 +468,26 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                     {/* Compare Button */}
                                     <TouchableOpacity
                                         onPress={handleCompare}
-                                        disabled={!selectedMonth1 || !selectedMonth2}
+                                        disabled={!selectedWeek1 || !selectedWeek2}
                                         style={{
                                             paddingVertical: 14,
                                             paddingHorizontal: 20,
                                             borderRadius: 12,
-                                            backgroundColor: (selectedMonth1 && selectedMonth2) 
+                                            backgroundColor: (selectedWeek1 && selectedWeek2) 
                                                 ? colors.primary[600] 
                                                 : colors.background.primary,
                                             borderWidth: 1,
-                                            borderColor: (selectedMonth1 && selectedMonth2) 
+                                            borderColor: (selectedWeek1 && selectedWeek2) 
                                                 ? colors.primary[600] 
                                                 : colors.border.light,
                                             alignItems: "center",
-                                            opacity: (selectedMonth1 && selectedMonth2) ? 1 : 0.5,
+                                            opacity: (selectedWeek1 && selectedWeek2) ? 1 : 0.5,
                                         }}
                                     >
                                         <Text style={{
                                             fontSize: 16,
                                             fontWeight: "600",
-                                            color: (selectedMonth1 && selectedMonth2) ? "white" : colors.text.tertiary,
+                                            color: (selectedWeek1 && selectedWeek2) ? "white" : colors.text.tertiary,
                                         }}>
                                             Compare
                                         </Text>
@@ -507,7 +517,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                         backgroundColor: colors.primary[600] 
                                                     }} />
                                                     <Text style={{ fontSize: 12, color: colors.text.secondary }}>
-                                                        {month1Display}
+                                                        {week1Display}
                                                     </Text>
                                                 </View>
                                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -518,7 +528,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                         backgroundColor: colors.status.info 
                                                     }} />
                                                     <Text style={{ fontSize: 12, color: colors.text.secondary }}>
-                                                        {month2Display}
+                                                        {week2Display}
                                                     </Text>
                                                 </View>
                                             </View>
@@ -581,8 +591,8 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                         gap: comparisonData.length > 5 ? 8 : 12,
                                                     }}>
                                                         {comparisonData.map((item, index) => {
-                                                            const barHeight1 = (item.month1Volume / maxChartValue) * 260;
-                                                            const barHeight2 = (item.month2Volume / maxChartValue) * 260;
+                                                            const barHeight1 = (item.week1Volume / maxChartValue) * 260;
+                                                            const barHeight2 = (item.week2Volume / maxChartValue) * 260;
                                                             
                                                             return (
                                                                 <View 
@@ -600,7 +610,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                         height: 260,
                                                                         justifyContent: "center",
                                                                     }}>
-                                                                        {/* Month 1 bar */}
+                                                                        {/* Week 1 bar */}
                                                                         <View style={{ alignItems: "center" }}>
                                                                             <Text style={{ 
                                                                                 fontSize: 8, 
@@ -608,7 +618,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                                 marginBottom: 4,
                                                                                 fontWeight: '600'
                                                                             }}>
-                                                                                {formatShortNumber(item.month1Volume)}
+                                                                                {formatShortNumber(item.week1Volume)}
                                                                             </Text>
                                                                             <View style={{
                                                                                 width: 20,
@@ -620,7 +630,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                             }} />
                                                                         </View>
                                                                         
-                                                                        {/* Month 2 bar */}
+                                                                        {/* Week 2 bar */}
                                                                         <View style={{ alignItems: "center" }}>
                                                                             <Text style={{ 
                                                                                 fontSize: 8, 
@@ -628,7 +638,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                                 marginBottom: 4,
                                                                                 fontWeight: '600'
                                                                             }}>
-                                                                                {formatShortNumber(item.month2Volume)}
+                                                                                {formatShortNumber(item.week2Volume)}
                                                                             </Text>
                                                                             <View style={{
                                                                                 width: 20,
@@ -690,12 +700,12 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                 Exercise Details
                                             </Text>
                                             {comparisonData.map((item, index) => {
-                                                const isIncrease = item.month2Volume > item.month1Volume;
-                                                const isDecrease = item.month2Volume < item.month1Volume;
-                                                const isStable = item.month2Volume === item.month1Volume;
-                                                const change = item.month2Volume - item.month1Volume;
-                                                const changePercent = item.month1Volume > 0 
-                                                    ? ((change / item.month1Volume) * 100).toFixed(1)
+                                                const isIncrease = item.week2Volume > item.week1Volume;
+                                                const isDecrease = item.week2Volume < item.week1Volume;
+                                                const isStable = item.week2Volume === item.week1Volume;
+                                                const change = item.week2Volume - item.week1Volume;
+                                                const changePercent = item.week1Volume > 0 
+                                                    ? ((change / item.week1Volume) * 100).toFixed(1)
                                                     : 0;
                                                 
                                                 const ProgressIcon = isIncrease ? TrendingUp : isDecrease ? TrendingDown : Minus;
@@ -769,7 +779,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                             gap: 12,
                                                             marginBottom: 12,
                                                         }}>
-                                                            {/* Month 1 Volume */}
+                                                            {/* Week 1 Volume */}
                                                             <View style={{ 
                                                                 flex: 1,
                                                                 backgroundColor: colors.primary[50],
@@ -786,7 +796,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                     letterSpacing: 0.5,
                                                                     marginBottom: 6,
                                                                 }}>
-                                                                    {month1Display}
+                                                                    {week1Display}
                                                                 </Text>
                                                                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
                                                                     <Text style={{ 
@@ -795,7 +805,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                         color: colors.primary[700],
                                                                         letterSpacing: -0.5,
                                                                     }}>
-                                                                        {formatShortNumber(item.month1Volume)}
+                                                                        {formatShortNumber(item.week1Volume)}
                                                                     </Text>
                                                                     <Text style={{ 
                                                                         fontSize: 14, 
@@ -808,7 +818,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                 </View>
                                                             </View>
 
-                                                            {/* Month 2 Volume */}
+                                                            {/* Week 2 Volume */}
                                                             <View style={{ 
                                                                 flex: 1,
                                                                 backgroundColor: colors.status.info + '15',
@@ -825,7 +835,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                     letterSpacing: 0.5,
                                                                     marginBottom: 6,
                                                                 }}>
-                                                                    {month2Display}
+                                                                    {week2Display}
                                                                 </Text>
                                                                 <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
                                                                     <Text style={{ 
@@ -834,7 +844,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                                                         color: colors.status.info,
                                                                         letterSpacing: -0.5,
                                                                     }}>
-                                                                        {formatShortNumber(item.month2Volume)}
+                                                                        {formatShortNumber(item.week2Volume)}
                                                                     </Text>
                                                                     <Text style={{ 
                                                                         fontSize: 14, 
@@ -905,7 +915,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                             marginTop: 8,
                                             textAlign: 'center',
                                         }}>
-                                            These months don't have any exercises in common
+                                            These weeks don't have any exercises in common
                                         </Text>
                                     </View>
                                 ) : null}
@@ -917,3 +927,4 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
         </Modal>
     );
 }
+

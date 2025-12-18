@@ -20,6 +20,7 @@ export default function ChartsLayout() {
                 },
                 headerShadowVisible: true,
                 headerBackTitleVisible: false,
+                headerBackTitle: "",
                 presentation: "card",
                 animation: "slide_from_right",
             }}
@@ -28,6 +29,8 @@ export default function ChartsLayout() {
                 name="index"
                 options={{
                     headerShown: false,
+                    title: "",
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -38,6 +41,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -48,6 +53,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -58,6 +65,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -68,6 +77,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -78,6 +89,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -88,6 +101,8 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
             <Stack.Screen
@@ -98,6 +113,20 @@ export default function ChartsLayout() {
                         backgroundColor: colors.background.card,
                     },
                     headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
+                }}
+            />
+            <Stack.Screen
+                name="muscle-groups-heatmap"
+                options={{
+                    title: "Muscle Group",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
                 }}
             />
         </Stack>
