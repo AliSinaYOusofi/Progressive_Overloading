@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase"
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext"
 import Toast from "react-native-toast-message"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
+import ThemedAlertComponent from "../components/ThemedAlert"
 import "../assets/css/global.css"
 
 function RootLayoutContent() {
@@ -296,6 +297,7 @@ function RootLayoutContent() {
           ),
         }}
       />
+      <ThemedAlertComponent />
     </>
   )
 }
