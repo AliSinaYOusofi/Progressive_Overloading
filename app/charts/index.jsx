@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
-import { TrendingUp, BarChart3, Award, Trophy, Calendar, Target, Activity, Zap } from "lucide-react-native";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useRouter } from "expo-router";
 import { 
@@ -22,6 +21,18 @@ import QuickStats from "../../components/Charts/QuickStats";
 import CollapsibleSection from "../../components/Charts/CollapsibleSection";
 import StrengthStandards from "../../components/Charts/StrengthStandards";
 import RPEAnalysis from "../../components/Charts/RPEAnalysis";
+import PremiumChartCard from "../../components/Charts/PremiumChartCard";
+
+// Import custom SVG icons
+import ExerciseProgressionIcon from "../../components/Charts/Icons/ExerciseProgressionIcon";
+import VolumeProgressionIcon from "../../components/Charts/Icons/VolumeProgressionIcon";
+import PersonalRecordsIcon from "../../components/Charts/Icons/PersonalRecordsIcon";
+import WeeklyProgressIcon from "../../components/Charts/Icons/WeeklyProgressIcon";
+import MonthlyTrendsIcon from "../../components/Charts/Icons/MonthlyTrendsIcon";
+import ProgressiveOverloadIcon from "../../components/Charts/Icons/ProgressiveOverloadIcon";
+import RPEAnalysisIcon from "../../components/Charts/Icons/RPEAnalysisIcon";
+import MuscleGroupIcon from "../../components/Charts/Icons/MuscleGroupIcon";
+import StrengthStandardsIcon from "../../components/Charts/Icons/StrengthStandardsIcon";
 
 
 export default function ChartsScreen() {
@@ -118,15 +129,15 @@ export default function ChartsScreen() {
             <ScrollView 
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
                 {/* Header */}
-                <View style={{ alignItems: 'center', marginBottom: 32 }}>
-                    <Text style={{ fontSize: 30, fontWeight: 'bold', color: colors.text.primary, marginBottom: 8, textAlign: 'center' }}>Progressive Overload Analytics</Text>
-                    <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center' }}>Track your strength gains and performance</Text>
+                <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                    <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Progressive Overload Analytics</Text>
+                    <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center', fontWeight: '400' }}>Track your strength gains and performance</Text>
                 </View>
 
                 {/* Quick Stats - Always Visible */}
@@ -136,117 +147,27 @@ export default function ChartsScreen() {
                 />
 
                 {/* Exercise Progression Charts */}
-                <View style={{ marginBottom: 24 }}>
-                    <TouchableOpacity
-                        onPress={() => router.push('/charts/exercise-progression')}
-                        activeOpacity={0.7}
-                        style={{
-                            backgroundColor: colors.background.card,
-                            borderRadius: 12,
-                            padding: 16,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.05,
-                            shadowRadius: 2,
-                            elevation: 2,
-                            marginBottom: 8
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <View 
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12,
-                                        backgroundColor: colors.primary[100]
-                                    }}
-                                >
-                                    <TrendingUp size={20} color={colors.primary[600]} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Exercise Progression</Text>
-                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>1RM progression over time</Text>
-                                </View>
-                            </View>
-                            <View 
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 16,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: colors.background.primary
-                                }}
-                            >
-                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                <PremiumChartCard
+                    icon={ExerciseProgressionIcon}
+                    title="Exercise Progression"
+                    subtitle="Track your one-rep max (1RM) progression over time for each exercise. See how your strength has improved and identify your strongest movements."
+                    onPress={() => router.push('/charts/exercise-progression')}
+                />
 
                 {/* Volume Progression */}
-                <View style={{ marginBottom: 24 }}>
-                    <TouchableOpacity
-                        onPress={() => router.push('/charts/volume-progression')}
-                        activeOpacity={0.7}
-                        style={{
-                            backgroundColor: colors.background.card,
-                            borderRadius: 12,
-                            padding: 16,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.05,
-                            shadowRadius: 2,
-                            elevation: 2,
-                            marginBottom: 8
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                <View 
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12,
-                                        backgroundColor: colors.primary[100]
-                                    }}
-                                >
-                                    <BarChart3 size={20} color={colors.primary[600]} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Volume Progression</Text>
-                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Total weight lifted per day</Text>
-                                </View>
-                            </View>
-                            <View 
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 16,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: colors.background.primary
-                                }}
-                            >
-                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                <PremiumChartCard
+                    icon={VolumeProgressionIcon}
+                    title="Volume Progression"
+                    subtitle="Monitor your total training volume - the cumulative weight lifted per day. Understand your workload patterns and training consistency over time."
+                    onPress={() => router.push('/charts/volume-progression')}
+                />
 
                 {/* Strength Standards */}
                 {strengthStandards && strengthStandards.length > 0 && (
                     <CollapsibleSection
                         title="Strength Standards"
-                        subtitle="Relative to bodyweight"
-                        icon={Award}
+                        subtitle="Compare your strength levels relative to your bodyweight. See how you rank across different exercises and identify areas for improvement."
+                        icon={StrengthStandardsIcon}
                         defaultExpanded={false}
                     >
                         <StrengthStandards strengthStandards={strengthStandards} />
@@ -255,314 +176,49 @@ export default function ChartsScreen() {
 
                 {/* Personal Records */}
                 {personalRecords && personalRecords.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                        <TouchableOpacity
-                            onPress={() => router.push('/charts/personal-records')}
-                            activeOpacity={0.7}
-                            style={{
-                                backgroundColor: colors.background.card,
-                                borderRadius: 12,
-                                padding: 16,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 2,
-                                elevation: 2
-                            }}
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                    <View 
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 12,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: colors.primary[100]
-                                        }}
-                                    >
-                                        <Trophy size={20} color={colors.primary[600]} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Personal Records</Text>
-                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Your best performances</Text>
-                                    </View>
-                                </View>
-                                <View 
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 16,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: colors.background.primary
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                                </View>
-                            </View>
-                            {/* Preview of first 3 records */}
-                            <View style={{ marginTop: 16, gap: 12 }}>
-                                {personalRecords.slice(0, 3).map((record, index) => (
-                                    <View
-                                        key={index}
-                                        style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            paddingVertical: 10,
-                                            paddingHorizontal: 12,
-                                            backgroundColor: colors.background.primary,
-                                            borderRadius: 8,
-                                            borderWidth: 1,
-                                            borderColor: colors.border.light,
-                                        }}
-                                    >
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                            <View style={{
-                                                width: 32,
-                                                height: 32,
-                                                borderRadius: 8,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                backgroundColor: colors.primary[100],
-                                                marginRight: 10,
-                                            }}>
-                                                <Text style={{ 
-                                                    fontSize: 14, 
-                                                    fontWeight: "800", 
-                                                    color: colors.primary[700],
-                                                }}>
-                                                    {index + 1}
-                                                </Text>
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={{ 
-                                                    fontSize: 15, 
-                                                    fontWeight: "700", 
-                                                    color: colors.text.primary,
-                                                }}>
-                                                    {record.exercise}
-                                                </Text>
-                                                <Text style={{ 
-                                                    fontSize: 12, 
-                                                    color: colors.text.tertiary,
-                                                    marginTop: 2,
-                                                }}>
-                                                    {record.weight} {record.unit || "kg"} × {record.reps} reps
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end' }}>
-                                            <Text style={{ 
-                                                fontSize: 16, 
-                                                fontWeight: "800", 
-                                                color: colors.primary[600],
-                                            }}>
-                                                {record.oneRM.toFixed(1)}
-                                            </Text>
-                                            <Text style={{ 
-                                                fontSize: 11, 
-                                                color: colors.text.tertiary,
-                                                marginTop: 2,
-                                            }}>
-                                                1RM (kg)
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ))}
-                                {personalRecords.length > 3 && (
-                                    <Text style={{ 
-                                        fontSize: 13, 
-                                        color: colors.text.tertiary,
-                                        textAlign: 'center',
-                                        marginTop: 4,
-                                        fontStyle: 'italic',
-                                    }}>
-                                        +{personalRecords.length - 3} more records
-                                    </Text>
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                    <PremiumChartCard
+                        icon={PersonalRecordsIcon}
+                        title="Personal Records"
+                        subtitle={`View all your personal best performances across exercises. Celebrate your achievements and track your strongest lifts for each movement.`}
+                        badge={personalRecords.length > 0 ? `${personalRecords.length}` : null}
+                        onPress={() => router.push('/charts/personal-records')}
+                    />
                 )}
 
                 {/* Weekly Progress */}
-                <View style={{ marginBottom: 24 }}>
-                    <TouchableOpacity
-                        onPress={() => router.push('/charts/weekly-progress')}
-                        activeOpacity={0.7}
-                        style={{
-                            backgroundColor: colors.background.card,
-                            borderRadius: 12,
-                            padding: 16,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.05,
-                            shadowRadius: 2,
-                            elevation: 2
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                <View 
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: colors.primary[100]
-                                    }}
-                                >
-                                    <Calendar size={20} color={colors.primary[600]} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Weekly Progress</Text>
-                                    <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Sets logged this week</Text>
-                                </View>
-                            </View>
-                            <View 
-                                style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 16,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: colors.background.primary
-                                }}
-                            >
-                                <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </View>
+                <PremiumChartCard
+                    icon={WeeklyProgressIcon}
+                    title="Weekly Progress"
+                    subtitle="Get a detailed breakdown of your training week. See sets, exercises, and volume logged each day to understand your weekly training patterns."
+                    onPress={() => router.push('/charts/weekly-progress')}
+                />
 
                 {/* Monthly Trends */}
                 {monthlyStats && monthlyStats.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                        <TouchableOpacity
-                            onPress={() => router.push('/charts/monthly-trends')}
-                            activeOpacity={0.7}
-                            style={{
-                                backgroundColor: colors.background.card,
-                                borderRadius: 12,
-                                padding: 16,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 2,
-                                elevation: 2
-                            }}
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                    <View 
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 12,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: colors.primary[100]
-                                        }}
-                                    >
-                                        <Calendar size={20} color={colors.primary[600]} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Monthly Trends</Text>
-                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Sets and exercises over time</Text>
-                                    </View>
-                                </View>
-                                <View 
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 16,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: colors.background.primary
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                    <PremiumChartCard
+                        icon={MonthlyTrendsIcon}
+                        title="Monthly Trends"
+                        subtitle="Analyze your training trends over months. Track sets, exercises, and overall activity to spot long-term patterns and consistency in your training."
+                        onPress={() => router.push('/charts/monthly-trends')}
+                    />
                 )}
 
                 {/* Progressive Overload Insights */}
                 {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                        <TouchableOpacity
-                            onPress={() => router.push('/charts/progressive-overload')}
-                            activeOpacity={0.7}
-                            style={{
-                                backgroundColor: colors.background.card,
-                                borderRadius: 12,
-                                padding: 16,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 2,
-                                elevation: 2
-                            }}
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                    <View 
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 10,
-                                            backgroundColor: colors.primary[100],
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <Target size={20} color={colors.primary[600]} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ 
-                                            fontSize: 16, 
-                                            fontWeight: '700', 
-                                            color: colors.text.primary,
-                                            marginBottom: 2
-                                        }}>
-                                            Progressive Overload Analysis
-                                        </Text>
-                                        <Text style={{ 
-                                            fontSize: 13, 
-                                            color: colors.text.secondary 
-                                        }}>
-                                            Your strength progression insights
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View 
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 16,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: colors.background.primary
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                    <PremiumChartCard
+                        icon={ProgressiveOverloadIcon}
+                        title="Progressive Overload Analysis"
+                        subtitle="Discover insights about your strength progression. Identify when you're effectively overloading and when you might need to adjust your training approach."
+                        onPress={() => router.push('/charts/progressive-overload')}
+                    />
                 )}
 
                 {/* RPE Analysis */}
                 {rpeAnalysis && rpeAnalysis.length > 0 && (
                     <CollapsibleSection
                         title="Training Intensity (RPE)"
-                        subtitle="Rate of Perceived Exertion analysis"
-                        icon={Zap}
+                        subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
+                        icon={RPEAnalysisIcon}
                         defaultExpanded={false}
                     >
                         <RPEAnalysis rpeAnalysis={rpeAnalysis} />
@@ -571,55 +227,12 @@ export default function ChartsScreen() {
 
                 {/* Muscle Group Heatmap */}
                 {muscleGroupHeatmap && muscleGroupHeatmap.length > 0 && (
-                    <View style={{ marginBottom: 24 }}>
-                        <TouchableOpacity
-                            onPress={() => router.push('/charts/muscle-groups-heatmap')}
-                            activeOpacity={0.7}
-                            style={{
-                                backgroundColor: colors.background.card,
-                                borderRadius: 12,
-                                padding: 16,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 2,
-                                elevation: 2
-                            }}
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                    <View 
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 12,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: colors.primary[100]
-                                        }}
-                                    >
-                                        <Activity size={20} color={colors.primary[600]} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text.primary }}>Muscle Group</Text>
-                                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 2 }}>Volume by muscle group</Text>
-                                    </View>
-                                </View>
-                                <View 
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 16,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: colors.background.primary
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 18, color: colors.text.tertiary }}>→</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+                    <PremiumChartCard
+                        icon={MuscleGroupIcon}
+                        title="Muscle Group Heatmap"
+                        subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
+                        onPress={() => router.push('/charts/muscle-groups-heatmap')}
+                    />
                 )}
 
             </ScrollView>

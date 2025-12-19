@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
+import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
 import { ChevronDown } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -7,6 +7,7 @@ import ModalCloseButton from "../ModalCloseButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import exerciseNames from "../../exercise_names.json";
 
 export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, defaults }) {
     const colors = useThemedColors();
@@ -64,6 +65,9 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
     const [unit, setUnit] = useState("lb");
     const [sets, setSets] = useState("");
     const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Weight units only for logging sets
     const weightUnits = [
@@ -73,6 +77,80 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         { label: "g", value: "g" },
     ];
 
+    // Check if exercise is a bodyweight exercise
+    const isBodyweightExercise = useCallback((exerciseName) => {
+        if (!exerciseName) return false;
+        const lower = exerciseName.toLowerCase();
+        const bodyweightKeywords = [
+            'bodyweight', 'sit-up', 'sit up', 'crunch', 'plank', 'push-up', 
+            'push up', 'pull-up', 'pull up', 'stretch', 'stretching', 
+            'yoga', 'cardio', 'running', 'walking', 'jumping', 'jump',
+            'burpee', 'mountain climber', 'abs', 'abdominal', 'lunge',
+            'squat', 'dip', 'chin-up', 'chin up', 'muscle-up', 'muscle up',
+            'handstand', 'wall sit', 'flutter kick', 'leg raise', 'hip raise',
+            'glute bridge', 'superman', 'dead bug', 'bird dog', 'side plank',
+            'russian twist', 'bicycle', 'toe touch', 'v-up', 'hollow hold'
+        ];
+        return bodyweightKeywords.some(keyword => lower.includes(keyword));
+    }, []);
+
+    // Filter exercises based on query
+    const filterExercises = useCallback((query) => {
+        if (!query || query.trim().length < 3) {
+            return [];
+        }
+
+        const normalizedQuery = query.toLowerCase().trim();
+        const startsWithMatches = [];
+        const containsMatches = [];
+
+        exerciseNames.forEach((exercise) => {
+            const normalizedExercise = exercise.toLowerCase();
+            if (normalizedExercise.startsWith(normalizedQuery)) {
+                startsWithMatches.push(exercise);
+            } else if (normalizedExercise.includes(normalizedQuery)) {
+                containsMatches.push(exercise);
+            }
+        });
+
+        // Combine: starts-with matches first, then contains matches
+        const allMatches = [...startsWithMatches, ...containsMatches];
+        return allMatches.slice(0, 8);
+    }, []);
+
+    // Handle exercise name change
+    const handleExerciseNameChange = useCallback((text) => {
+        setExerciseName(text);
+        const filtered = filterExercises(text);
+        setSuggestions(filtered);
+        setShowSuggestions(text.trim().length >= 3 && filtered.length > 0);
+        
+        // Auto-suggest weight = 0 for bodyweight exercises if weight field is empty
+        if (isBodyweightExercise(text) && (!weight || weight === "")) {
+            setWeight("0");
+        }
+    }, [filterExercises, isBodyweightExercise, weight]);
+
+    // Handle suggestion selection
+    const handleSuggestionSelect = useCallback((selectedExercise) => {
+        setExerciseName(selectedExercise);
+        setShowSuggestions(false);
+        setSuggestions([]);
+        
+        // Auto-suggest weight = 0 for bodyweight exercises if weight field is empty
+        if (isBodyweightExercise(selectedExercise) && (!weight || weight === "")) {
+            setWeight("0");
+        }
+    }, [isBodyweightExercise, weight]);
+
+    // Handle input blur
+    const handleExerciseInputBlur = useCallback(() => {
+        // Delay hiding suggestions to allow for selection
+        setTimeout(() => {
+            setShowSuggestions(false);
+        }, 200);
+    }, []);
+
     useEffect(() => {
         if (!visible) {
             setExerciseName("");
@@ -81,6 +159,9 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
             setUnit("lb");
             setSets("");
             setShowUnitDropdown(false);
+            setSuggestions([]);
+            setShowSuggestions(false);
+            setErrorMessage("");
         }
     }, [visible]);
 
@@ -113,24 +194,43 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
     }, [visible, translateY]);
 
     const handleSubmit = () => {
+        setErrorMessage(""); // Clear any previous errors
+        
         const name = exerciseName.trim();
         if (!name) {
-            Alert.alert("Exercise required", "Please enter an exercise name.");
+            setErrorMessage("Please enter an exercise name.");
             return;
         }
-        const w = parseFloat(weight);
-        const r = parseInt(reps, 10);
+        
+        // Weight is optional - default to 0 if empty
+        const weightValue = weight.trim() === "" ? "0" : weight;
+        const w = parseFloat(weightValue);
         if (isNaN(w) || w < 0) {
-            Alert.alert("Invalid weight", "Please enter a valid weight.");
+            setErrorMessage("Please enter a valid weight (0 or leave empty for bodyweight exercises).");
             return;
         }
+        
+        // Validate reps - must be a number between 1 and 100
+        const repsTrimmed = reps.trim();
+        if (!repsTrimmed || repsTrimmed === "") {
+            setErrorMessage("Please enter the number of reps.");
+            return;
+        }
+        const r = parseInt(repsTrimmed, 10);
         if (isNaN(r) || r <= 0 || r > 100) {
-            Alert.alert("Invalid reps", "Reps must be between 1 and 100.");
+            setErrorMessage("Reps must be between 1 and 100.");
             return;
         }
-        const s = parseInt(sets, 10);
+        
+        // Validate sets - must be a number between 1 and 30
+        const setsTrimmed = sets.trim();
+        if (!setsTrimmed || setsTrimmed === "") {
+            setErrorMessage("Please enter the number of sets.");
+            return;
+        }
+        const s = parseInt(setsTrimmed, 10);
         if (isNaN(s) || s <= 0 || s > 30) {
-            Alert.alert("Invalid sets", "Sets must be between 1 and 30.");
+            setErrorMessage("Sets must be between 1 and 30.");
             return;
         }
         const u = (unit || "lb").trim(); // Default to "lb" if no unit is selected
@@ -184,23 +284,43 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                             }}
                         >
                             {/* Header */}
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                                <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Log Set</Text>
-                                <ModalCloseButton onPress={onClose} disabled={isSubmitting} size={20} />
+                            <View style={{ marginBottom: 24 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: errorMessage ? 8 : 0 }}>
+                                    <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Log Set</Text>
+                                    <ModalCloseButton onPress={onClose} disabled={isSubmitting} size={20} />
+                                </View>
+                                {errorMessage ? (
+                                    <Text style={{ 
+                                        color: colors.status.error, 
+                                        fontSize: 14, 
+                                        fontWeight: "500",
+                                        marginTop: 4,
+                                    }}>
+                                        {errorMessage}
+                                    </Text>
+                                ) : null}
                             </View>
 
                             {/* Exercise Input */}
-                            <View style={{ marginBottom: 20 }}>
+                            <View style={{ marginBottom: 20, position: "relative", zIndex: 1 }}>
                                 <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Exercise</Text>
                                 <TextInput
                                     editable={!isSubmitting}
                                     value={exerciseName}
-                                    onChangeText={setExerciseName}
+                                    onChangeText={handleExerciseNameChange}
+                                    onBlur={handleExerciseInputBlur}
+                                    onFocus={() => {
+                                        if (exerciseName.trim().length >= 3) {
+                                            const filtered = filterExercises(exerciseName);
+                                            setSuggestions(filtered);
+                                            setShowSuggestions(filtered.length > 0);
+                                        }
+                                    }}
                                     placeholder="e.g., Bench Press"
                                     placeholderTextColor={colors.text.tertiary}
                                     style={{ 
                                         borderWidth: 1, 
-                                        borderColor: "#E5E7EB", 
+                                        borderColor: showSuggestions ? (isDarkMode ? colors.primary[400] : colors.primary[500]) : "#E5E7EB", 
                                         borderRadius: 12, 
                                         paddingHorizontal: 16, 
                                         paddingVertical: 14,
@@ -214,6 +334,55 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                         elevation: 1,
                                     }}
                                 />
+                                {/* Suggestions Dropdown */}
+                                {showSuggestions && suggestions.length > 0 && (
+                                    <View style={{
+                                        position: "absolute",
+                                        top: "100%",
+                                        left: 0,
+                                        right: 0,
+                                        marginTop: 4,
+                                        backgroundColor: colors.background.card || "white",
+                                        borderRadius: 12,
+                                        borderWidth: 1,
+                                        borderColor: isDarkMode ? colors.border.medium : "#E5E7EB",
+                                        shadowColor: "#000",
+                                        shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.15,
+                                        shadowRadius: 8,
+                                        elevation: 8,
+                                        maxHeight: 200,
+                                        zIndex: 1000,
+                                    }}>
+                                        <ScrollView 
+                                            nestedScrollEnabled={true}
+                                            showsVerticalScrollIndicator={false}
+                                            keyboardShouldPersistTaps="handled"
+                                        >
+                                            {suggestions.map((suggestion, index) => (
+                                                <TouchableOpacity
+                                                    key={suggestion}
+                                                    onPress={() => handleSuggestionSelect(suggestion)}
+                                                    style={{
+                                                        paddingHorizontal: 16,
+                                                        paddingVertical: 12,
+                                                        borderBottomWidth: index < suggestions.length - 1 ? 1 : 0,
+                                                        borderBottomColor: isDarkMode ? colors.border.medium : "#F3F4F6",
+                                                    }}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Text style={{
+                                                        fontSize: 16,
+                                                        color: colors.text.primary,
+                                                        fontWeight: "400",
+                                                    }}>
+                                                        {suggestion}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
                             </View>
 
                             {/* Weight, Reps, Sets, Unit Row */}
@@ -225,7 +394,7 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                                         value={weight}
                                         onChangeText={setWeight}
                                         keyboardType="numeric"
-                                        placeholder="0"
+                                        placeholder={isBodyweightExercise(exerciseName) ? "0 (bodyweight)" : "0"}
                                         placeholderTextColor={colors.text.tertiary}
                                         style={{ 
                                             borderWidth: 1, 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Trash2, ChevronDown } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -14,6 +14,8 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
     const [unit, setUnit] = useState("lb");
     const [sets, setSets] = useState("");
     const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
 
     // Weight units only for editing sets
     const weightUnits = [
@@ -23,6 +25,23 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
         { label: "g", value: "g" },
     ];
 
+    // Check if exercise is a bodyweight exercise
+    const isBodyweightExercise = useCallback((exerciseName) => {
+        if (!exerciseName) return false;
+        const lower = exerciseName.toLowerCase();
+        const bodyweightKeywords = [
+            'bodyweight', 'sit-up', 'sit up', 'crunch', 'plank', 'push-up', 
+            'push up', 'pull-up', 'pull up', 'stretch', 'stretching', 
+            'yoga', 'cardio', 'running', 'walking', 'jumping', 'jump',
+            'burpee', 'mountain climber', 'abs', 'abdominal', 'lunge',
+            'squat', 'dip', 'chin-up', 'chin up', 'muscle-up', 'muscle up',
+            'handstand', 'wall sit', 'flutter kick', 'leg raise', 'hip raise',
+            'glute bridge', 'superman', 'dead bug', 'bird dog', 'side plank',
+            'russian twist', 'bicycle', 'toe touch', 'v-up', 'hollow hold'
+        ];
+        return bodyweightKeywords.some(keyword => lower.includes(keyword));
+    }, []);
+
     useEffect(() => {
         if (visible && initialValues) {
             setExerciseName(initialValues.exerciseName || "");
@@ -30,34 +49,85 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
             setReps(String(initialValues.reps ?? ""));
             setUnit(initialValues.unit || "lb");
             setSets(String(initialValues.sets ?? ""));
+            setIsInitialLoad(true);
+        } else if (!visible) {
+            setIsInitialLoad(false);
         }
     }, [visible, initialValues]);
+
+    // Handle exercise name change to auto-suggest weight for bodyweight exercises
+    // Only auto-set when user manually changes the exercise name (not on initial load)
+    const handleExerciseNameChange = useCallback((text) => {
+        setExerciseName(text);
+        // Auto-suggest weight = 0 for bodyweight exercises if weight is empty
+        // Only do this after initial load to preserve existing values when editing
+        if (!isInitialLoad && isBodyweightExercise(text)) {
+            setWeight((currentWeight) => {
+                // Only auto-set if weight is empty
+                if (!currentWeight || currentWeight.trim() === "") {
+                    return "0";
+                }
+                return currentWeight;
+            });
+        }
+    }, [isBodyweightExercise, isInitialLoad]);
+
+    // Mark initial load as complete after modal opens
+    useEffect(() => {
+        if (visible && isInitialLoad) {
+            // Use setTimeout to mark initial load complete after state is set
+            const timer = setTimeout(() => {
+                setIsInitialLoad(false);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [visible, isInitialLoad]);
 
     useEffect(() => {
         if (!visible) {
             setShowUnitDropdown(false);
+            setErrorMessage("");
         }
     }, [visible]);
 
     const handleSave = () => {
+        setErrorMessage(""); // Clear any previous errors
+        
         const name = exerciseName.trim();
         if (!name) {
-            Alert.alert("Exercise required", "Please enter an exercise name.");
+            setErrorMessage("Please enter an exercise name.");
             return;
         }
-        const w = parseFloat(weight);
-        const r = parseInt(reps, 10);
+        
+        // Weight is optional - default to 0 if empty
+        const weightValue = weight.trim() === "" ? "0" : weight;
+        const w = parseFloat(weightValue);
         if (isNaN(w) || w < 0) {
-            Alert.alert("Invalid weight", "Please enter a valid weight.");
+            setErrorMessage("Please enter a valid weight (0 or leave empty for bodyweight exercises).");
             return;
         }
+        
+        // Validate reps - must be a number between 1 and 100
+        const repsTrimmed = reps.trim();
+        if (!repsTrimmed || repsTrimmed === "") {
+            setErrorMessage("Please enter the number of reps.");
+            return;
+        }
+        const r = parseInt(repsTrimmed, 10);
         if (isNaN(r) || r <= 0 || r > 100) {
-            Alert.alert("Invalid reps", "Reps must be between 1 and 100.");
+            setErrorMessage("Reps must be between 1 and 100.");
             return;
         }
-        const s = parseInt(sets, 10);
+        
+        // Validate sets - must be a number between 1 and 30
+        const setsTrimmed = sets.trim();
+        if (!setsTrimmed || setsTrimmed === "") {
+            setErrorMessage("Please enter the number of sets.");
+            return;
+        }
+        const s = parseInt(setsTrimmed, 10);
         if (isNaN(s) || s <= 0 || s > 30) {
-            Alert.alert("Invalid sets", "Sets must be between 1 and 30.");
+            setErrorMessage("Sets must be between 1 and 30.");
             return;
         }
         const u = (unit || "lb").trim();
@@ -94,9 +164,21 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                             }}
                         >
                             {/* Header */}
-                            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                                <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Edit Set</Text>
-                                <ModalCloseButton onPress={onClose} disabled={isSubmitting || isDeleting} size={20} />
+                            <View style={{ marginBottom: 24 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: errorMessage ? 8 : 0 }}>
+                                    <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Edit Set</Text>
+                                    <ModalCloseButton onPress={onClose} disabled={isSubmitting || isDeleting} size={20} />
+                                </View>
+                                {errorMessage ? (
+                                    <Text style={{ 
+                                        color: colors.status.error, 
+                                        fontSize: 14, 
+                                        fontWeight: "500",
+                                        marginTop: 4,
+                                    }}>
+                                        {errorMessage}
+                                    </Text>
+                                ) : null}
                             </View>
 
                             {/* Exercise Input */}
@@ -105,7 +187,7 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                                 <TextInput
                                     editable={!isSubmitting && !isDeleting}
                                     value={exerciseName}
-                                    onChangeText={setExerciseName}
+                                    onChangeText={handleExerciseNameChange}
                                     placeholder="e.g., Bench Press"
                                     placeholderTextColor={colors.text.tertiary}
                                     style={{ 
@@ -135,7 +217,7 @@ export default function EditSetModal({ visible, onClose, onSubmit, onDelete, isS
                                         value={weight}
                                         onChangeText={setWeight}
                                         keyboardType="numeric"
-                                        placeholder="0"
+                                        placeholder={isBodyweightExercise(exerciseName) ? "0 (bodyweight)" : "0"}
                                         placeholderTextColor={colors.text.tertiary}
                                         style={{ 
                                             borderWidth: 1, 
