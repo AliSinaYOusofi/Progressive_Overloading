@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text } from 'react-native';
-import { Target } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Calendar, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { format, isToday, isYesterday } from 'date-fns';
 import { useThemedColors } from '../../hooks/useThemedColors';
-import GoalListItem from './GoalListItem';
-import GoalGridItem from './GoalGridItem';
-import SearchBarWithViewToggle from './SearchBarWithViewToggle';
+import { useTheme } from '../../contexts/ThemeContext';
 import LoadMoreButton from './LoadMoreButton';
 import EmptyState from './EmptyState';
 import SectionHeader from './SectionHeader';
-import GoalSortFilterModal from './GoalSortFilterModal';
 
 export default function GoalsSection({
   fitnessGoals,
@@ -24,12 +23,10 @@ export default function GoalsSection({
   isCompleted = false,
 }) {
   const colors = useThemedColors();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
-  const [displayLimit, setDisplayLimit] = useState(10); // Initial display limit
-  const [sortBy, setSortBy] = useState('date'); // 'date', 'title', 'progress', 'target'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
-  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const { isDarkMode } = useTheme();
+  const router = useRouter();
+  const [dateDisplayLimit, setDateDisplayLimit] = useState(10); // Show last 10 days initially
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
 
   const cardType = isCompleted ? 'completedGoals' : 'goals';
   
@@ -40,100 +37,88 @@ export default function GoalsSection({
     ) || [];
   }, [fitnessGoals, isCompleted]);
 
-  // Filter and sort goals
-  const filteredGoals = useMemo(() => {
-    let goals = baseFilteredGoals;
+  // Group goals by date
+  const goalsByDate = useMemo(() => {
+    const grouped = {};
     
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      goals = goals.filter(goal => {
-        const title = (goal.title || '').toLowerCase();
-        const description = (goal.description || '').toLowerCase();
-        return title.includes(query) || description.includes(query);
-      });
-    }
-
-    // Apply sorting
-    const sorted = [...goals].sort((a, b) => {
-      let aValue, bValue;
-
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.created_at || 0).getTime();
-          bValue = new Date(b.created_at || 0).getTime();
-          break;
-        case 'title':
-          aValue = (a.title || '').toLowerCase();
-          bValue = (b.title || '').toLowerCase();
-          break;
-        case 'progress':
-          const aProgress = a.target_value > 0 
-            ? (a.current_value / a.target_value) * 100 
-            : 0;
-          const bProgress = b.target_value > 0 
-            ? (b.current_value / b.target_value) * 100 
-            : 0;
-          aValue = aProgress;
-          bValue = bProgress;
-          break;
-        case 'target':
-          aValue = parseFloat(a.target_value) || 0;
-          bValue = parseFloat(b.target_value) || 0;
-          break;
-        default:
-          return 0;
+    (baseFilteredGoals || []).forEach(goal => {
+      const dateKey = goal.created_at;
+      if (!dateKey) return;
+      
+      const date = new Date(dateKey);
+      const dateStr = format(date, 'yyyy-MM-dd'); // Use consistent date string as key
+      
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = {
+          date: date,
+          dateStr: dateStr,
+          goals: [],
+        };
       }
-
-      if (sortBy === 'title') {
-        // String comparison for titles
-        if (sortOrder === 'asc') {
-          return aValue.localeCompare(bValue);
-        } else {
-          return bValue.localeCompare(aValue);
-        }
-      } else {
-        // Numeric/date comparison
-        if (sortOrder === 'asc') {
-          return aValue - bValue;
-        } else {
-          return bValue - aValue;
-        }
-      }
+      grouped[dateStr].goals.push(goal);
     });
 
-    return sorted;
-  }, [baseFilteredGoals, searchQuery, sortBy, sortOrder]);
+    // Convert to array and sort by date (newest first)
+    return Object.values(grouped).sort((a, b) => {
+      return b.date.getTime() - a.date.getTime();
+    });
+  }, [baseFilteredGoals]);
 
-  // Get goals to display (limited)
-  const displayedGoals = useMemo(() => {
-    return filteredGoals.slice(0, displayLimit);
-  }, [filteredGoals, displayLimit]);
+  // No filtering needed - show all dates
+  const filteredDates = goalsByDate;
 
-  const hasMore = filteredGoals.length > displayLimit;
-  const displayCount = searchQuery.trim() ? filteredGoals.length : baseFilteredGoals.length;
+  // Get dates to display (limited)
+  const displayedDates = useMemo(() => {
+    return filteredDates.slice(0, dateDisplayLimit);
+  }, [filteredDates, dateDisplayLimit]);
 
-  // Reset display limit when search changes or card collapses
-  useEffect(() => {
-    if (!cardExpanded[cardType]) {
-      setSearchQuery('');
-      setDisplayLimit(10);
-    }
-  }, [cardExpanded, cardType]);
+  const hasMore = filteredDates.length > dateDisplayLimit;
+  const totalDatesCount = goalsByDate.length;
 
-  useEffect(() => {
-    setDisplayLimit(10); // Reset to initial limit when search changes
-  }, [searchQuery]);
+  // Format date for display
+  const formatDateLabel = (date) => {
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMM d, yyyy');
+  };
 
-  const handleSortChange = (newSortBy, newSortOrder) => {
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-    setDisplayLimit(10); // Reset display limit when sort changes
+  // Calculate stats for a date
+  const getDateStats = (dateGroup) => {
+    const totalGoals = dateGroup.goals.length;
+    const completedGoals = dateGroup.goals.filter(g => g.is_completed).length;
+    const totalProgress = dateGroup.goals.reduce((sum, g) => {
+      const progress = g.target_value > 0 
+        ? (g.current_value / g.target_value) * 100 
+        : 0;
+      return sum + progress;
+    }, 0);
+    const avgProgress = totalGoals > 0 ? totalProgress / totalGoals : 0;
+    
+    return { totalGoals, completedGoals, avgProgress };
+  };
+
+  const handleDatePress = (dateStr) => {
+    router.push({
+      pathname: '/goal-day-detail',
+      params: { date: dateStr, isCompleted: isCompleted ? 'true' : 'false' }
+    });
+  };
+
+  const handleDateSelect = (dateStr) => {
+    setShowDateDropdown(false);
+    handleDatePress(dateStr);
   };
 
   const handleLoadMore = () => {
-    setDisplayLimit(prev => Math.min(prev + 10, filteredGoals.length));
+    setDateDisplayLimit(prev => prev + 10);
   };
+
+  // Reset when card collapses
+  useEffect(() => {
+    if (!cardExpanded[cardType]) {
+      setDateDisplayLimit(10);
+    }
+  }, [cardExpanded, cardType]);
 
   return (
     <View
@@ -153,7 +138,7 @@ export default function GoalsSection({
     >
       <SectionHeader
         title={isCompleted ? 'Completed Goals' : 'Goals'}
-        count={baseFilteredGoals.length > 0 ? displayCount : 0}
+        count={totalDatesCount}
         isExpanded={cardExpanded[cardType]}
         onToggle={() => toggleCardExpansion(cardType)}
         onLogSet={openAddGoalModal}
@@ -163,101 +148,204 @@ export default function GoalsSection({
 
       {cardExpanded[cardType] && (
         <>
-          {/* Search Input with View Toggle */}
-          {baseFilteredGoals.length > 0 && (
-            <SearchBarWithViewToggle
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              onSortPress={() => setSortModalVisible(true)}
-            />
+          {/* Date Dropdown Button */}
+          {baseFilteredGoals.length > 0 && goalsByDate.length > 0 && (
+            <View style={{ marginBottom: 16, position: 'relative' }}>
+              <TouchableOpacity
+                onPress={() => setShowDateDropdown(!showDateDropdown)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  backgroundColor: colors.background.primary,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: showDateDropdown ? colors.primary[600] : colors.border.light,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Calendar size={18} color={colors.primary[600]} />
+                  <Text style={{ 
+                    fontSize: 15, 
+                    color: colors.text.primary,
+                    fontWeight: '600'
+                  }}>
+                    Jump to Date ({goalsByDate.length} {goalsByDate.length === 1 ? 'day' : 'days'})
+                  </Text>
+                </View>
+                <ChevronDown size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+
+              {/* Date Dropdown */}
+              {showDateDropdown && (
+                <>
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: -300,
+                      zIndex: 999,
+                    }}
+                    activeOpacity={1}
+                    onPress={() => setShowDateDropdown(false)}
+                  />
+                  <View style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: 4,
+                    backgroundColor: colors.background.card,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border.light,
+                    maxHeight: 200,
+                    zIndex: 1000,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}>
+                    <ScrollView 
+                      nestedScrollEnabled
+                      style={{ maxHeight: 200 }}
+                    >
+                      {goalsByDate.map((dateGroup, index) => {
+                        const stats = getDateStats(dateGroup);
+                        return (
+                          <TouchableOpacity
+                            key={dateGroup.dateStr}
+                            onPress={() => handleDateSelect(dateGroup.dateStr)}
+                            style={{
+                              paddingHorizontal: 16,
+                              paddingVertical: 12,
+                              backgroundColor: 'transparent',
+                              borderBottomWidth: index < goalsByDate.length - 1 ? 1 : 0,
+                              borderBottomColor: colors.border.light,
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 14,
+                              color: colors.text.primary,
+                              fontWeight: '600',
+                              marginBottom: 4,
+                            }}>
+                              {formatDateLabel(dateGroup.date)}
+                            </Text>
+                            <Text style={{
+                              fontSize: 12,
+                              color: colors.text.secondary,
+                            }}>
+                              {stats.totalGoals} {stats.totalGoals === 1 ? 'goal' : 'goals'} • {stats.completedGoals} completed
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+            </View>
           )}
 
-          {/* Sort/Filter Modal */}
-          <GoalSortFilterModal
-            visible={sortModalVisible}
-            onClose={() => setSortModalVisible(false)}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={handleSortChange}
-          />
-
-          {/* Content */}
+          {/* Date Grouped Content */}
           {baseFilteredGoals.length > 0 ? (
-            filteredGoals.length > 0 ? (
-              viewMode === 'list' ? (
-                // List View
-                <>
-                  {displayedGoals.map((goal, idx, arr) => (
-                    <GoalListItem
-                      key={goal.id}
-                      goal={goal}
-                      index={idx}
-                      isLast={idx === arr.length - 1}
-                      onPress={() => openGoalDetails(goal)}
-                      onToggleComplete={() => handleToggleComplete(goal)}
-                      onEdit={() => openEditGoalModal(goal)}
-                      onDelete={() => handleDeleteGoal(goal.id)}
-                      isCompleting={completeLoadingGoalId === goal.id}
-                      isDeleting={deleteLoadingGoalId === goal.id}
-                    />
-                  ))}
-                  {hasMore && (
-                    <LoadMoreButton
-                      remaining={filteredGoals.length - displayLimit}
-                      onLoadMore={handleLoadMore}
-                    />
-                  )}
-                </>
-              ) : (
-                // Grid View
-                <>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                    {displayedGoals.map((goal, idx) => (
-                      <GoalGridItem
-                        key={goal.id}
-                        goal={goal}
-                        index={idx}
-                        onPress={() => openGoalDetails(goal)}
-                        onToggleComplete={() => handleToggleComplete(goal)}
-                        onEdit={() => openEditGoalModal(goal)}
-                        onDelete={() => handleDeleteGoal(goal.id)}
-                        isCompleting={completeLoadingGoalId === goal.id}
-                        isDeleting={deleteLoadingGoalId === goal.id}
-                      />
-                    ))}
-                  </View>
-                  {hasMore && (
-                    <LoadMoreButton
-                      remaining={filteredGoals.length - displayLimit}
-                      onLoadMore={handleLoadMore}
-                      fullWidth={true}
-                    />
-                  )}
-                </>
-              )
-            ) : (
-              <EmptyState type="noMatches" searchQuery={searchQuery} />
-            )
+            displayedDates.length > 0 ? (
+              <>
+                {displayedDates.map((dateGroup) => {
+                  const stats = getDateStats(dateGroup);
+
+                  return (
+                    <TouchableOpacity
+                      key={dateGroup.dateStr}
+                      onPress={() => handleDatePress(dateGroup.dateStr)}
+                      activeOpacity={0.7}
+                      style={{
+                        marginBottom: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border.light,
+                        backgroundColor: isDarkMode 
+                          ? colors.neutral[200] 
+                          : colors.background.card,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Date Header Card */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 16,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              backgroundColor: isDarkMode
+                                ? colors.neutral[300]
+                                : colors.neutral[100],
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 12,
+                            }}
+                          >
+                            <Calendar
+                              size={18}
+                              color={colors.text.secondary}
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 16,
+                                fontWeight: '600',
+                                color: colors.text.primary,
+                                marginBottom: 2,
+                              }}
+                            >
+                              {formatDateLabel(dateGroup.date)}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: colors.text.secondary,
+                              }}
+                            >
+                              {stats.totalGoals} {stats.totalGoals === 1 ? 'goal' : 'goals'} • {stats.completedGoals} completed
+                            </Text>
+                          </View>
+                        </View>
+                        <ChevronRight 
+                          size={20} 
+                          color={colors.text.secondary}
+                          style={{ opacity: 0.5 }}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {hasMore && (
+                  <LoadMoreButton
+                    remaining={filteredDates.length - dateDisplayLimit}
+                    onLoadMore={handleLoadMore}
+                    fullWidth={true}
+                  />
+                )}
+              </>
+            ) : null
           ) : (
-            <View
-              style={{
-                backgroundColor: colors.background.primary,
-                borderRadius: 12,
-                padding: 16,
-                alignItems: 'center',
-              }}
-            >
-              <Target size={32} color={colors.text.tertiary} />
-              <Text
-                style={{ color: colors.text.tertiary, textAlign: 'center', marginTop: 8 }}
-              >
-                {isCompleted
-                  ? 'No completed goals yet.'
-                  : 'No goals set yet. Add your first goal!'}
-              </Text>
-            </View>
+            <EmptyState type="noSets" />
           )}
         </>
       )}

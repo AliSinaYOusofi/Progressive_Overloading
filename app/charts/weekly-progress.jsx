@@ -3,7 +3,8 @@ import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpa
 import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity, ChevronRight, GitCompare } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
-import { getCurrentUser, getWeeklyProgress, getWeeklyStats } from "../../lib/database";
+import { useAppStore } from "../../stores/useAppStore";
+import { getWeeklyStats } from "../../lib/database";
 import { LineChart } from "react-native-gifted-charts";
 import { formatShortNumber } from "../../utils/numberUtils";
 import WeeklyDayDetailModal from "../../components/Charts/WeeklyDayDetailModal";
@@ -12,47 +13,48 @@ import WeeklyCrossCheckModal from "../../components/Charts/WeeklyCrossCheckModal
 export default function WeeklyProgressScreen() {
     const colors = useThemedColors();
     const { isDarkMode } = useTheme();
-    const [weeklyProgress, setWeeklyProgress] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showDayDetailModal, setShowDayDetailModal] = useState(false);
     const [selectedDayDate, setSelectedDayDate] = useState(null);
-    const [userId, setUserId] = useState(null);
     const [showCrossCheckModal, setShowCrossCheckModal] = useState(false);
     const [weeklyStats, setWeeklyStats] = useState([]);
+    
+    // Use selective subscriptions from store - subscribe to entire nested object
+    const user = useAppStore(state => state.user);
+    const weeklyProgressData = useAppStore(state => state.chartsData.weeklyProgress);
+    const loadWeeklyProgress = useAppStore(state => state.loadWeeklyProgress);
+    
+    // Extract timeframe-specific data (30 days) using useMemo to avoid infinite loops
+    const weeklyProgress = useMemo(() => {
+      const timeframeValue = 30; // Weekly progress uses 30 days
+      return weeklyProgressData[timeframeValue] || [];
+    }, [weeklyProgressData]);
 
     useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async (isRefresh = false) => {
-        try {
-            if (!isRefresh) setIsLoading(true);
-            
-            const currentUser = await getCurrentUser();
-            if (!currentUser) return;
-            
-            setUserId(currentUser.id);
-
-            // Default to 30 days timeframe
-            const timeframeValue = 30;
-            const progress = await getWeeklyProgress(currentUser.id, timeframeValue);
-            setWeeklyProgress(progress);
+        if (user) {
+            // Default to 30 days timeframe for weekly progress
+            loadWeeklyProgress(30);
             
             // Load weekly stats for cross-check (use 84 days to get ~12 weeks)
-            const stats = await getWeeklyStats(currentUser.id, 84);
-            setWeeklyStats(stats);
-        } catch (error) {
-            console.error("Error loading weekly progress:", error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+            getWeeklyStats(user.id, 84).then(stats => {
+                setWeeklyStats(stats);
+            }).catch(error => {
+                console.error("Error loading weekly stats:", error);
+            });
         }
-    };
+    }, [user]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        loadData(true);
+        loadWeeklyProgress(30, true).then(() => {
+            if (user) {
+                return getWeeklyStats(user.id, 84);
+            }
+        }).then(stats => {
+            if (stats) setWeeklyStats(stats);
+        }).finally(() => {
+            setRefreshing(false);
+        });
     };
 
     // Calculate week dates and enhance data
@@ -185,7 +187,10 @@ export default function WeeklyProgressScreen() {
         ? (chartWidth - initialSpacing - endSpacing) / (lineChartData.length - 1)
         : chartWidth;
 
-    if (isLoading) {
+    // Show loading only if no data exists and we're waiting for initial load
+    const isLoading = !weeklyProgress || weeklyProgress.length === 0;
+    
+    if (isLoading && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
@@ -651,7 +656,7 @@ export default function WeeklyProgressScreen() {
                 visible={showDayDetailModal}
                 onClose={() => setShowDayDetailModal(false)}
                 dayDate={selectedDayDate}
-                userId={userId}
+                userId={user?.id}
             />
             
             <WeeklyCrossCheckModal

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from "react-native";
 import { useThemedColors } from "../hooks/useThemedColors";
-import { useHomeScreenData } from "../hooks/useHomeScreenData";
+import { useAppStore } from "../stores/useAppStore";
 import { useSetActions } from "../hooks/useSetActions";
 import { useGoalActions } from "../hooks/useGoalActions";
 
@@ -11,8 +11,6 @@ import ProgressSection from "../components/HomeScreen/ProgressSection";
 import GoalsSection from "../components/HomeScreen/GoalsSection";
 import ExpiredGoalsSection from "../components/HomeScreen/ExpiredGoalsSection";
 import RecentSetsSection from "../components/HomeScreen/RecentSetsSection";
-import AddGoalModal from "../components/HomeScreen/AddGoalModal";
-import LogSetModal from "../components/HomeScreen/LogSetModal";
 import EditSetModal from "../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../components/HomeScreen/RMInfoModal";
 import SetDetailsModal from "../components/HomeScreen/SetDetailsModal";
@@ -22,27 +20,55 @@ import StreakInfoModal from "../components/HomeScreen/StreakInfoModal";
 export default function HomeScreen() {
     const colors = useThemedColors();
     
-    // Data hook
+    // Zustand store
     const {
         user,
         profile,
         currentStreak,
         fitnessGoals,
-        setFitnessGoals,
         progressByExercise,
         recentSets,
         isLoading,
-        refreshing,
-        onRefresh,
+        isRefreshing,
+        initializeUserData,
+        refreshAll,
         loadProgressFromSets,
         loadRecentSets,
-    } = useHomeScreenData();
+        addFitnessGoal,
+        updateFitnessGoal,
+        removeFitnessGoal,
+        setFitnessGoals,
+    } = useAppStore();
 
+    // Initialize data on mount
+    useEffect(() => {
+        if (!user) {
+            initializeUserData();
+        }
+    }, [user, initializeUserData]);
+
+    // Get store actions for sets
+    const { addExerciseSet, refreshRecentSets, refreshProgress } = useAppStore();
+    
     // Set actions hook
-    const setActions = useSetActions({ user, loadProgressFromSets, loadRecentSets });
+    const setActions = useSetActions({ 
+        user, 
+        loadProgressFromSets, 
+        loadRecentSets,
+        addExerciseSet,
+        refreshRecentSets,
+        refreshProgress,
+    });
 
     // Goal actions hook
-    const goalActions = useGoalActions({ user, fitnessGoals, setFitnessGoals });
+    const goalActions = useGoalActions({ 
+        user, 
+        fitnessGoals, 
+        setFitnessGoals,
+        addFitnessGoal,
+        updateFitnessGoal,
+        removeFitnessGoal,
+    });
 
     // UI state
     const [showRMInfoModal, setShowRMInfoModal] = useState(false);
@@ -79,7 +105,7 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                <RefreshControl refreshing={isRefreshing} onRefresh={refreshAll} />
             }
         >
             {/* Header */}
@@ -174,14 +200,6 @@ export default function HomeScreen() {
                 deleteLoadingId={goalActions.modalDeleteLoadingGoalId}
             />
 
-            <LogSetModal
-                visible={setActions.isLogSetVisible}
-                onClose={setActions.handleCloseLogSet}
-                onSubmit={setActions.handleSubmitLogSet}
-                isSubmitting={setActions.isLogSubmitting}
-                defaults={setActions.userDefaults}
-            />
-
             <SetDetailsModal
                 visible={setActions.isSetDetailsVisible}
                 onClose={setActions.closeSetDetails}
@@ -220,15 +238,6 @@ export default function HomeScreen() {
                     sets: setActions.editingSet?.sets,
                     unit: setActions.editingSet?.unit,
                 } : null}
-            />
-
-            <AddGoalModal
-                visible={goalActions.isGoalModalVisible}
-                onClose={() => goalActions.setIsGoalModalVisible(false)}
-                onSubmit={goalActions.handleSaveGoal}
-                initialValues={goalActions.goalFormState}
-                isEditing={Boolean(goalActions.editingGoalId)}
-                isLoading={goalActions.isGoalActionLoading}
             />
         </ScrollView>
     );

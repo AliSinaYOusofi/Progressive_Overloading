@@ -1,45 +1,38 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
-import { getCurrentUser, getMonthlyStats } from "../../lib/database";
+import { useAppStore } from "../../stores/useAppStore";
 import MonthlyTrends from "../../components/Charts/MonthlyTrends";
 import MonthlyCrossCheckModal from "../../components/Charts/MonthlyCrossCheckModal";
 import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 
 export default function MonthlyTrendsScreen() {
     const colors = useThemedColors();
-    const [monthlyStats, setMonthlyStats] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
     const [refreshing, setRefreshing] = useState(false);
     const [showCrossCheckModal, setShowCrossCheckModal] = useState(false);
-    const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
+    
+    // Use selective subscriptions from store - subscribe to entire nested object
+    const user = useAppStore(state => state.user);
+    const monthlyStatsData = useAppStore(state => state.chartsData.monthlyStats);
+    const loadMonthlyStats = useAppStore(state => state.loadMonthlyStats);
+    
+    // Extract timeframe-specific data using useMemo to avoid infinite loops
+    const monthlyStats = useMemo(() => {
+      const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
+      return monthlyStatsData[timeframeValue] || [];
+    }, [monthlyStatsData, selectedTimeframe]);
 
     useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async (isRefresh = false, timeframe = selectedTimeframe) => {
-        try {
-            if (!isRefresh) setIsLoading(true);
-            
-            const currentUser = await getCurrentUser();
-            if (!currentUser) return;
-
-            // For "All Time", use a very large number to get all data
-            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
-            const stats = await getMonthlyStats(currentUser.id, timeframeValue);
-            setMonthlyStats(stats);
-        } catch (error) {
-            console.error("Error loading monthly trends:", error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+        if (user) {
+            loadMonthlyStats(selectedTimeframe);
         }
-    };
+    }, [user, selectedTimeframe]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        loadData(false, newTimeframe);
+        // Check cache first - don't force refresh
+        loadMonthlyStats(newTimeframe, false);
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
@@ -48,15 +41,20 @@ export default function MonthlyTrendsScreen() {
         // Use daysDiff as the timeframe - this will calculate from today backwards
         // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
-        loadData(false, daysDiff);
+        loadMonthlyStats(daysDiff, true);
     };
 
     const onRefresh = () => {
         setRefreshing(true);
-        loadData(true);
+        loadMonthlyStats(selectedTimeframe, true).finally(() => {
+            setRefreshing(false);
+        });
     };
 
-    if (isLoading) {
+    // Show loading only if no data exists and we're waiting for initial load
+    const isLoading = !monthlyStats || monthlyStats.length === 0;
+    
+    if (isLoading && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />

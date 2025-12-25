@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import React from "react";
 import {
     View,
     Text,
@@ -25,14 +26,16 @@ import {
     ExternalLink,
 } from "lucide-react-native";
 import { useThemedColors } from "../hooks/useThemedColors";
+import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { signOut, getUser } from "../lib/auth";
 import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../lib/database";
-import EditProfileModal from "../components/HomeScreen/EditProfileModal";
 import BMIInfoModal from "../components/Profile/BMIInfoModal";
 import SetDefaultsModal from "../components/HomeScreen/SetDefaultsModal";
 
 export default function ProfileScreen() {
     const colors = useThemedColors();
+    const router = useRouter();
     const [userProfile, setUserProfile] = useState(null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
@@ -42,7 +45,6 @@ export default function ProfileScreen() {
     });
     const [achievements, setAchievements] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showEditModal, setShowEditModal] = useState(false);
     const [showBMIModal, setShowBMIModal] = useState(false);
     const [showDefaultsModal, setShowDefaultsModal] = useState(false);
     const [hasError, setHasError] = useState(false);
@@ -50,6 +52,13 @@ export default function ProfileScreen() {
     useEffect(() => {
         loadUserData();
     }, []);
+
+    // Refresh data when screen comes into focus (e.g., after editing profile)
+    useFocusEffect(
+        React.useCallback(() => {
+            loadUserData(true);
+        }, [])
+    );
 
     const loadUserData = async (isRefresh = false) => {
         try {
@@ -248,7 +257,7 @@ export default function ProfileScreen() {
                         </View>
                         <TouchableOpacity
                             style={styles.editButton}
-                            onPress={() => setShowEditModal(true)}
+                            onPress={() => router.push('/edit-profile')}
                         >
                             <Edit size={20} color={colors.background.primary} />
                         </TouchableOpacity>
@@ -418,7 +427,7 @@ export default function ProfileScreen() {
                         </View>
                         <TouchableOpacity
                             style={styles.completeProfileButton}
-                            onPress={() => setShowEditModal(true)}
+                            onPress={() => router.push('/edit-profile')}
                         >
                             <Edit size={20} color={colors.background.primary} style={{ marginRight: 8 }} />
                             <Text style={styles.completeProfileButtonText}>
@@ -452,49 +461,13 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Achievements */}
-                <View style={styles.achievementsSection}>
-                    <Text style={styles.sectionTitle}>Recent Achievements</Text>
-                    {achievements.length > 0 ? (
-                        achievements.map((achievement, index) => (
-                            <View key={index} style={styles.achievementCard}>
-                                <View style={styles.achievementIcon}>
-                                    <Trophy
-                                        size={24}
-                                        color={colors.status.warning}
-                                    />
-                                </View>
-                                <View style={styles.achievementContent}>
-                                    <Text style={styles.achievementName}>
-                                        {achievement.name}
-                                    </Text>
-                                    <Text style={styles.achievementDescription}>
-                                        {achievement.description}
-                                    </Text>
-                                    <Text style={styles.achievementDate}>
-                                        {achievement.date}
-                                    </Text>
-                                </View>
-                            </View>
-                        ))
-                    ) : (
-                        <View style={styles.noAchievementsCard}>
-                            <Trophy size={32} color={colors.text.tertiary} />
-                            <Text style={styles.noAchievementsText}>
-                                No achievements yet
-                            </Text>
-                            <Text style={styles.noAchievementsSubtext}>
-                                Complete workouts to earn achievements!
-                            </Text>
-                        </View>
-                    )}
-                </View>
 
                 {/* Profile Actions */}
                 <View style={styles.actionsSection}>
                     <Text style={styles.sectionTitle}>Account</Text>
                     <TouchableOpacity 
                         style={styles.actionButton}
-                        onPress={() => setShowEditModal(true)}
+                        onPress={() => router.push('/edit-profile')}
                     >
                         <View style={styles.actionIcon}>
                             <Edit size={20} color={colors.primary[600]} />
@@ -562,14 +535,6 @@ export default function ProfileScreen() {
             </ScrollView>
 
             <BMIInfoModal visible={showBMIModal} onClose={() => setShowBMIModal(false)} />
-
-            {/* Profile Edit Modal */}
-            <EditProfileModal
-                visible={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                currentProfile={userProfile}
-                onProfileUpdate={handleProfileUpdate}
-            />
 
             {/* Workout Defaults Modal */}
             <SetDefaultsModal

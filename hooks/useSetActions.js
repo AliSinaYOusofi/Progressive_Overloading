@@ -1,12 +1,38 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { getCurrentUser, getProfile } from '../lib/database';
-import Toast from 'react-native-toast-message';
 
 /**
  * Custom hook for managing set-related actions (log, edit, delete)
  */
-export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) => {
-  const [isLogSetVisible, setIsLogSetVisible] = useState(false);
+export const useSetActions = ({ 
+  user, 
+  loadProgressFromSets, 
+  loadRecentSets,
+  addExerciseSet,
+  refreshRecentSets,
+  refreshProgress,
+}) => {
+  // Use store actions if provided, otherwise fall back to passed functions
+  const addSet = addExerciseSet || ((set) => {
+    // Fallback: if store actions not provided, just call refresh functions
+    if (loadRecentSets && user) {
+      loadRecentSets(user.id);
+    }
+  });
+  
+  const refreshSets = refreshRecentSets || (async () => {
+    if (loadRecentSets && user) {
+      await loadRecentSets(user.id);
+    }
+  });
+  
+  const refreshProg = refreshProgress || (async () => {
+    if (loadProgressFromSets && user) {
+      await loadProgressFromSets(user.id);
+    }
+  });
+  const router = useRouter();
   const [isLogSubmitting, setIsLogSubmitting] = useState(false);
   const [isEditSetVisible, setIsEditSetVisible] = useState(false);
   const [editingSet, setEditingSet] = useState(null);
@@ -41,25 +67,9 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
   }, [user]);
 
   const handleOpenLogSet = async () => {
-    // Refresh defaults before opening modal to ensure we have latest values
-    try {
-      const currentUser = user || (await getCurrentUser());
-      if (currentUser) {
-        const profile = await getProfile(currentUser.id);
-        if (profile) {
-          setUserDefaults({
-            default_sets: profile.default_sets,
-            default_reps: profile.default_reps,
-            default_weight_unit: profile.default_weight_unit,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user defaults:', error);
-    }
-    setIsLogSetVisible(true);
+    // Navigate to log-set screen
+    router.push('/log-set');
   };
-  const handleCloseLogSet = () => setIsLogSetVisible(false);
 
   const handleSubmitLogSet = async ({ exerciseName, weight, reps, sets, unit }) => {
     setIsLogSubmitting(true);
@@ -69,10 +79,12 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       return;
     }
     
+    let wasSuccessful = false;
+    
     try {
       const { findOrCreateExercise, createExerciseSet } = await import('../lib/database');
       const exercise = await findOrCreateExercise(currentUser.id, exerciseName);
-      await createExerciseSet({
+      const newSet = await createExerciseSet({
         user_id: currentUser.id,
         exercise_id: exercise.id,
         weight,
@@ -82,38 +94,49 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
         performed_at: new Date().toISOString(),
       });
       
-      handleCloseLogSet();
+      wasSuccessful = true;
       
-      // Show toast immediately after closing modal
-      Toast.show({
-        type: 'success',
-        text1: 'Set logged',
-        text2: 'Your workout set has been logged successfully',
-      });
+      // Add set to store with exercise relation for display
+      const setWithExercise = {
+        ...newSet,
+        exercises: { name: exerciseName }
+      };
+      if (addSet) {
+        addSet(setWithExercise);
+      }
       
-      // Load data in background
-      await loadProgressFromSets(currentUser.id);
-      await loadRecentSets(currentUser.id);
+      // Refresh data in background
+      if (refreshSets) {
+        await refreshSets();
+      }
+      if (refreshProg) {
+        await refreshProg();
+      }
+      
+      // Fallback: use old functions if store actions not available
+      if (!refreshSets && loadProgressFromSets) {
+        await loadProgressFromSets(currentUser.id);
+      }
+      if (!refreshSets && loadRecentSets) {
+        await loadRecentSets(currentUser.id);
+      }
     } catch (e) {
       console.error('Error logging set:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to log set',
-        text2: e.message || 'Please try again',
-      });
     } finally {
       setIsLogSubmitting(false);
     }
   };
 
   const openEditSetModal = (set) => {
-    setEditingSet(set);
-    setIsEditSetVisible(true);
+    // Navigate to edit-set screen with set ID
+    router.push({
+      pathname: '/edit-set',
+      params: { setId: set.id }
+    });
   };
 
   const closeEditSetModal = () => {
-    setIsEditSetVisible(false);
-    setEditingSet(null);
+    // No longer needed - navigation handles this
   };
 
   const openSetDetails = (set) => {
@@ -147,23 +170,23 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       
       closeEditSetModal();
       
-      // Show toast immediately after closing modal
-      Toast.show({
-        type: 'success',
-        text1: 'Set updated',
-        text2: 'Your workout set has been updated successfully',
-      });
+      // Refresh data using store actions or fallback
+      if (refreshSets) {
+        await refreshSets();
+      }
+      if (refreshProg) {
+        await refreshProg();
+      }
       
-      // Load data in background
-      await loadProgressFromSets(currentUser.id);
-      await loadRecentSets(currentUser.id);
+      // Fallback: use old functions if store actions not available
+      if (!refreshSets && loadProgressFromSets) {
+        await loadProgressFromSets(currentUser.id);
+      }
+      if (!refreshSets && loadRecentSets) {
+        await loadRecentSets(currentUser.id);
+      }
     } catch (e) {
       console.error('Error updating set:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to update set',
-        text2: e.message || 'Please try again',
-      });
     } finally {
       setIsEditSubmitting(false);
     }
@@ -180,13 +203,6 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
     const setToDelete = editingSet;
     closeEditSetModal();
     
-    // Show toast immediately
-    Toast.show({
-      type: 'success',
-      text1: 'Set deleted',
-      text2: 'Your workout set has been deleted successfully',
-    });
-    
     // Then make API call
     try {
       const { deleteExerciseSet } = await import('../lib/database');
@@ -195,11 +211,6 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       await loadRecentSets(currentUser.id);
     } catch (e) {
       console.error('Error deleting set:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to delete set',
-        text2: e.message || 'Please try again',
-      });
     } finally {
       setIsEditDeleting(false);
     }
@@ -213,13 +224,6 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       return;
     }
     
-    // Show toast immediately
-    Toast.show({
-      type: 'success',
-      text1: 'Set deleted',
-      text2: 'Your workout set has been deleted successfully',
-    });
-    
     // Then make API call
     try {
       const { deleteExerciseSet } = await import('../lib/database');
@@ -228,11 +232,6 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       await loadRecentSets(currentUser.id);
     } catch (e) {
       console.error('Error deleting set:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to delete set',
-        text2: e.message || 'Please try again',
-      });
     } finally {
       setDeleteLoadingSetId(null);
     }
@@ -250,26 +249,14 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
       await loadProgressFromSets(currentUser.id);
       await loadRecentSets(currentUser.id);
       closeSetDetails();
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Set deleted',
-        text2: 'Your workout set has been deleted successfully',
-      });
     } catch (e) {
       console.error('Error deleting set:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to delete set',
-        text2: e.message || 'Please try again',
-      });
     } finally {
       setModalDeleteLoadingSetId(null);
     }
   };
 
   return {
-    isLogSetVisible,
     isLogSubmitting,
     isEditSetVisible,
     editingSet,
@@ -281,7 +268,6 @@ export const useSetActions = ({ user, loadProgressFromSets, loadRecentSets }) =>
     modalDeleteLoadingSetId,
     userDefaults,
     handleOpenLogSet,
-    handleCloseLogSet,
     handleSubmitLogSet,
     openEditSetModal,
     closeEditSetModal,

@@ -28,7 +28,7 @@ export default function SetListItem({
       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
         <View
           style={{
-            backgroundColor: colors.primary[100],
+            backgroundColor: colors.neutral[100],
             padding: 9,
             borderRadius: 20,
             marginRight: 14,
@@ -36,9 +36,11 @@ export default function SetListItem({
             minHeight: 36,
             alignItems: 'center',
             justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: colors.border.light,
           }}
         >
-          <Text style={{ color: colors.primary[600], fontWeight: '700', fontSize: 14 }}>
+          <Text style={{ color: colors.text.secondary, fontWeight: '700', fontSize: 14 }}>
             {index + 1}
           </Text>
         </View>

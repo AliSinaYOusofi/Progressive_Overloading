@@ -1,14 +1,13 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState, useMemo } from "react";
 import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from "react-native";
 import { Calendar, Dumbbell, Repeat, Layers, Clock, TrendingUp } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useAppStore } from "../../stores/useAppStore";
 import ModalCloseButton from "../ModalCloseButton";
 import LoadMoreButton from "../HomeScreen/LoadMoreButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { getExerciseSetsByDate } from "../../lib/database";
-import { getCurrentUser } from "../../lib/database";
 import { formatShortNumber } from "../../utils/numberUtils";
 
 const INITIAL_DISPLAY_COUNT = 10;
@@ -19,10 +18,23 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
     const screenHeight = Dimensions.get("window").height;
     const translateY = useSharedValue(0);
     const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
-    const [sets, setSets] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [groupedSets, setGroupedSets] = useState([]);
     const [displayLimit, setDisplayLimit] = useState(INITIAL_DISPLAY_COUNT);
+    
+    // Use Zustand store for day detail data
+    const user = useAppStore(state => state.user);
+    const loadDayDetailData = useAppStore(state => state.loadDayDetailData);
+    
+    // Get cached data for this date
+    const dayDetailData = useAppStore(state => {
+      if (!dayDate) return null;
+      const dateKey = state.getDateKey(dayDate);
+      return state.dayDetailData[dateKey] || null;
+    });
+    
+    // Extract sets and groupedSets from cached data
+    const sets = useMemo(() => dayDetailData?.sets || [], [dayDetailData]);
+    const groupedSets = useMemo(() => dayDetailData?.groupedSets || [], [dayDetailData]);
 
     // Define close function in RN Runtime scope (required for scheduleOnRN)
     const handleClose = useCallback(() => {
@@ -75,75 +87,28 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
         }
     }, [visible, translateY]);
 
-    // Get unique key for a set (exercise + weight + reps + sets)
-    const getSetKey = (set) => {
-        const exerciseName = set.exercises?.name || 'Unknown';
-        return `${exerciseName}_${set.weight || 0}_${set.reps || 0}_${set.sets || 1}`;
-    };
 
-    // Fetch sets when modal opens
+    // Load day detail data when modal opens (only if not cached)
     useEffect(() => {
-        const loadSets = async () => {
-            if (!visible || !dayDate) return;
+        const loadData = async () => {
+            if (!visible || !dayDate || !user) return;
             
-            setIsLoading(true);
+            // Only show loading if data is not cached
+            if (!dayDetailData) {
+                setIsLoading(true);
+            }
+            
             try {
-                const currentUserId = userId || (await getCurrentUser())?.id;
-                if (!currentUserId) {
-                    setSets([]);
-                    return;
-                }
-
-                const daySets = await getExerciseSetsByDate(currentUserId, dayDate);
-                setSets(daySets);
-
-                // Get distinct sets based on exercise + weight + reps + sets
-                const distinctSetsMap = new Map();
-                daySets.forEach(set => {
-                    const key = getSetKey(set);
-                    if (!distinctSetsMap.has(key)) {
-                        distinctSetsMap.set(key, set);
-                    }
-                });
-
-                const distinctSets = Array.from(distinctSetsMap.values());
-
-                // Group distinct sets by exercise
-                const grouped = distinctSets.reduce((acc, set) => {
-                    const exerciseName = set.exercises?.name || 'Unknown';
-                    if (!acc[exerciseName]) {
-                        acc[exerciseName] = [];
-                    }
-                    acc[exerciseName].push(set);
-                    return acc;
-                }, {});
-
-                // Convert to array and sort by total volume
-                const groupedArray = Object.entries(grouped)
-                    .map(([exerciseName, exerciseSets]) => ({
-                        exerciseName,
-                        sets: exerciseSets.sort((a, b) => 
-                            new Date(a.performed_at) - new Date(b.performed_at)
-                        ),
-                        totalVolume: exerciseSets.reduce((sum, s) => 
-                            sum + (s.weight || 0) * (s.reps || 0) * (s.sets || 1), 0
-                        ),
-                        totalSets: exerciseSets.reduce((sum, s) => sum + (s.sets || 1), 0),
-                    }))
-                    .sort((a, b) => b.totalVolume - a.totalVolume);
-
-                setGroupedSets(groupedArray);
+                await loadDayDetailData(dayDate);
             } catch (error) {
-                console.error('Error loading sets:', error);
-                setSets([]);
-                setGroupedSets([]);
+                console.error('Error loading day detail data:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadSets();
-    }, [visible, dayDate, userId]);
+        loadData();
+    }, [visible, dayDate, user, loadDayDetailData, dayDetailData]);
 
     if (!dayDate) {
         return null;

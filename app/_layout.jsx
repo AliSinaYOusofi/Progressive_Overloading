@@ -5,9 +5,9 @@ import { Platform, View, Text, ActivityIndicator, TouchableOpacity } from "react
 import { useEffect, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext"
-import Toast from "react-native-toast-message"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import ThemedAlertComponent from "../components/ThemedAlert"
+import NetworkStatusBanner from "../components/NetworkStatusBanner"
 import "../assets/css/global.css"
 
 function RootLayoutContent() {
@@ -135,11 +135,11 @@ function RootLayoutContent() {
             right: 8,
             marginBottom: Platform.OS === "ios" ? 0 : 0,
             borderRadius: 24,
-            elevation: 20,
-            shadowColor: colors.neutral[900],
-            shadowOffset: { width: 0, height: -8 },
-            shadowOpacity: 0.15,
-            shadowRadius: 20,
+            elevation: 0,
+            shadowColor: 'transparent',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0,
+            shadowRadius: 0,
             borderWidth: 1,
             borderColor: colors.neutral[200],
           },
@@ -171,7 +171,7 @@ function RootLayoutContent() {
         <Tabs.Screen
           name="charts"
           options={{
-            title: "Charts",
+            title: "Insights",
             tabBarIcon: ({ color, size, focused }) => (
               <BarChart3 size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
             ),
@@ -197,106 +197,16 @@ function RootLayoutContent() {
         />
         <Tabs.Screen name="(auth)" options={{ href: null }} />
         <Tabs.Screen name="index" options={{ href: null }} />
+        <Tabs.Screen name="day-detail" options={{ href: null }} />
+        <Tabs.Screen name="goal-day-detail" options={{ href: null }} />
+        <Tabs.Screen name="edit-profile" options={{ href: null }} />
+        <Tabs.Screen name="log-set" options={{ href: null }} />
+        <Tabs.Screen name="edit-set" options={{ href: null }} />
+        <Tabs.Screen name="add-goal" options={{ href: null }} />
+        <Tabs.Screen name="edit-goal" options={{ href: null }} />
+        <Tabs.Screen name="privacy-policy" options={{ href: null }} />
       </Tabs>
-      <Toast
-        visibilityTime={3000}
-        onPress={() => Toast.hide()}
-        config={{
-          success: ({ text1, text2 }) => (
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => Toast.hide()}
-              style={{
-                height: 60,
-                width: '90%',
-                backgroundColor: colors.background.card,
-                borderRadius: 12,
-                borderLeftWidth: 4,
-                borderLeftColor: colors.status.success,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                shadowColor: colors.neutral[900],
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 8,
-                swipeable: true,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: '600',
-                    color: colors.text.primary,
-                    marginBottom: 2,
-                  }}
-                >
-                  {text1}
-                </Text>
-                {text2 && (
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: colors.text.secondary,
-                    }}
-                  >
-                    {text2}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ),
-          error: ({ text1, text2 }) => (
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => Toast.hide()}
-              style={{
-                height: 60,
-                width: '90%',
-                backgroundColor: colors.background.card,
-                borderRadius: 12,
-                borderLeftWidth: 4,
-                borderLeftColor: colors.status.error,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                flexDirection: 'row',
-                alignItems: 'center',
-                shadowColor: colors.neutral[900],
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 8,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: '600',
-                    color: colors.text.primary,
-                    marginBottom: 2,
-                  }}
-                >
-                  {text1}
-                </Text>
-                {text2 && (
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: colors.text.secondary,
-                    }}
-                  >
-                    {text2}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <NetworkStatusBanner />
       <ThemedAlertComponent />
     </>
   )

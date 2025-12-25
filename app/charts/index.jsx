@@ -1,20 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useRouter } from "expo-router";
-import { 
-    getCurrentUser, 
-    getUserStats, 
-    getExerciseProgressionData, 
-    getVolumeProgressionData, 
-    getStrengthStandards, 
-    getMonthlyStats, 
-    getPersonalRecords,
-    getWeeklyProgress,
-    getRPEAnalysis,
-    getProgressiveOverloadInsights,
-    getMuscleGroupHeatmapData
-} from "../../lib/database";
+import { useAppStore } from "../../stores/useAppStore";
 
 // Import chart components
 import QuickStats from "../../components/Charts/QuickStats";
@@ -33,89 +21,112 @@ import ProgressiveOverloadIcon from "../../components/Charts/Icons/ProgressiveOv
 import RPEAnalysisIcon from "../../components/Charts/Icons/RPEAnalysisIcon";
 import MuscleGroupIcon from "../../components/Charts/Icons/MuscleGroupIcon";
 import StrengthStandardsIcon from "../../components/Charts/Icons/StrengthStandardsIcon";
+import GoalAnalyticsIcon from "../../components/Charts/Icons/GoalAnalyticsIcon";
 
 
 export default function ChartsScreen() {
     const colors = useThemedColors();
     const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [userStats, setUserStats] = useState(null);
-    const [exerciseProgression, setExerciseProgression] = useState({});
-    const [volumeProgression, setVolumeProgression] = useState([]);
-    const [strengthStandards, setStrengthStandards] = useState([]);
-    const [monthlyStats, setMonthlyStats] = useState([]);
-    const [personalRecords, setPersonalRecords] = useState([]);
-    const [weeklyProgress, setWeeklyProgress] = useState([]);
-    const [rpeAnalysis, setRpeAnalysis] = useState([]);
-    const [progressiveOverloadInsights, setProgressiveOverloadInsights] = useState([]);
-    const [muscleGroupHeatmap, setMuscleGroupHeatmap] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    
+    // Get data from Zustand store using selective subscriptions
+    // Charts index uses all-time data (36500), so read from nested structure
+    const user = useAppStore(state => state.user);
+    
+    // Subscribe to entire nested objects to get stable references
+    const exerciseProgressionData = useAppStore(state => state.chartsData.exerciseProgression);
+    const volumeProgressionData = useAppStore(state => state.chartsData.volumeProgression);
+    const monthlyStatsData = useAppStore(state => state.chartsData.monthlyStats);
+    const personalRecordsData = useAppStore(state => state.chartsData.personalRecords);
+    const weeklyProgressData = useAppStore(state => state.chartsData.weeklyProgress);
+    const progressiveOverloadInsightsData = useAppStore(state => state.chartsData.progressiveOverloadInsights);
+    const muscleGroupHeatmapData = useAppStore(state => state.chartsData.muscleGroupHeatmap);
+    const goalAnalyticsData = useAppStore(state => state.chartsData.goalAnalytics);
+    
+    // Use stable empty objects/arrays to prevent new references on every render
+    const EMPTY_OBJECT = {};
+    const EMPTY_ARRAY = [];
+    
+    // Extract timeframe-specific data using useMemo with stable fallbacks
+    const exerciseProgression = useMemo(() => exerciseProgressionData[36500] || EMPTY_OBJECT, [exerciseProgressionData]);
+    const volumeProgression = useMemo(() => volumeProgressionData[36500] || EMPTY_ARRAY, [volumeProgressionData]);
+    const monthlyStats = useMemo(() => monthlyStatsData[36500] || EMPTY_ARRAY, [monthlyStatsData]);
+    const personalRecords = useMemo(() => personalRecordsData[36500] || EMPTY_ARRAY, [personalRecordsData]);
+    const weeklyProgress = useMemo(() => weeklyProgressData[36500] || EMPTY_ARRAY, [weeklyProgressData]);
+    const progressiveOverloadInsights = useMemo(() => progressiveOverloadInsightsData[36500] || EMPTY_ARRAY, [progressiveOverloadInsightsData]);
+    const muscleGroupHeatmap = useMemo(() => muscleGroupHeatmapData[36500] || EMPTY_ARRAY, [muscleGroupHeatmapData]);
+    const goalAnalytics = useMemo(() => goalAnalyticsData[36500] || {
+      completionRateOverTime: [],
+      goalsCreatedOverTime: [],
+      statusBreakdown: { active: 0, completed: 0, expired: 0 },
+      averageProgressOverTime: [],
+      averageCompletionTime: 0,
+      totalGoals: 0,
+      completedGoals: 0,
+      activeGoals: 0,
+      expiredGoals: 0,
+    }, [goalAnalyticsData]);
+    
+    // Direct selectors for non-nested data
+    const userStats = useAppStore(state => state.chartsData.userStats);
+    const strengthStandards = useAppStore(state => state.chartsData.strengthStandards);
+    const rpeAnalysis = useAppStore(state => state.chartsData.rpeAnalysis);
+    
+    // Memoize chartsData object to prevent infinite loops
+    const chartsData = useMemo(() => ({
+      userStats,
+      exerciseProgression,
+      volumeProgression,
+      strengthStandards,
+      monthlyStats,
+      personalRecords,
+      weeklyProgress,
+      rpeAnalysis,
+      progressiveOverloadInsights,
+      muscleGroupHeatmap,
+      goalAnalytics,
+    }), [userStats, exerciseProgression, volumeProgression, strengthStandards, monthlyStats, personalRecords, weeklyProgress, rpeAnalysis, progressiveOverloadInsights, muscleGroupHeatmap, goalAnalytics]);
+    
+    const chartsLoading = useAppStore(state => state.chartsLoading);
+    const chartsRefreshing = useAppStore(state => state.chartsRefreshing);
+    const chartsError = useAppStore(state => state.chartsError);
+    const loadChartsData = useAppStore(state => state.loadChartsData);
+    const refreshChartsData = useAppStore(state => state.refreshChartsData);
 
     useEffect(() => {
-        loadChartsData();
-    }, []);
-
-    const loadChartsData = async (isRefresh = false) => {
-        try {
-            if (!isRefresh) setIsLoading(true);
-            
-            const currentUser = await getCurrentUser();
-            if (!currentUser) return;
-            
-            setUser(currentUser);
-
-            // Always fetch all-time data (36500 days = ~100 years)
-            const allTimeValue = 36500;
-
-            const [
-                stats,
-                progression,
-                volume,
-                standards,
-                monthly,
-                records,
-                weekly,
-                rpe,
-                overloadInsights,
-                heatmap
-            ] = await Promise.all([
-                getUserStats(currentUser.id, allTimeValue),
-                getExerciseProgressionData(currentUser.id, null, allTimeValue),
-                getVolumeProgressionData(currentUser.id, allTimeValue),
-                getStrengthStandards(currentUser.id, allTimeValue),
-                getMonthlyStats(currentUser.id, allTimeValue),
-                getPersonalRecords(currentUser.id, 100, allTimeValue),
-                getWeeklyProgress(currentUser.id, allTimeValue),
-                getRPEAnalysis(currentUser.id, allTimeValue),
-                getProgressiveOverloadInsights(currentUser.id, allTimeValue),
-                getMuscleGroupHeatmapData(currentUser.id, allTimeValue)
-            ]);
-
-            setUserStats(stats);
-            setExerciseProgression(progression);
-            setVolumeProgression(volume);
-            setStrengthStandards(standards);
-            setMonthlyStats(monthly);
-            setPersonalRecords(records);
-            setWeeklyProgress(weekly);
-            setRpeAnalysis(rpe);
-            setProgressiveOverloadInsights(overloadInsights);
-            setMuscleGroupHeatmap(heatmap);
-        } catch (error) {
-            console.error("Error loading charts data:", error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+        // Only load if user exists, data is missing, and not already loading
+        if (user && !chartsLoading && (!userStats || !exerciseProgressionData[36500] || Object.keys(exerciseProgressionData[36500] || {}).length === 0)) {
+            loadChartsData();
         }
-    };
+    }, [user, userStats, exerciseProgressionData, loadChartsData, chartsLoading]);
 
     const onRefresh = () => {
-        setRefreshing(true);
-        loadChartsData(true);
+        refreshChartsData();
     };
 
-    if (isLoading) {
+    // Show error state if there's an error and no data
+    if (chartsError && !chartsData.userStats && !chartsLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary, paddingHorizontal: 20 }}>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: colors.status.error, marginBottom: 12, textAlign: 'center' }}>Unable to Load Insights</Text>
+                <Text style={{ fontSize: 16, color: colors.text.secondary, marginBottom: 24, textAlign: 'center', lineHeight: 24 }}>{chartsError}</Text>
+                <TouchableOpacity
+                    onPress={() => {
+                        loadChartsData(true);
+                    }}
+                    style={{
+                        backgroundColor: colors.primary[600],
+                        paddingHorizontal: 24,
+                        paddingVertical: 12,
+                        borderRadius: 12,
+                    }}
+                >
+                    <Text style={{ color: colors.text.white, fontSize: 16, fontWeight: '600' }}>Try Again</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (chartsLoading && !chartsData.userStats) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
@@ -131,19 +142,52 @@ export default function ChartsScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl refreshing={chartsRefreshing} onRefresh={onRefresh} />
                 }
             >
                 {/* Header */}
                 <View style={{ alignItems: 'center', marginBottom: 40 }}>
-                    <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Progressive Overload Analytics</Text>
+                    <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Insights</Text>
                     <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center', fontWeight: '400' }}>Track your strength gains and performance</Text>
                 </View>
 
+                {/* Error Banner - Show if there's an error but we have some data */}
+                {chartsError && chartsData.userStats && (
+                    <View style={{
+                        backgroundColor: colors.status.error + '15',
+                        borderLeftWidth: 4,
+                        borderLeftColor: colors.status.error,
+                        padding: 16,
+                        borderRadius: 12,
+                        marginBottom: 24,
+                    }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.status.error, marginBottom: 8 }}>
+                            Unable to Load Latest Data
+                        </Text>
+                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginBottom: 12, lineHeight: 20 }}>
+                            {chartsError}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => {
+                                loadChartsData(true);
+                            }}
+                            style={{
+                                backgroundColor: colors.status.error,
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 8,
+                                alignSelf: 'flex-start',
+                            }}
+                        >
+                            <Text style={{ color: colors.text.white, fontSize: 14, fontWeight: '600' }}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Quick Stats - Always Visible */}
                 <QuickStats 
-                    userStats={userStats}
-                    personalRecords={personalRecords}
+                    userStats={chartsData.userStats}
+                    personalRecords={chartsData.personalRecords}
                 />
 
                 {/* Exercise Progression Charts */}
@@ -163,24 +207,24 @@ export default function ChartsScreen() {
                 />
 
                 {/* Strength Standards */}
-                {strengthStandards && strengthStandards.length > 0 && (
+                {chartsData.strengthStandards && chartsData.strengthStandards.length > 0 && (
                     <CollapsibleSection
                         title="Strength Standards"
                         subtitle="Compare your strength levels relative to your bodyweight. See how you rank across different exercises and identify areas for improvement."
                         icon={StrengthStandardsIcon}
                         defaultExpanded={false}
                     >
-                        <StrengthStandards strengthStandards={strengthStandards} />
+                        <StrengthStandards strengthStandards={chartsData.strengthStandards} />
                     </CollapsibleSection>
                 )}
 
                 {/* Personal Records */}
-                {personalRecords && personalRecords.length > 0 && (
+                {chartsData.personalRecords && chartsData.personalRecords.length > 0 && (
                     <PremiumChartCard
                         icon={PersonalRecordsIcon}
                         title="Personal Records"
                         subtitle={`View all your personal best performances across exercises. Celebrate your achievements and track your strongest lifts for each movement.`}
-                        badge={personalRecords.length > 0 ? `${personalRecords.length}` : null}
+                        badge={chartsData.personalRecords.length > 0 ? `${chartsData.personalRecords.length}` : null}
                         onPress={() => router.push('/charts/personal-records')}
                     />
                 )}
@@ -194,7 +238,7 @@ export default function ChartsScreen() {
                 />
 
                 {/* Monthly Trends */}
-                {monthlyStats && monthlyStats.length > 0 && (
+                {chartsData.monthlyStats && chartsData.monthlyStats.length > 0 && (
                     <PremiumChartCard
                         icon={MonthlyTrendsIcon}
                         title="Monthly Trends"
@@ -204,7 +248,7 @@ export default function ChartsScreen() {
                 )}
 
                 {/* Progressive Overload Insights */}
-                {progressiveOverloadInsights && progressiveOverloadInsights.length > 0 && (
+                {chartsData.progressiveOverloadInsights && chartsData.progressiveOverloadInsights.length > 0 && (
                     <PremiumChartCard
                         icon={ProgressiveOverloadIcon}
                         title="Progressive Overload Analysis"
@@ -214,26 +258,33 @@ export default function ChartsScreen() {
                 )}
 
                 {/* RPE Analysis */}
-                {rpeAnalysis && rpeAnalysis.length > 0 && (
+                {chartsData.rpeAnalysis && chartsData.rpeAnalysis.length > 0 && (
                     <CollapsibleSection
                         title="Training Intensity (RPE)"
                         subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
                         icon={RPEAnalysisIcon}
                         defaultExpanded={false}
                     >
-                        <RPEAnalysis rpeAnalysis={rpeAnalysis} />
+                        <RPEAnalysis rpeAnalysis={chartsData.rpeAnalysis} />
                     </CollapsibleSection>
                 )}
 
                 {/* Muscle Group Heatmap */}
-                {muscleGroupHeatmap && muscleGroupHeatmap.length > 0 && (
-                    <PremiumChartCard
-                        icon={MuscleGroupIcon}
-                        title="Muscle Group Heatmap"
-                        subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
-                        onPress={() => router.push('/charts/muscle-groups-heatmap')}
-                    />
-                )}
+                <PremiumChartCard
+                    icon={MuscleGroupIcon}
+                    title="Muscle Group Heatmap"
+                    subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
+                    badge="BETA"
+                    onPress={() => router.push('/charts/muscle-groups-heatmap')}
+                />
+
+                {/* Goal Analytics */}
+                <PremiumChartCard
+                    icon={GoalAnalyticsIcon}
+                    title="Goal Analytics"
+                    subtitle="Track your fitness goals progress, completion rates, and trends. Analyze your goal-setting patterns and achievement rates over time."
+                    onPress={() => router.push('/charts/goal-analytics')}
+                />
 
             </ScrollView>
         </View>

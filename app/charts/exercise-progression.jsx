@@ -1,43 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
-import { getCurrentUser, getExerciseProgressionData } from "../../lib/database";
+import { useAppStore } from "../../stores/useAppStore";
 import ExerciseProgression from "../../components/Charts/ExerciseProgression";
 import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 
 export default function ExerciseProgressionScreen() {
     const colors = useThemedColors();
-    const [exerciseProgression, setExerciseProgression] = useState({});
-    const [isLoading, setIsLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
+    const [refreshing, setRefreshing] = useState(false);
+    
+    // Use selective subscriptions from store - subscribe to entire nested object
+    const user = useAppStore(state => state.user);
+    const exerciseProgressionData = useAppStore(state => state.chartsData.exerciseProgression);
+    const loadExerciseProgression = useAppStore(state => state.loadExerciseProgression);
+    
+    // Extract timeframe-specific data using useMemo to avoid infinite loops
+    const exerciseProgression = useMemo(() => {
+      const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
+      return exerciseProgressionData[timeframeValue] || {};
+    }, [exerciseProgressionData, selectedTimeframe]);
 
     useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async (isRefresh = false, timeframe = selectedTimeframe) => {
-        try {
-            if (!isRefresh) setIsLoading(true);
-            
-            const currentUser = await getCurrentUser();
-            if (!currentUser) return;
-
-            // For "All Time", use a very large number to get all data
-            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
-            const progression = await getExerciseProgressionData(currentUser.id, null, timeframeValue);
-            setExerciseProgression(progression);
-        } catch (error) {
-            console.error("Error loading exercise progression data:", error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+        if (user) {
+            loadExerciseProgression(selectedTimeframe);
         }
-    };
+    }, [user, selectedTimeframe]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        loadData(false, newTimeframe);
+        // Check cache first - don't force refresh
+        loadExerciseProgression(newTimeframe, false);
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
@@ -46,15 +39,20 @@ export default function ExerciseProgressionScreen() {
         // Use daysDiff as the timeframe - this will calculate from today backwards
         // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
-        loadData(false, daysDiff);
+        loadExerciseProgression(daysDiff, true);
     };
 
     const onRefresh = () => {
         setRefreshing(true);
-        loadData(true);
+        loadExerciseProgression(selectedTimeframe, true).finally(() => {
+            setRefreshing(false);
+        });
     };
 
-    if (isLoading) {
+    // Show loading only if no data exists and we're waiting for initial load
+    const isLoading = !exerciseProgression || Object.keys(exerciseProgression).length === 0;
+    
+    if (isLoading && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
