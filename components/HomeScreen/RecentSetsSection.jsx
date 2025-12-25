@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Calendar, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { format, isToday, isYesterday } from 'date-fns';
 import { useThemedColors } from '../../hooks/useThemedColors';
-import SetListItem from './SetListItem';
-import SetGridItem from './SetGridItem';
-import SearchBarWithViewToggle from './SearchBarWithViewToggle';
+import { useTheme } from '../../contexts/ThemeContext';
 import LoadMoreButton from './LoadMoreButton';
 import EmptyState from './EmptyState';
 import SectionHeader from './SectionHeader';
-import SortFilterModal from './SortFilterModal';
 
 export default function RecentSetsSection({
   recentSets,
@@ -20,104 +20,91 @@ export default function RecentSetsSection({
   deleteLoadingSetId,
 }) {
   const colors = useThemedColors();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
-  const [displayLimit, setDisplayLimit] = useState(10); // Initial display limit
-  const [sortBy, setSortBy] = useState('date'); // 'date', 'weight', 'reps', 'sets', 'exercise'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
-  const [sortModalVisible, setSortModalVisible] = useState(false);
+  const { isDarkMode } = useTheme();
+  const router = useRouter();
+  const [dateDisplayLimit, setDateDisplayLimit] = useState(10); // Show last 10 days initially
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
 
-  // Filter and sort sets
-  const filteredSets = useMemo(() => {
-    let sets = recentSets || [];
+  // Group sets by date
+  const setsByDate = useMemo(() => {
+    const grouped = {};
     
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      sets = sets.filter(set => {
-        const exerciseName = (set.exercises?.name || 'Exercise').toLowerCase();
-        return exerciseName.includes(query);
-      });
-    }
-
-    // Apply sorting
-    const sorted = [...sets].sort((a, b) => {
-      let aValue, bValue;
-
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.created_at || a.date || 0).getTime();
-          bValue = new Date(b.created_at || b.date || 0).getTime();
-          break;
-        case 'weight':
-          aValue = parseFloat(a.weight) || 0;
-          bValue = parseFloat(b.weight) || 0;
-          break;
-        case 'reps':
-          aValue = parseInt(a.reps) || 0;
-          bValue = parseInt(b.reps) || 0;
-          break;
-        case 'sets':
-          aValue = parseInt(a.sets) || 0;
-          bValue = parseInt(b.sets) || 0;
-          break;
-        case 'exercise':
-          aValue = (a.exercises?.name || 'Exercise').toLowerCase();
-          bValue = (b.exercises?.name || 'Exercise').toLowerCase();
-          break;
-        default:
-          return 0;
+    (recentSets || []).forEach(set => {
+      const dateKey = set.performed_at || set.created_at || set.date;
+      if (!dateKey) return;
+      
+      const date = new Date(dateKey);
+      const dateStr = format(date, 'yyyy-MM-dd'); // Use consistent date string as key
+      
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = {
+          date: date,
+          dateStr: dateStr,
+          sets: [],
+        };
       }
-
-      if (sortBy === 'exercise') {
-        // String comparison for exercise names
-        if (sortOrder === 'asc') {
-          return aValue.localeCompare(bValue);
-        } else {
-          return bValue.localeCompare(aValue);
-        }
-      } else {
-        // Numeric/date comparison
-        if (sortOrder === 'asc') {
-          return aValue - bValue;
-        } else {
-          return bValue - aValue;
-        }
-      }
+      grouped[dateStr].sets.push(set);
     });
 
-    return sorted;
-  }, [recentSets, searchQuery, sortBy, sortOrder]);
+    // Convert to array and sort by date (newest first)
+    return Object.values(grouped).sort((a, b) => {
+      return b.date.getTime() - a.date.getTime();
+    });
+  }, [recentSets]);
 
-  // Get sets to display (limited)
-  const displayedSets = useMemo(() => {
-    return filteredSets.slice(0, displayLimit);
-  }, [filteredSets, displayLimit]);
+  // No filtering needed - show all dates
+  const filteredDates = setsByDate;
 
-  const hasMore = filteredSets.length > displayLimit;
-  const displayCount = searchQuery.trim() ? filteredSets.length : recentSets.length;
+  // Get dates to display (limited)
+  const displayedDates = useMemo(() => {
+    return filteredDates.slice(0, dateDisplayLimit);
+  }, [filteredDates, dateDisplayLimit]);
 
-  // Reset display limit when search changes or card collapses
-  useEffect(() => {
-    if (!cardExpanded.recentSets) {
-      setSearchQuery('');
-      setDisplayLimit(10);
-    }
-  }, [cardExpanded.recentSets]);
+  const hasMore = filteredDates.length > dateDisplayLimit;
+  const totalDatesCount = setsByDate.length;
 
-  useEffect(() => {
-    setDisplayLimit(10); // Reset to initial limit when search changes
-  }, [searchQuery]);
+  // Format date for display
+  const formatDateLabel = (date) => {
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    return format(date, 'MMM d, yyyy');
+  };
 
-  const handleSortChange = (newSortBy, newSortOrder) => {
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-    setDisplayLimit(10); // Reset display limit when sort changes
+  // Calculate stats for a date
+  const getDateStats = (dateGroup) => {
+    const uniqueExercises = new Set(
+      dateGroup.sets.map(s => s.exercises?.name || 'Exercise')
+    ).size;
+    const totalSets = dateGroup.sets.reduce((sum, s) => sum + (parseInt(s.sets) || 1), 0);
+    const totalVolume = dateGroup.sets.reduce((sum, s) => {
+      return sum + ((parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0) * (parseInt(s.sets) || 1));
+    }, 0);
+    
+    return { uniqueExercises, totalSets, totalVolume };
+  };
+
+  const handleDatePress = (dateStr) => {
+    router.push({
+      pathname: '/day-detail',
+      params: { date: dateStr }
+    });
+  };
+
+  const handleDateSelect = (dateStr) => {
+    setShowDateDropdown(false);
+    handleDatePress(dateStr);
   };
 
   const handleLoadMore = () => {
-    setDisplayLimit(prev => Math.min(prev + 10, filteredSets.length));
+    setDateDisplayLimit(prev => prev + 10);
   };
+
+  // Reset when card collapses
+  useEffect(() => {
+    if (!cardExpanded.recentSets) {
+      setDateDisplayLimit(10);
+    }
+  }, [cardExpanded.recentSets]);
 
   return (
     <View
@@ -136,8 +123,8 @@ export default function RecentSetsSection({
       }}
     >
       <SectionHeader
-        title="Recent Sets"
-        count={recentSets?.length > 0 ? displayCount : 0}
+        title="Recent Exercises"
+        count={totalDatesCount}
         isExpanded={cardExpanded.recentSets}
         onToggle={() => toggleCardExpansion('recentSets')}
         onLogSet={handleOpenLogSet}
@@ -146,79 +133,202 @@ export default function RecentSetsSection({
 
       {cardExpanded.recentSets && (
         <>
-          {/* Search Input with View Toggle */}
-          {recentSets?.length > 0 && (
-            <SearchBarWithViewToggle
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              onSortPress={() => setSortModalVisible(true)}
-            />
+          {/* Date Dropdown Button */}
+          {recentSets?.length > 0 && setsByDate.length > 0 && (
+            <View style={{ marginBottom: 16, position: 'relative' }}>
+              <TouchableOpacity
+                onPress={() => setShowDateDropdown(!showDateDropdown)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  backgroundColor: colors.background.primary,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: showDateDropdown ? colors.primary[600] : colors.border.light,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Calendar size={18} color={colors.primary[600]} />
+                  <Text style={{ 
+                    fontSize: 15, 
+                    color: colors.text.primary,
+                    fontWeight: '600'
+                  }}>
+                    Jump to Date ({setsByDate.length} {setsByDate.length === 1 ? 'day' : 'days'})
+                  </Text>
+                </View>
+                <ChevronDown size={18} color={colors.text.tertiary} />
+              </TouchableOpacity>
+
+              {/* Date Dropdown */}
+              {showDateDropdown && (
+                <>
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: -300,
+                      zIndex: 999,
+                    }}
+                    activeOpacity={1}
+                    onPress={() => setShowDateDropdown(false)}
+                  />
+                  <View style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: 4,
+                    backgroundColor: colors.background.card,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border.light,
+                    maxHeight: 200,
+                    zIndex: 1000,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}>
+                    <ScrollView 
+                      nestedScrollEnabled
+                      style={{ maxHeight: 200 }}
+                    >
+                      {setsByDate.map((dateGroup, index) => {
+                        const stats = getDateStats(dateGroup);
+                        return (
+                          <TouchableOpacity
+                            key={dateGroup.dateStr}
+                            onPress={() => handleDateSelect(dateGroup.dateStr)}
+                            style={{
+                              paddingHorizontal: 16,
+                              paddingVertical: 12,
+                              backgroundColor: 'transparent',
+                              borderBottomWidth: index < setsByDate.length - 1 ? 1 : 0,
+                              borderBottomColor: colors.border.light,
+                            }}
+                          >
+                            <Text style={{
+                              fontSize: 14,
+                              color: colors.text.primary,
+                              fontWeight: '600',
+                              marginBottom: 4,
+                            }}>
+                              {formatDateLabel(dateGroup.date)}
+                            </Text>
+                            <Text style={{
+                              fontSize: 12,
+                              color: colors.text.secondary,
+                            }}>
+                              {stats.uniqueExercises} {stats.uniqueExercises === 1 ? 'exercise' : 'exercises'} • {stats.totalSets} {stats.totalSets === 1 ? 'set' : 'sets'}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+            </View>
           )}
 
-          {/* Sort/Filter Modal */}
-          <SortFilterModal
-            visible={sortModalVisible}
-            onClose={() => setSortModalVisible(false)}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={handleSortChange}
-          />
-
-          {/* Content */}
+          {/* Date Grouped Content */}
           {recentSets?.length > 0 ? (
-            filteredSets.length > 0 ? (
-              viewMode === 'list' ? (
-                // List View
-                <>
-                  {displayedSets.map((s, idx, arr) => (
-                    <SetListItem
-                      key={s.id}
-                      set={s}
-                      index={idx}
-                      isLast={idx === arr.length - 1}
-                      onPress={() => openSetDetails(s)}
-                      onEdit={() => openEditSetModal(s)}
-                      onDelete={() => handleDeleteSetFromList(s)}
-                      isDeleting={deleteLoadingSetId === s.id}
-                    />
-                  ))}
-                  {hasMore && (
-                    <LoadMoreButton
-                      remaining={filteredSets.length - displayLimit}
-                      onLoadMore={handleLoadMore}
-                    />
-                  )}
-                </>
-              ) : (
-                // Grid View
-                <>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                    {displayedSets.map((s, idx) => (
-                      <SetGridItem
-                        key={s.id}
-                        set={s}
-                        index={idx}
-                        onPress={() => openSetDetails(s)}
-                        onEdit={() => openEditSetModal(s)}
-                        onDelete={() => handleDeleteSetFromList(s)}
-                        isDeleting={deleteLoadingSetId === s.id}
-                      />
-                    ))}
-                  </View>
-                  {hasMore && (
-                    <LoadMoreButton
-                      remaining={filteredSets.length - displayLimit}
-                      onLoadMore={handleLoadMore}
-                      fullWidth={true}
-                    />
-                  )}
-                </>
-              )
-            ) : (
-              <EmptyState type="noMatches" searchQuery={searchQuery} />
-            )
+            displayedDates.length > 0 ? (
+              <>
+                {displayedDates.map((dateGroup) => {
+                  const stats = getDateStats(dateGroup);
+
+                  return (
+                    <TouchableOpacity
+                      key={dateGroup.dateStr}
+                      onPress={() => handleDatePress(dateGroup.dateStr)}
+                      activeOpacity={0.7}
+                      style={{
+                        marginBottom: 12,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border.light,
+                        backgroundColor: isDarkMode 
+                          ? colors.neutral[200] 
+                          : colors.background.card,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Date Header Card */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 16,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <View
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              backgroundColor: isDarkMode
+                                ? colors.neutral[300]
+                                : colors.neutral[100],
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginRight: 12,
+                            }}
+                          >
+                            <Calendar
+                              size={18}
+                              color={colors.text.secondary}
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: 16,
+                                fontWeight: '600',
+                                color: colors.text.primary,
+                                marginBottom: 2,
+                              }}
+                            >
+                              {formatDateLabel(dateGroup.date)}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: colors.text.secondary,
+                              }}
+                            >
+                              {stats.uniqueExercises} {stats.uniqueExercises === 1 ? 'exercise' : 'exercises'} • {stats.totalSets} {stats.totalSets === 1 ? 'set' : 'sets'}
+                            </Text>
+                          </View>
+                        </View>
+                        <ChevronRight 
+                          size={20} 
+                          color={colors.text.secondary}
+                          style={{ opacity: 0.5 }}
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {hasMore && (
+                  <LoadMoreButton
+                    remaining={filteredDates.length - dateDisplayLimit}
+                    onLoadMore={handleLoadMore}
+                    fullWidth={true}
+                  />
+                )}
+              </>
+            ) : null
           ) : (
             <EmptyState type="noSets" />
           )}

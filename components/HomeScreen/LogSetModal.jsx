@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, Modal, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from "react-native";
 import { ChevronDown } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
@@ -68,6 +68,7 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const prevIsSubmittingRef = useRef(false);
 
     // Weight units only for logging sets
     const weightUnits = [
@@ -193,6 +194,45 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
         }
     }, [visible, translateY]);
 
+    // Reset form after successful submission (when isSubmitting goes from true to false)
+    useEffect(() => {
+        const wasSubmitting = prevIsSubmittingRef.current;
+        prevIsSubmittingRef.current = isSubmitting;
+        
+        // Only reset if we just finished submitting (went from true to false) and there's no error
+        if (wasSubmitting && !isSubmitting && visible && !errorMessage) {
+            // Reset form to defaults for next exercise
+            const resetForm = () => {
+                setExerciseName("");
+                setWeight("");
+                setReps("");
+                setSets("");
+                setShowSuggestions(false);
+                setSuggestions([]);
+                setErrorMessage("");
+                
+                // Re-apply defaults
+                if (defaults) {
+                    if (defaults.default_sets) {
+                        setSets(String(defaults.default_sets));
+                    }
+                    if (defaults.default_reps) {
+                        setReps(String(defaults.default_reps));
+                    }
+                    if (defaults.default_weight_unit) {
+                        setUnit(defaults.default_weight_unit);
+                    }
+                } else {
+                    setUnit("lb");
+                }
+            };
+            
+            // Use a small delay to ensure toast has time to show
+            const timeoutId = setTimeout(resetForm, 100);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [isSubmitting, visible, errorMessage, defaults]);
+
     const handleSubmit = () => {
         setErrorMessage(""); // Clear any previous errors
         
@@ -286,7 +326,7 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                             {/* Header */}
                             <View style={{ marginBottom: 24 }}>
                                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: errorMessage ? 8 : 0 }}>
-                                    <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Log Set</Text>
+                                    <Text style={{ fontSize: 24, fontWeight: "700", color: colors.text.primary }}>Log Exercise</Text>
                                     <ModalCloseButton onPress={onClose} disabled={isSubmitting} size={20} />
                                 </View>
                                 {errorMessage ? (

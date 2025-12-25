@@ -11,7 +11,7 @@ import {
 import { Flame } from "lucide-react-native"
 import { useThemedColors } from '../../hooks/useThemedColors'
 import { useTheme } from '../../contexts/ThemeContext'
-import { useStreakData } from '../../hooks/useStreakData'
+import { useAppStore } from '../../stores/useAppStore'
 import ActivityGraph from './ActivityGraph'
 import StreakStatsCards from './StreakStatsCards'
 import StreakTips from './StreakTips'
@@ -24,7 +24,20 @@ const { height: screenHeight } = Dimensions.get('window')
 export default function StreakInfoModal({ visible, onClose, userId }) {
   const colors = useThemedColors();
   const { isDarkMode } = useTheme();
-  const { streakData, loading, refetch } = useStreakData(visible, userId)
+  const streakData = useAppStore(state => state.streakAnalytics);
+  const loading = useAppStore(state => state.streakAnalyticsLoading);
+  const loadStreakAnalytics = useAppStore(state => state.loadStreakAnalytics);
+  
+  // Load streak analytics when modal becomes visible
+  useEffect(() => {
+    if (visible && userId) {
+      loadStreakAnalytics(false); // Use cached data if available
+    }
+  }, [visible, userId, loadStreakAnalytics]);
+  
+  const refetch = () => {
+    loadStreakAnalytics(true); // Force refresh
+  };
   const translateY = useSharedValue(0);
   const SWIPE_THRESHOLD = screenHeight * 0.2; // 20% of screen height
 

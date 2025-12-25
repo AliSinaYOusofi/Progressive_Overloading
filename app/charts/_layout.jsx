@@ -129,6 +129,18 @@ export default function ChartsLayout() {
                     headerBackTitle: "",
                 }}
             />
+            <Stack.Screen
+                name="goal-analytics"
+                options={{
+                    title: "Goal Analytics",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
+                }}
+            />
         </Stack>
     );
 }

@@ -7,8 +7,9 @@ import LoadMoreButton from "../HomeScreen/LoadMoreButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { getExerciseSetsByMuscleGroup, getCurrentUser } from "../../lib/database";
 import { formatShortNumber } from "../../utils/numberUtils";
+import WeeklyDayDetailModal from "./WeeklyDayDetailModal";
+import { useAppStore } from "../../stores/useAppStore";
 
 const INITIAL_DISPLAY_COUNT = 10;
 const LOAD_MORE_COUNT = 10;
@@ -32,11 +33,26 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
   const screenHeight = Dimensions.get("window").height;
   const translateY = useSharedValue(0);
   const SWIPE_THRESHOLD = screenHeight * 0.2;
-  const [sets, setSets] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [groupedSets, setGroupedSets] = useState([]);
-  const [userId, setUserId] = useState(null);
   const [displayLimit, setDisplayLimit] = useState(INITIAL_DISPLAY_COUNT);
+  const [selectedDayDate, setSelectedDayDate] = useState(null);
+  const [showDayDetailModal, setShowDayDetailModal] = useState(false);
+  
+  // Use Zustand store for muscle group exercise data
+  const user = useAppStore(state => state.user);
+  const loadMuscleGroupExerciseData = useAppStore(state => state.loadMuscleGroupExerciseData);
+  
+  // Get cached data for this muscle group and timeframe
+  const muscleGroupData = useAppStore(state => {
+    if (!muscleGroup || !timeframe) return null;
+    const timeframeValue = timeframe === 'all' ? 36500 : timeframe;
+    const cacheKey = `muscleGroup_${muscleGroup.toLowerCase()}_${timeframeValue}`;
+    return state.muscleGroupExerciseData[cacheKey] || null;
+  });
+  
+  // Extract sets and groupedSets from cached data
+  const sets = muscleGroupData?.sets || [];
+  const groupedSets = muscleGroupData?.groupedSets || [];
+  const isLoading = !muscleGroupData && user !== null;
 
   // Define close function in RN Runtime scope (required for scheduleOnRN)
   const handleClose = useCallback(() => {
@@ -89,99 +105,20 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
     }
   }, [visible, translateY]);
 
-  // Load user ID
+  // Load muscle group exercise data when modal opens (only if not cached)
   useEffect(() => {
-    const loadUser = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    loadUser();
-  }, []);
-
-  // Fetch sets when modal opens
-  useEffect(() => {
-    const loadSets = async () => {
-      if (!visible || !muscleGroup || !userId) return;
+    const loadData = async () => {
+      if (!visible || !muscleGroup || !user) return;
       
-      setIsLoading(true);
       try {
-        const timeframeValue = timeframe === 'all' ? 36500 : timeframe;
-        const muscleGroupSets = await getExerciseSetsByMuscleGroup(userId, muscleGroup, timeframeValue);
-        setSets(muscleGroupSets);
-
-        // Get distinct sets based on date + exercise + weight + reps + sets
-        const distinctSetsMap = new Map();
-        muscleGroupSets.forEach(set => {
-          const key = getSetKey(set);
-          if (!distinctSetsMap.has(key)) {
-            distinctSetsMap.set(key, set);
-          }
-        });
-
-        const distinctSets = Array.from(distinctSetsMap.values());
-
-        // Group distinct sets by date, then by exercise
-        const groupedByDate = {};
-        
-        distinctSets.forEach(set => {
-          const date = new Date(set.performed_at);
-          date.setHours(0, 0, 0, 0);
-          const dateKey = date.toISOString();
-          const exerciseName = set.exercises?.name || 'Unknown';
-          
-          if (!groupedByDate[dateKey]) {
-            groupedByDate[dateKey] = {};
-          }
-          
-          if (!groupedByDate[dateKey][exerciseName]) {
-            groupedByDate[dateKey][exerciseName] = [];
-          }
-          
-          groupedByDate[dateKey][exerciseName].push(set);
-        });
-
-        // Convert to array format, sorted by date (most recent first)
-        const groupedArray = Object.entries(groupedByDate)
-          .map(([dateKey, exercises]) => {
-            const date = new Date(dateKey);
-            const exerciseEntries = Object.entries(exercises).map(([exerciseName, exerciseSets]) => ({
-              exerciseName,
-              sets: exerciseSets.sort((a, b) => 
-                new Date(b.performed_at) - new Date(a.performed_at)
-              ),
-              totalVolume: exerciseSets.reduce((sum, s) => 
-                sum + (s.weight || 0) * (s.reps || 0) * (s.sets || 1), 0
-              ),
-              totalSets: exerciseSets.reduce((sum, s) => sum + (s.sets || 1), 0),
-            })).sort((a, b) => b.totalVolume - a.totalVolume);
-
-            const dayTotalVolume = exerciseEntries.reduce((sum, ex) => sum + ex.totalVolume, 0);
-            const dayTotalSets = exerciseEntries.reduce((sum, ex) => sum + ex.totalSets, 0);
-
-            return {
-              date: date,
-              dateKey: dateKey,
-              exercises: exerciseEntries,
-              totalVolume: dayTotalVolume,
-              totalSets: dayTotalSets,
-            };
-          })
-          .sort((a, b) => new Date(b.dateKey) - new Date(a.dateKey));
-
-        setGroupedSets(groupedArray);
+        await loadMuscleGroupExerciseData(muscleGroup, timeframe, false);
       } catch (error) {
-        console.error('Error loading sets:', error);
-        setSets([]);
-        setGroupedSets([]);
-      } finally {
-        setIsLoading(false);
+        console.error('Error loading muscle group exercise data:', error);
       }
     };
 
-    loadSets();
-  }, [visible, muscleGroup, userId, timeframe]);
+    loadData();
+  }, [visible, muscleGroup, user, timeframe, loadMuscleGroupExerciseData]);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -206,14 +143,6 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // Get unique key for a set (date + exercise + weight + reps + sets)
-  const getSetKey = (set) => {
-    const date = new Date(set.performed_at);
-    date.setHours(0, 0, 0, 0);
-    const exerciseName = set.exercises?.name || 'Unknown';
-    return `${date.toISOString()}_${exerciseName}_${set.weight || 0}_${set.reps || 0}_${set.sets || 1}`;
   };
 
   const renderEmptyState = () => {
@@ -364,8 +293,13 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
                 ) : groupedSets.length > 0 ? (
                   <View>
                     {groupedSets.slice(0, displayLimit).map((dayGroup, dayIndex) => (
-                      <View
+                      <TouchableOpacity
                         key={dayGroup.dateKey}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setSelectedDayDate(dayGroup.date);
+                          setShowDayDetailModal(true);
+                        }}
                         style={{
                           backgroundColor: colors.background.card,
                           borderRadius: 12,
@@ -581,7 +515,7 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
                             </View>
                           ))}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     ))}
                     {groupedSets.length > displayLimit && (
                       <LoadMoreButton
@@ -599,6 +533,19 @@ export default function MuscleGroupExerciseModal({ visible, onClose, muscleGroup
           </GestureDetector>
         </View>
       </GestureHandlerRootView>
+      
+      {/* Day Detail Modal - Reuses WeeklyDayDetailModal with caching */}
+      {selectedDayDate && (
+        <WeeklyDayDetailModal
+          visible={showDayDetailModal}
+          onClose={() => {
+            setShowDayDetailModal(false);
+            setSelectedDayDate(null);
+          }}
+          dayDate={selectedDayDate}
+          userId={user?.id}
+        />
+      )}
     </Modal>
   );
 }

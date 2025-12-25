@@ -9,6 +9,7 @@ export default function SearchBarWithViewToggle({
   viewMode,
   onViewModeChange,
   onSortPress,
+  showViewToggle = true,
 }) {
   const colors = useThemedColors();
 
@@ -60,30 +61,34 @@ export default function SearchBarWithViewToggle({
           >
             <ArrowUpDown size={16} color={colors.text.tertiary} />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onViewModeChange('list')}
-            style={{
-              backgroundColor: viewMode === 'list' ? colors.primary[100] : 'transparent',
-              padding: 6,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: viewMode === 'list' ? colors.primary[200] : colors.border.light,
-            }}
-          >
-            <List size={16} color={viewMode === 'list' ? colors.primary[600] : colors.text.tertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onViewModeChange('grid')}
-            style={{
-              backgroundColor: viewMode === 'grid' ? colors.primary[100] : 'transparent',
-              padding: 6,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: viewMode === 'grid' ? colors.primary[200] : colors.border.light,
-            }}
-          >
-            <LayoutGrid size={16} color={viewMode === 'grid' ? colors.primary[600] : colors.text.tertiary} />
-          </TouchableOpacity>
+          {showViewToggle && (
+            <>
+              <TouchableOpacity
+                onPress={() => onViewModeChange('list')}
+                style={{
+                  backgroundColor: viewMode === 'list' ? colors.neutral[200] : 'transparent',
+                  padding: 6,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: viewMode === 'list' ? colors.border.light : colors.border.light,
+                }}
+              >
+                <List size={16} color={viewMode === 'list' ? colors.text.primary : colors.text.tertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => onViewModeChange('grid')}
+                style={{
+                  backgroundColor: viewMode === 'grid' ? colors.neutral[200] : 'transparent',
+                  padding: 6,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: viewMode === 'grid' ? colors.border.light : colors.border.light,
+                }}
+              >
+                <LayoutGrid size={16} color={viewMode === 'grid' ? colors.text.primary : colors.text.tertiary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>

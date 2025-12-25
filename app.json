@@ -2,10 +2,12 @@
   "expo": {
     "scheme": "progressive-loading",
     "icon": "./assets/images/app_icon.png",
-    "name": "app",
-    "slug": "app",
+    "name": "Progressive Overloading",
+    "slug": "progressive-overloading",
     "version": "1.0.0",
     "userInterfaceStyle": "automatic",
+    "description": "Track your strength training progress with progressive overloading. Log sets, monitor goals, and analyze your fitness journey.",
+    "orientation": "portrait",
     "splash": {
       "backgroundColor": "#10B981",
       "image": "./assets/images/app_splash_screen_light.png",
@@ -16,7 +18,19 @@
       "expo-splash-screen"
     ],
     "ios": {
-      "bundleIdentifier": "com.anonymous.app"
-    }
+      "bundleIdentifier": "com.progressiveoverloading.app",
+      "buildNumber": "1",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.progressiveoverloading.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/app_icon.png",
+        "backgroundColor": "#10B981"
+      },
+      "permissions": []
+    },
+    "privacy": "public"
   }
 }

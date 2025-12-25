@@ -22,7 +22,9 @@ export const useHomeScreenData = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadRecentSets = async (userId) => {
-    const sets = await getExerciseSetsByUser(userId, 25);
+    // Increased limit to fetch more days (e.g., last 30-60 days worth of sets)
+    // Assuming average of 20-30 sets per day, 500 sets should cover ~20-25 days
+    const sets = await getExerciseSetsByUser(userId, 500);
     setRecentSets(sets);
   };
 

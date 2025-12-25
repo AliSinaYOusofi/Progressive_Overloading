@@ -35,19 +35,19 @@ export default function SetGridItem({
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
         <View
           style={{
-            backgroundColor: colors.primary[100],
+            backgroundColor: colors.neutral[100],
             padding: 14,
             borderRadius: 24,
             marginBottom: 10,
-            borderWidth: 2,
-            borderColor: colors.primary[200],
+            borderWidth: 1,
+            borderColor: colors.border.light,
             minWidth: 48,
             minHeight: 48,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: colors.primary[600], fontWeight: '700', fontSize: 18 }}>
+          <Text style={{ color: colors.text.secondary, fontWeight: '700', fontSize: 18 }}>
             {index + 1}
           </Text>
         </View>

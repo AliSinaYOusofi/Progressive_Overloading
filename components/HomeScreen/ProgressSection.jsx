@@ -28,65 +28,75 @@ export default function ProgressSection({
         marginBottom: 24,
       }}
     >
-      <TouchableOpacity
-        onPress={() => toggleCardExpansion('progress')}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold', marginRight: 2 }}>
-          Your Progress
-        </Text>
+      <View style={{ marginBottom: 16 }}>
+        {/* Title Row */}
+        <TouchableOpacity
+          onPress={() => toggleCardExpansion('progress')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 12,
+          }}
+        >
+          <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: 'bold', marginRight: 2 }}>
+            Your Progress
+          </Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <TouchableOpacity
-            onPress={handleOpenLogSet}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: colors.primary[100],
-              paddingHorizontal: 12,
-              paddingVertical: 4,
-              borderRadius: 20,
-            }}
-          >
-            <Plus size={18} color={colors.primary[600]} />
-            <Text style={{ color: colors.primary[700], fontWeight: '500', marginLeft: 4 }}>
-              Log Set
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowRMInfoModal(true)}
-            style={{
-              backgroundColor: colors.background.input,
-              padding: 8,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: colors.border.light,
-            }}
-          >
-            <Info size={18} color={colors.text.tertiary} />
-          </TouchableOpacity>
-          <View
-            style={{
-              backgroundColor: colors.background.input,
-              padding: 8,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: colors.border.light,
-            }}
-          >
-            {cardExpanded.progress ? (
-              <ChevronUp size={18} color={colors.text.tertiary} />
-            ) : (
-              <ChevronDown size={18} color={colors.text.tertiary} />
-            )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setShowRMInfoModal(true);
+              }}
+              style={{
+                backgroundColor: colors.background.input,
+                padding: 8,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border.light,
+              }}
+            >
+              <Info size={18} color={colors.text.tertiary} />
+            </TouchableOpacity>
+            <View
+              style={{
+                backgroundColor: colors.background.input,
+                padding: 8,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border.light,
+              }}
+            >
+              {cardExpanded.progress ? (
+                <ChevronUp size={18} color={colors.text.tertiary} />
+              ) : (
+                <ChevronDown size={18} color={colors.text.tertiary} />
+              )}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+
+        {/* Log Exercise Button Row */}
+        <TouchableOpacity
+          onPress={handleOpenLogSet}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            backgroundColor: colors.primary[100],
+            paddingHorizontal: 18,
+            paddingVertical: 12,
+            borderRadius: 12,
+          }}
+        >
+          <Plus size={20} color={colors.primary[600]} />
+          <Text style={{ color: colors.primary[700], fontWeight: '600', fontSize: 15, marginLeft: 6 }}>
+            Log Exercise
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {cardExpanded.progress && (
         <>
@@ -103,7 +113,7 @@ export default function ProgressSection({
               <Text
                 style={{ color: colors.text.tertiary, textAlign: 'center', marginTop: 8 }}
               >
-                No progress yet. Log sets to begin tracking your improvements.
+                No progress yet. Log exercises to begin tracking your improvements.
               </Text>
             </View>
           ) : (

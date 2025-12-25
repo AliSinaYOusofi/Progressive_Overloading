@@ -17,6 +17,7 @@ import {
     Smartphone,
     LogOut
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { getColors } from "../constants/ui_colors";
 import { signOut } from "../lib/auth";
 import { useTheme } from "../contexts/ThemeContext";
@@ -27,6 +28,7 @@ import AppVersionModal from "../components/Profile/AppVersionModal";
 export default function SettingsScreen() {
     const { isDarkMode, toggleTheme } = useTheme();
     const colors = getColors(isDarkMode);
+    const router = useRouter();
     
     const [notifications, setNotifications] = useState(true);
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -104,6 +106,12 @@ export default function SettingsScreen() {
                 // },
                 {
                     icon: Shield,
+                    title: "Privacy Policy",
+                    subtitle: "Read our privacy policy",
+                    type: "navigate",
+                },
+                {
+                    icon: Eye,
                     title: "Privacy Settings",
                     subtitle: "Manage your data and privacy",
                     type: "navigate",
@@ -173,6 +181,8 @@ export default function SettingsScreen() {
         const handlePress = () => {
             if (item.type === "logout") {
                 handleLogout();
+            } else if (item.title === "Privacy Policy") {
+                router.push("/privacy-policy");
             } else if (item.title === "Privacy Settings") {
                 setShowPrivacyModal(true);
             } else if (item.title === "Data Sharing") {

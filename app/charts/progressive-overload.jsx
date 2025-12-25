@@ -1,54 +1,60 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
-import { getCurrentUser, getProgressiveOverloadInsights, getProgressiveOverloadComparison } from "../../lib/database";
+import { useAppStore } from "../../stores/useAppStore";
+import { getProgressiveOverloadComparison } from "../../lib/database";
 import ProgressiveOverloadInsights from "../../components/Charts/ProgressiveOverloadInsights";
 import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 
 export default function ProgressiveOverloadScreen() {
     const colors = useThemedColors();
-    const [progressiveOverloadInsights, setProgressiveOverloadInsights] = useState([]);
     const [comparisonData, setComparisonData] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
+    
+    // Use selective subscriptions from store - subscribe to entire nested object
+    const user = useAppStore(state => state.user);
+    const progressiveOverloadInsightsData = useAppStore(state => state.chartsData.progressiveOverloadInsights);
+    const loadProgressiveOverloadInsights = useAppStore(state => state.loadProgressiveOverloadInsights);
+    
+    // Extract timeframe-specific data using useMemo to avoid infinite loops
+    const progressiveOverloadInsights = useMemo(() => {
+      const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
+      return progressiveOverloadInsightsData[timeframeValue] || [];
+    }, [progressiveOverloadInsightsData, selectedTimeframe]);
 
     useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async (isRefresh = false, timeframe = selectedTimeframe) => {
-        try {
-            if (!isRefresh) setIsLoading(true);
-            
-            const currentUser = await getCurrentUser();
-            if (!currentUser) return;
-
-            // For "All Time", use a very large number to get all data
-            const timeframeValue = timeframe === 'all' ? 36500 : timeframe; // 100 years for all time
-            
-            // Fetch comparison data (only if timeframe is not 'all' and is a reasonable number)
-            if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
-                const comparison = await getProgressiveOverloadComparison(currentUser.id, timeframeValue);
-                setProgressiveOverloadInsights(comparison.currentInsights);
-                setComparisonData(comparison);
-            } else {
-                // For 'all' time or very large timeframes, just get insights without comparison
-                const insights = await getProgressiveOverloadInsights(currentUser.id, timeframeValue);
-                setProgressiveOverloadInsights(insights);
-                setComparisonData(null);
-            }
-        } catch (error) {
-            console.error("Error loading progressive overload insights:", error);
-        } finally {
-            setIsLoading(false);
-            setRefreshing(false);
+        if (user) {
+            loadProgressiveOverloadInsights(selectedTimeframe).then(() => {
+                // Fetch comparison data if needed
+                const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
+                if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
+                    getProgressiveOverloadComparison(user.id, timeframeValue).then(comparison => {
+                        setComparisonData(comparison);
+                    }).catch(error => {
+                        console.error("Error loading comparison data:", error);
+                    });
+                } else {
+                    setComparisonData(null);
+                }
+            });
         }
-    };
+    }, [user, selectedTimeframe]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        loadData(false, newTimeframe);
+        // Check cache first - don't force refresh
+        loadProgressiveOverloadInsights(newTimeframe, false).then(() => {
+            const timeframeValue = newTimeframe === 'all' ? 36500 : newTimeframe;
+            if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
+                return getProgressiveOverloadComparison(user.id, timeframeValue);
+            }
+            return null;
+        }).then(comparison => {
+            setComparisonData(comparison);
+        }).catch(error => {
+            console.error("Error loading comparison data:", error);
+        });
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
@@ -57,15 +63,37 @@ export default function ProgressiveOverloadScreen() {
         // Use daysDiff as the timeframe - this will calculate from today backwards
         // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
-        loadData(false, daysDiff);
+        loadProgressiveOverloadInsights(daysDiff, true).then(() => {
+            if (daysDiff <= 365) {
+                return getProgressiveOverloadComparison(user.id, daysDiff);
+            }
+            return null;
+        }).then(comparison => {
+            setComparisonData(comparison);
+        }).catch(error => {
+            console.error("Error loading comparison data:", error);
+        });
     };
 
     const onRefresh = () => {
         setRefreshing(true);
-        loadData(true);
+        loadProgressiveOverloadInsights(selectedTimeframe, true).then(() => {
+            const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
+            if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
+                return getProgressiveOverloadComparison(user.id, timeframeValue);
+            }
+            return null;
+        }).then(comparison => {
+            setComparisonData(comparison);
+        }).finally(() => {
+            setRefreshing(false);
+        });
     };
 
-    if (isLoading) {
+    // Show loading only if no data exists and we're waiting for initial load
+    const isLoading = !progressiveOverloadInsights || progressiveOverloadInsights.length === 0;
+    
+    if (isLoading && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
