@@ -4,7 +4,7 @@ import { useThemedColors } from "../../hooks/useThemedColors";
 import { getCurrentUser, getMonthlyDetailData } from "../../lib/database";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { Activity, Dumbbell, Repeat, Calendar, TrendingUp, TrendingDown, Trophy, BarChart3, Target } from "lucide-react-native";
-import { BarChart } from "react-native-gifted-charts";
+import { LineChart } from "react-native-gifted-charts";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -94,7 +94,7 @@ export default function MonthlyTrendsDetailScreen() {
     const { summary, dailyBreakdown, exerciseBreakdown, weeklyBreakdown, daysOfWeek } = monthlyData;
     const totalVolume = summary.totalVolume || 0;
 
-    // Prepare bar chart data for daily volume
+    // Prepare line chart data for daily volume
     const dailyVolumeChartData = dailyBreakdown.map((day) => {
         const date = new Date(day.date);
         const label = date.toLocaleDateString("en", { month: "short", day: "numeric" });
@@ -107,17 +107,16 @@ export default function MonthlyTrendsDetailScreen() {
                 fontSize: 9,
                 fontWeight: '500',
             },
-            frontColor: colors.primary[600],
-            topLabelComponent: () => (
-                <Text style={{ 
-                    fontSize: 8, 
-                    color: isDarkMode ? colors.text.white : colors.text.primary, 
-                    fontWeight: '600',
-                    marginBottom: 2 
-                }}>
-                    {day.totalVolume >= 1000 ? `${(day.totalVolume / 1000).toFixed(1)}k` : day.totalVolume.toFixed(0)}
-                </Text>
-            ),
+            dataPointText: formatVolume(day.totalVolume),
+            textShiftY: -8,
+            textShiftX: -5,
+            textFontSize: 8,
+            textColor: isDarkMode ? colors.text.white : colors.text.primary,
+            dataPointTextStyle: {
+                color: isDarkMode ? colors.text.white : colors.text.primary,
+                fontSize: 8,
+                fontWeight: '600',
+            },
         };
     });
 
@@ -536,7 +535,6 @@ export default function MonthlyTrendsDetailScreen() {
                         marginBottom: 24,
                         borderWidth: 1,
                         borderColor: colors.border.light,
-                        overflow: 'hidden' // Prevent chart from extending beyond container
                     }}>
                         <Text style={{ 
                             fontSize: 16, 
@@ -547,16 +545,21 @@ export default function MonthlyTrendsDetailScreen() {
                             Daily Volume Progression
                         </Text>
                         <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                            <BarChart
+                            <LineChart
+                                key={`linechart-${dailyVolumeChartData.length}-${maxVolume}`}
                                 data={dailyVolumeChartData}
                                 width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
                                 height={200}
-                                barWidth={20}
-                                initialSpacing={20} // Increased to prevent first bar clipping
-                                spacing={15}
-                                barBorderRadius={4}
-                                showGradient
-                                gradientColor={colors.primary[400]}
+                                spacing={48}
+                                initialSpacing={20}
+                                thickness={3}
+                                color={colors.primary[600]}
+                                curved
+                                areaChart
+                                startFillColor={colors.primary[600] + '40'}
+                                endFillColor={colors.primary[600] + '10'}
+                                startOpacity={0.4}
+                                endOpacity={0.1}
                                 yAxisThickness={1}
                                 xAxisThickness={1}
                                 xAxisColor={colors.border.medium}
@@ -566,18 +569,15 @@ export default function MonthlyTrendsDetailScreen() {
                                 yAxisLabelWidth={40}
                                 maxValue={maxVolume * 1.1 || 1000}
                                 noOfSections={4}
-                                isAnimated
-                                animationDuration={1000}
-                                cappedBars
-                                capColor={colors.primary[700]}
-                                capThickness={2}
-                                capRadius={2}
-                                showValuesAsTopLabel
-                                topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                                topLabelContainerStyle={{ marginBottom: 4 }}
+                                isAnimated={false}
                                 rulesColor={colors.border.light}
                                 rulesType="solid"
                                 dashGap={0}
+                                hideDataPoints={false}
+                                dataPointsColor={colors.primary[600]}
+                                dataPointsRadius={4}
+                                showTextOnDataPoints={true}
+                                textBackgroundColor="transparent"
                             />
                         </View>
                     </View>

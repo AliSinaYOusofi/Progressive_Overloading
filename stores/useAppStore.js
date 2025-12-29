@@ -48,7 +48,7 @@ export const useAppStore = create((set, get) => ({
     monthlyStats: {}, // { [timeframeValue]: data }
     personalRecords: {}, // { [timeframeValue]: data }
     weeklyProgress: {}, // { [timeframeValue]: data }
-    rpeAnalysis: [], // No timeframe filtering (used in index)
+    rpeAnalysis: {}, // { [timeframeValue]: data }
     progressiveOverloadInsights: {}, // { [timeframeValue]: data }
     muscleGroupHeatmap: {}, // { [timeframeValue]: data }
     goalAnalytics: {}, // { [timeframeValue]: data }
@@ -647,6 +647,38 @@ export const useAppStore = create((set, get) => ({
     }
   },
   
+  loadRPEAnalysis: async (timeframe = 30, forceRefresh = false) => {
+    const state = get();
+    if (!state.user) return [];
+    
+    const timeframeValue = timeframe === 'all' ? 36500 : timeframe;
+    const cacheKey = `rpeAnalysis_${timeframeValue}`;
+    
+    // Check cache - return timeframe-specific data
+    if (!forceRefresh && state.isCacheValid(cacheKey)) {
+      return state.chartsData.rpeAnalysis[timeframeValue] || [];
+    }
+    
+    try {
+      const data = await getRPEAnalysis(state.user.id, timeframeValue);
+      const now = Date.now();
+      set({
+        chartsData: { 
+          ...state.chartsData, 
+          rpeAnalysis: {
+            ...state.chartsData.rpeAnalysis,
+            [timeframeValue]: data
+          }
+        },
+        chartsCache: { ...state.chartsCache, [cacheKey]: now },
+      });
+      return data;
+    } catch (error) {
+      console.error('Error loading RPE analysis:', error);
+      return state.chartsData.rpeAnalysis[timeframeValue] || [];
+    }
+  },
+  
   loadProgressiveOverloadInsights: async (timeframe = 30, forceRefresh = false) => {
     const state = get();
     if (!state.user) return [];
@@ -860,7 +892,7 @@ export const useAppStore = create((set, get) => ({
       if (shouldFetch('rpeAnalysis_all')) {
         promises.push(
           getRPEAnalysis(state.user.id, allTimeValue).then(data => {
-            updates.rpeAnalysis = data;
+            updates.rpeAnalysis = { [allTimeValue]: data };
             cacheUpdates['rpeAnalysis_all'] = now;
           })
         );
@@ -958,7 +990,10 @@ export const useAppStore = create((set, get) => ({
           mergedChartsData.strengthStandards = updates.strengthStandards;
         }
         if (updates.rpeAnalysis !== undefined) {
-          mergedChartsData.rpeAnalysis = updates.rpeAnalysis;
+          mergedChartsData.rpeAnalysis = {
+            ...state.chartsData.rpeAnalysis,
+            ...updates.rpeAnalysis
+          };
         }
         
         set({

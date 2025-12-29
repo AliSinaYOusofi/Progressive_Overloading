@@ -100,6 +100,92 @@ const levenshteinDistance = (str1, str2) => {
 };
 
 /**
+ * Score a match quality - higher score = better match
+ * Prefers standard variants (Barbell, no special modifiers, shorter names, expected primary muscles)
+ */
+const scoreMatchQuality = (exercise, normalizedInput) => {
+  let score = 0;
+  const normalizedName = normalizeExerciseName(exercise.name);
+  const name = exercise.name;
+  
+  // Exact match gets highest score
+  if (normalizedName === normalizedInput) {
+    score += 1000;
+  }
+  
+  // Prefer Barbell variants (standard equipment)
+  if (/^barbell\s+/i.test(name)) {
+    score += 100;
+  }
+  
+  // Penalize special modifiers (prefer simpler variants)
+  const specialModifiers = [
+    /powerlifting/i,
+    /with bands/i,
+    /with chains/i,
+    /close-grip/i,
+    /wide-grip/i,
+    /machine/i,
+    /cable/i,
+    /smith/i,
+    /kettlebell/i,
+    /dumbbell/i,
+    /decline/i,
+    /guillotine/i,
+  ];
+  
+  let modifierPenalty = 0;
+  specialModifiers.forEach(pattern => {
+    if (pattern.test(name)) {
+      modifierPenalty += 20;
+    }
+  });
+  score -= modifierPenalty;
+  
+  // Prefer shorter names (fewer words = simpler)
+  const wordCount = name.split(/\s+/).length;
+  score += (10 - Math.min(wordCount, 10)) * 2;
+  
+  // For Bench Press, prefer chest as primary muscle
+  if (normalizedInput.includes('bench') && normalizedInput.includes('press')) {
+    const primaryMuscles = (exercise.primaryMuscles || []).map(m => normalizeExerciseName(String(m)));
+    if (primaryMuscles.some(m => m === 'chest' || m.includes('chest'))) {
+      score += 50;
+    }
+  }
+  
+  // For Squat, prefer quads/glutes as primary
+  if (normalizedInput.includes('squat')) {
+    const primaryMuscles = (exercise.primaryMuscles || []).map(m => normalizeExerciseName(String(m)));
+    const preferredMuscles = ['quadriceps', 'glutes', 'glute', 'quad'];
+    if (primaryMuscles.some(m => preferredMuscles.some(pm => m.includes(pm) || pm.includes(m)))) {
+      score += 50;
+    }
+  }
+  
+  // For Deadlift, prefer back/hamstrings as primary
+  if (normalizedInput.includes('deadlift')) {
+    const primaryMuscles = (exercise.primaryMuscles || []).map(m => normalizeExerciseName(String(m)));
+    const preferredMuscles = ['quadriceps', 'hamstrings', 'glutes', 'lower back', 'back'];
+    if (primaryMuscles.some(m => preferredMuscles.some(pm => m.includes(pm) || pm.includes(m)))) {
+      score += 50;
+    }
+  }
+  
+  // Prefer names that start with the input (better prefix match)
+  if (normalizedName.startsWith(normalizedInput)) {
+    score += 30;
+  }
+  
+  // Penalize names with parentheses (usually less standard)
+  if (name.includes('(') || name.includes(')')) {
+    score -= 10;
+  }
+  
+  return score;
+};
+
+/**
  * Match an exercise name against the exercises.json database
  * @param {string} exerciseName - Exercise name from database
  * @returns {Promise<Object|null>} Matched exercise object or null
@@ -125,14 +211,22 @@ export const matchExercise = async (exerciseName) => {
     return match;
   }
   
-  // Try contains match
-  match = exercises.find(ex => 
-    normalizeExerciseName(ex.name).includes(normalizedInput) ||
-    normalizedInput.includes(normalizeExerciseName(ex.name))
-  );
+  // Try contains match - collect ALL matches instead of returning first
+  const containsMatches = exercises.filter(ex => {
+    const normalizedEx = normalizeExerciseName(ex.name);
+    return normalizedEx.includes(normalizedInput) || normalizedInput.includes(normalizedEx);
+  });
   
-  if (match) {
-    return match;
+  if (containsMatches.length > 0) {
+    // Score all matches and return the best one
+    const scoredMatches = containsMatches.map(ex => ({
+      exercise: ex,
+      score: scoreMatchQuality(ex, normalizedInput)
+    }));
+    
+    // Sort by score (descending) and return the best match
+    scoredMatches.sort((a, b) => b.score - a.score);
+    return scoredMatches[0].exercise;
   }
   
   // Try fuzzy matching with similarity threshold

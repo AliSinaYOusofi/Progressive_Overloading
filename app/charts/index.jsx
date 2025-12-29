@@ -69,7 +69,13 @@ export default function ChartsScreen() {
     // Direct selectors for non-nested data
     const userStats = useAppStore(state => state.chartsData.userStats);
     const strengthStandards = useAppStore(state => state.chartsData.strengthStandards);
-    const rpeAnalysis = useAppStore(state => state.chartsData.rpeAnalysis);
+    const rpeAnalysisData = useAppStore(state => state.chartsData.rpeAnalysis);
+    
+    // Extract timeframe-specific data for RPE analysis
+    const rpeAnalysis = useMemo(() => {
+      const data = rpeAnalysisData[36500] || [];
+      return Array.isArray(data) ? data : Object.values(data);
+    }, [rpeAnalysisData]);
     
     // Memoize chartsData object to prevent infinite loops
     const chartsData = useMemo(() => ({
@@ -80,7 +86,7 @@ export default function ChartsScreen() {
       monthlyStats,
       personalRecords,
       weeklyProgress,
-      rpeAnalysis,
+      rpeAnalysis: rpeAnalysis,
       progressiveOverloadInsights,
       muscleGroupHeatmap,
       goalAnalytics,
@@ -257,16 +263,15 @@ export default function ChartsScreen() {
                     />
                 )}
 
-                {/* RPE Analysis */}
-                {chartsData.rpeAnalysis && chartsData.rpeAnalysis.length > 0 && (
-                    <CollapsibleSection
+                {/* Training Intensity (RPE) */}
+                {rpeAnalysis && rpeAnalysis.length > 0 && (
+                    <PremiumChartCard
+                        icon={RPEAnalysisIcon}
                         title="Training Intensity (RPE)"
                         subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
-                        icon={RPEAnalysisIcon}
-                        defaultExpanded={false}
-                    >
-                        <RPEAnalysis rpeAnalysis={chartsData.rpeAnalysis} />
-                    </CollapsibleSection>
+                        badge="BETA"
+                        onPress={() => router.push('/charts/training-intensity')}
+                    />
                 )}
 
                 {/* Muscle Group Heatmap */}
