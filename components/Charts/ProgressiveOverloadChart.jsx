@@ -34,15 +34,13 @@ export default function ProgressiveOverloadChart({ timeSeriesData, progression, 
     // Take last 15 data points or all if less
     const dataPoints = timeSeriesData.slice(-15);
     
-    return dataPoints.map((point, index) => {
+    return dataPoints.map((point) => {
       const date = new Date(point.date);
-      const label = index % Math.ceil(dataPoints.length / 4) === 0 || index === dataPoints.length - 1
-        ? date.toLocaleDateString('en', { month: 'short', day: 'numeric' })
-        : '';
+      const label = date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
       
       return {
         value: point.avg1RM,
-        label,
+        label: label,
         dataPointText: point.avg1RM.toFixed(1),
         labelTextStyle: { color: colors.text.tertiary, fontSize: 9 },
         dataPointTextStyle: { color: colors.text.primary, fontSize: 9 }
@@ -71,9 +69,7 @@ export default function ProgressiveOverloadChart({ timeSeriesData, progression, 
   const initialSpacing = 20;
   const endSpacing = 20;
   const chartWidth = availableWidth;
-  const spacing = chartData.length > 1 
-    ? (chartWidth - initialSpacing - endSpacing) / (chartData.length - 1)
-    : chartWidth;
+  const spacing = 48;
 
   return (
     <View style={{ marginBottom: 16 }}>
@@ -123,9 +119,11 @@ export default function ProgressiveOverloadChart({ timeSeriesData, progression, 
             yAxisSide="left"
             xAxisSide="bottom"
             curved={true}
-            areaChart={false}
-            startFillColor={chartColor + "20"}
-            endFillColor={chartColor + "05"}
+            areaChart={true}
+            startFillColor={chartColor + "40"}
+            endFillColor={chartColor + "10"}
+            startOpacity={0.4}
+            endOpacity={0.1}
           />
         </View>
       </View>

@@ -183,9 +183,7 @@ export default function WeeklyProgressScreen() {
     // Calculate spacing for line chart
     const initialSpacing = 20;
     const endSpacing = 20;
-    const lineChartSpacing = lineChartData.length > 1 
-        ? (chartWidth - initialSpacing - endSpacing) / (lineChartData.length - 1)
-        : chartWidth;
+    const lineChartSpacing = 48;
 
     // Show loading only if no data exists and we're waiting for initial load
     const isLoading = !weeklyProgress || weeklyProgress.length === 0;
@@ -429,7 +427,11 @@ export default function WeeklyProgressScreen() {
                                         yAxisSide="left"
                                         xAxisSide="bottom"
                                         curved={true}
-                                        areaChart={false}
+                                        areaChart={true}
+                                        startFillColor={colors.primary[600] + '40'}
+                                        endFillColor={colors.primary[600] + '10'}
+                                        startOpacity={0.4}
+                                        endOpacity={0.1}
                                         yAxisThickness={1}
                                         xAxisThickness={1}
                                         yAxisLabelWidth={40}

@@ -52,6 +52,12 @@ export default function AuthLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen
+                name="forgot-password"
+                options={{
+                    href: null,
+                }}
+            />
         </Tabs>
     );
 }

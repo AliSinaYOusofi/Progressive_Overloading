@@ -2,13 +2,14 @@ import React from "react";
 import { View, Text } from "react-native";
 import { TrendingUp, Target, Dumbbell, Trophy } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { formatShortNumber } from "../../utils/numberUtils";
 
 export default function QuickStats({ userStats, personalRecords }) {
     const colors = useThemedColors();
     const stats = [
         {
             icon: TrendingUp,
-            value: userStats?.currentStreak || 0,
+            value: formatShortNumber(userStats?.currentStreak || 0),
             label: "Day Streak",
             color: colors.status.success
         },
@@ -20,13 +21,13 @@ export default function QuickStats({ userStats, personalRecords }) {
         },
         {
             icon: Dumbbell,
-            value: userStats?.workoutCount || 0,
+            value: formatShortNumber(userStats?.workoutCount || 0),
             label: "Total Sets",
             color: colors.status.info
         },
         {
             icon: Trophy,
-            value: personalRecords?.length || 0,
+            value: formatShortNumber(personalRecords?.length || 0),
             label: "Personal Records",
             color: colors.status.warning
         }

@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { useAppStore } from "../stores/useAppStore";
 import { getCurrentUser } from "../lib/database";
 import exerciseNames from "../exercise_names.json";
+import { useExerciseMuscleGroups } from "../hooks/useExerciseMuscleGroups";
 
 export default function LogSetScreen() {
     const colors = useThemedColors();
@@ -27,6 +28,9 @@ export default function LogSetScreen() {
     const [successMessage, setSuccessMessage] = useState("");
     const [defaults, setDefaults] = useState(null);
     const prevIsSubmittingRef = useRef(false);
+
+    // Get muscle groups for suggestions
+    const getMuscleGroup = useExerciseMuscleGroups(suggestions);
 
     // Weight units only for logging sets
     const weightUnits = [
@@ -475,27 +479,52 @@ export default function LogSetScreen() {
                                     showsVerticalScrollIndicator={false}
                                     keyboardShouldPersistTaps="handled"
                                 >
-                                    {suggestions.map((suggestion, index) => (
-                                        <TouchableOpacity
-                                            key={suggestion}
-                                            onPress={() => handleSuggestionSelect(suggestion)}
-                                            style={{
-                                                paddingHorizontal: 16,
-                                                paddingVertical: 12,
-                                                borderBottomWidth: index < suggestions.length - 1 ? 1 : 0,
-                                                borderBottomColor: isDarkMode ? colors.border.medium : "#F3F4F6",
-                                            }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={{
-                                                fontSize: 16,
-                                                color: colors.text.primary,
-                                                fontWeight: "400",
-                                            }}>
-                                                {suggestion}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
+                                    {suggestions.map((suggestion, index) => {
+                                        const muscleGroup = getMuscleGroup(suggestion);
+                                        return (
+                                            <TouchableOpacity
+                                                key={suggestion}
+                                                onPress={() => handleSuggestionSelect(suggestion)}
+                                                style={{
+                                                    paddingHorizontal: 16,
+                                                    paddingVertical: 12,
+                                                    borderBottomWidth: index < suggestions.length - 1 ? 1 : 0,
+                                                    borderBottomColor: isDarkMode ? colors.border.medium : "#F3F4F6",
+                                                    flexDirection: 'row',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={{
+                                                    fontSize: 16,
+                                                    color: colors.text.primary,
+                                                    fontWeight: "400",
+                                                    flex: 1,
+                                                    flexShrink: 1,
+                                                    marginRight: 8,
+                                                }} numberOfLines={1}>
+                                                    {suggestion}
+                                                </Text>
+                                                {muscleGroup && (
+                                                    <View style={{
+                                                        paddingHorizontal: 6,
+                                                        paddingVertical: 2,
+                                                        borderRadius: 8,
+                                                        backgroundColor: colors.background.secondary || colors.neutral[100],
+                                                    }}>
+                                                        <Text style={{
+                                                            fontSize: 10,
+                                                            color: colors.text.tertiary || colors.text.secondary,
+                                                            fontWeight: '500',
+                                                        }}>
+                                                            {muscleGroup}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
                                 </ScrollView>
                             </View>
                         )}

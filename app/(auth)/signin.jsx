@@ -170,18 +170,15 @@ const SignInScreen = () => {
                         )}
                     </View>
 
-                                         {/* Forgot Password - Placeholder for future implementation */}
-                     <TouchableOpacity
-                         style={styles.forgotPassword}
-                         onPress={() => {
-                             // TODO: Implement forgot password functionality
-                             console.log("Forgot password pressed");
-                         }}
-                     >
-                         <Text style={styles.forgotPasswordText}>
-                             Forgot Password?
-                         </Text>
-                     </TouchableOpacity>
+                    {/* Forgot Password */}
+                    <TouchableOpacity
+                        style={styles.forgotPassword}
+                        onPress={() => router.push("/(auth)/forgot-password")}
+                    >
+                        <Text style={styles.forgotPasswordText}>
+                            Forgot Password?
+                        </Text>
+                    </TouchableOpacity>
 
                     {/* Sign In Button */}
                     <TouchableOpacity

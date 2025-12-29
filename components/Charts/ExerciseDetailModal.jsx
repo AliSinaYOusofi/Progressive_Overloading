@@ -238,31 +238,30 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
     const data = analyticsData.timeSeriesData
     
-    return data.map((item, index) => {
+    return data.map((item) => {
       const date = new Date(item.date)
       const formattedDate = date.toLocaleDateString("en", { month: "short", day: "numeric" })
       
       return {
         value: item.avgWeight,
-        label: index % Math.ceil(data.length / 8) === 0 ? formattedDate : '', // Show every nth label to avoid crowding
+        label: formattedDate,
         labelTextStyle: { 
           color: colors.text.tertiary, 
           fontSize: 9,
           fontWeight: '500',
         },
         dataPointText: item.avgWeight.toFixed(1), // Show all weight values
-        dataPointTextStyle: { 
-          color: colors.text.primary, 
-          fontSize: 9,
-          fontWeight: '600'
-        },
+        textColor: isDarkMode ? colors.text.white : colors.text.primary,
+        textFontSize: 9,
+        textShiftY: -10,
+        textShiftX: -5,
       }
     })
   }
 
   const weightLineChartData = formatWeightLineChartData()
   
-  // Calculate min and max for y-axis with padding
+  // Calculate min and max for y-axis with padding (extra top padding for data point labels)
   const weightLineChartMinMax = useMemo(() => {
     if (!analyticsData || !analyticsData.timeSeriesData || analyticsData.timeSeriesData.length === 0) {
       return { min: 0, max: 100 }
@@ -271,11 +270,13 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
     const weights = analyticsData.timeSeriesData.map(d => d.avgWeight)
     const minWeight = Math.min(...weights)
     const maxWeight = Math.max(...weights)
-    const padding = (maxWeight - minWeight) * 0.1 || 5 // 10% padding or 5kg minimum
+    const range = maxWeight - minWeight
+    const bottomPadding = range * 0.1 || 5 // 10% padding or 5kg minimum
+    const topPadding = range * 0.4 || 30 // 40% top padding for labels or 30kg minimum
     
     return {
-      min: Math.max(0, minWeight - padding),
-      max: maxWeight + padding
+      min: Math.max(0, minWeight - bottomPadding),
+      max: maxWeight + topPadding
     }
   }, [analyticsData])
 
@@ -289,9 +290,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
 
   const initialSpacing = 20;
   const endSpacing = 20;
-  const chartSpacing = weightLineChartData.length > 1 
-    ? (chartWidth - initialSpacing - endSpacing) / (weightLineChartData.length - 1)
-    : chartWidth;
+  const chartSpacing = 48;
 
   // Calculate numeric trend values (actual change, not just percentage)
   const trendValues = useMemo(() => {
@@ -579,12 +578,20 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                         yAxisSide="left"
                         xAxisSide="bottom"
                         curved={true}
-                        areaChart={false}
-                        startFillColor={colors.primary[600] + "20"}
-                        endFillColor={colors.primary[600] + "05"}
+                        areaChart={true}
+                        startFillColor={colors.primary[600] + "40"}
+                        endFillColor={colors.primary[600] + "10"}
+                        startOpacity={0.4}
+                        endOpacity={0.1}
                         yAxisThickness={1}
                         xAxisThickness={1}
                         yAxisLabelWidth={40}
+                        textColor={isDarkMode ? colors.text.white : colors.text.primary}
+                        textFontSize={9}
+                        textShiftY={-10}
+                        textShiftX={-5}
+                        showTextOnDataPoints={true}
+                        textBackgroundColor="transparent"
                       />
                     </View>
                   </View>
@@ -619,21 +626,6 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           width: 16, 
                           height: 16, 
                           borderRadius: 4, 
-                          backgroundColor: colors.primary[600], 
-                          marginRight: 8,
-                          shadowColor: colors.primary[600],
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 3,
-                          elevation: 3
-                        }} />
-                        <Text style={{ fontSize: 13, color: colors.text.secondary, fontWeight: '600' }}>Weight (kg)</Text>
-                      </View>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginRight: 20, marginBottom: 4 }}>
-                        <View style={{ 
-                          width: 16, 
-                          height: 16, 
-                          borderRadius: 4, 
                           backgroundColor: colors.status.info, 
                           marginRight: 8,
                           shadowColor: colors.status.info,
@@ -661,46 +653,6 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                       </View>
                     </View>
 
-                    {/* Weight Chart */}
-                    <View style={{ marginBottom: 24 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
-                        Weight Progression
-                      </Text>
-                      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                        <BarChart
-                          data={chartData.map((item, index) => ({
-                            ...item,
-                            // Only show every nth label to prevent overlap
-                            label: index % Math.max(1, Math.ceil(chartData.length / 6)) === 0 ? item.label : ''
-                          }))}
-                          width={chartWidth}
-                          height={180}
-                          barWidth={Math.max(8, Math.min(16, (chartWidth - 80) / chartData.length - 15))}
-                          initialSpacing={20}
-                          spacing={Math.max(20, (chartWidth - 80) / chartData.length - Math.max(8, Math.min(16, (chartWidth - 80) / chartData.length - 15)))}
-                          barBorderRadius={4}
-                          showGradient
-                          gradientColor={colors.primary[400]}
-                          yAxisThickness={1}
-                          xAxisThickness={1}
-                          xAxisColor={colors.border.medium}
-                          yAxisColor={colors.border.medium}
-                          yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
-                          xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 7, fontWeight: '500' }}
-                          yAxisLabelWidth={35}
-                          noOfSections={4}
-                          cappedBars
-                          capColor={colors.primary[700]}
-                          capThickness={2}
-                          capRadius={2}
-                          rulesColor={colors.border.light}
-                          rulesType="solid"
-                          dashGap={0}
-                          labelWidth={45}
-                        />
-                      </View>
-                    </View>
-
                     {/* Reps Chart */}
                     <View style={{ marginBottom: 24 }}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text.secondary, marginBottom: 12, marginLeft: 4 }}>
@@ -716,7 +668,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           height={180}
                           barWidth={Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10))}
                           initialSpacing={15}
-                          spacing={Math.max(8, (chartWidth - 60) / chartData.length - Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10)))}
+                          spacing={28}
                           barBorderRadius={6}
                           showGradient
                           gradientColor={colors.status.info + 'CC'}
@@ -754,7 +706,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           height={180}
                           barWidth={Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10))}
                           initialSpacing={15}
-                          spacing={Math.max(8, (chartWidth - 60) / chartData.length - Math.max(12, Math.min(22, (chartWidth - 60) / chartData.length - 10)))}
+                          spacing={28}
                           barBorderRadius={6}
                           showGradient
                           gradientColor={colors.status.warning + 'CC'}
@@ -912,7 +864,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                             width: 40,
                             height: 40,
                             borderRadius: 20,
-                            backgroundColor: colors.background.primary,
+                            backgroundColor: colors.background.secondary || colors.neutral[100],
                             alignItems: "center",
                             justifyContent: "center",
                             marginRight: 12,
@@ -969,7 +921,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                           
                           {/* Volume Badge (optional) */}
                           <View style={{
-                            backgroundColor: colors.background.primary,
+                            backgroundColor: colors.background.secondary || colors.neutral[100],
                             borderRadius: 8,
                             paddingHorizontal: 10,
                             paddingVertical: 6,

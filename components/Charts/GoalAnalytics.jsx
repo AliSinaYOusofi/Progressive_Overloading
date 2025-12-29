@@ -46,15 +46,13 @@ export default function GoalAnalytics({ goalAnalytics }) {
       return [];
     }
     
-    return goalAnalytics.completionRateOverTime.map((point, index) => {
+    return goalAnalytics.completionRateOverTime.map((point) => {
       const date = new Date(point.date + '-01');
-      const label = index % Math.max(1, Math.ceil(goalAnalytics.completionRateOverTime.length / 6)) === 0 || index === goalAnalytics.completionRateOverTime.length - 1
-        ? date.toLocaleDateString('en', { month: 'short' })
-        : '';
+      const label = date.toLocaleDateString('en', { month: 'short' });
       
       return {
         value: point.completionRate,
-        label,
+        label: label,
         dataPointText: `${point.completionRate}%`,
         labelTextStyle: { color: colors.text.tertiary, fontSize: 9 },
         dataPointTextStyle: { color: colors.text.primary, fontSize: 9 }
@@ -89,15 +87,13 @@ export default function GoalAnalytics({ goalAnalytics }) {
       return [];
     }
     
-    return goalAnalytics.averageProgressOverTime.map((point, index) => {
+    return goalAnalytics.averageProgressOverTime.map((point) => {
       const date = new Date(point.date + '-01');
-      const label = index % Math.max(1, Math.ceil(goalAnalytics.averageProgressOverTime.length / 6)) === 0 || index === goalAnalytics.averageProgressOverTime.length - 1
-        ? date.toLocaleDateString('en', { month: 'short' })
-        : '';
+      const label = date.toLocaleDateString('en', { month: 'short' });
       
       return {
         value: point.avgProgress,
-        label,
+        label: label,
         dataPointText: `${point.avgProgress}%`,
         labelTextStyle: { color: colors.text.tertiary, fontSize: 9 },
         dataPointTextStyle: { color: colors.text.primary, fontSize: 9 }
@@ -280,7 +276,12 @@ export default function GoalAnalytics({ goalAnalytics }) {
             height={200}
             color={colors.primary[600]}
             thickness={3}
-            curved
+            curved={true}
+            areaChart={true}
+            startFillColor={colors.primary[600] + '40'}
+            endFillColor={colors.primary[600] + '10'}
+            startOpacity={0.4}
+            endOpacity={0.1}
             dataPointsColor={colors.primary[600]}
             dataPointsRadius={4}
             textShiftY={-10}
@@ -293,7 +294,7 @@ export default function GoalAnalytics({ goalAnalytics }) {
             maxValue={100}
             yAxisLabelSuffix="%"
             noOfSections={4}
-            spacing={chartWidth / (completionRateData.length + 1)}
+            spacing={48}
           />
         </View>
       )}
@@ -466,7 +467,12 @@ export default function GoalAnalytics({ goalAnalytics }) {
             height={200}
             color={colors.primary[600]}
             thickness={3}
-            curved
+            curved={true}
+            areaChart={true}
+            startFillColor={colors.primary[600] + '40'}
+            endFillColor={colors.primary[600] + '10'}
+            startOpacity={0.4}
+            endOpacity={0.1}
             dataPointsColor={colors.primary[600]}
             dataPointsRadius={4}
             textShiftY={-10}
@@ -479,7 +485,7 @@ export default function GoalAnalytics({ goalAnalytics }) {
             maxValue={100}
             yAxisLabelSuffix="%"
             noOfSections={4}
-            spacing={chartWidth / (progressData.length + 1)}
+            spacing={48}
           />
         </View>
       )}

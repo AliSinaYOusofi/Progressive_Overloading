@@ -1,7 +1,7 @@
 {
   "expo": {
     "scheme": "progressive-loading",
-    "icon": "./assets/images/app_icon.png",
+    "icon": "./assets/images/icon.png",
     "name": "Progressive Overloading",
     "slug": "progressive-overloading",
     "version": "1.0.0",

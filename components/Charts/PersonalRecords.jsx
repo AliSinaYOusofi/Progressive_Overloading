@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Filter, ChevronDown, Trophy, Award, TrendingUp, Calendar, Dumbbell, Target } from "lucide-react-native"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { useTheme } from "../../contexts/ThemeContext"
-import { BarChart } from "react-native-gifted-charts"
+import { LineChart } from "react-native-gifted-charts"
 import { getCurrentUser } from "../../lib/database"
 import ExerciseDetailModal from "./ExerciseDetailModal"
 import PersonalRecordsFilterModal from "./PersonalRecordsFilterModal"
@@ -216,40 +216,48 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
       .slice(0, 8);
   }, [personalRecords]);
 
-  // Prepare bar chart data for top exercises by 1RM
-  const barChartData = useMemo(() => {
+  // Prepare line chart data for top exercises by 1RM
+  const lineChartData = useMemo(() => {
     if (!recordsByExercise || recordsByExercise.length === 0) return [];
     
     return recordsByExercise.map((item) => {
-      const name = item.exercise.length > 10 
-        ? item.exercise.substring(0, 10) + '...' 
-        : item.exercise;
-      
       // Clean up any floating point noise so gifted-charts doesn't render long decimals in the top label
       const clean1RM = normalizeNumber(item.best1RM, 1);
+      const formatted1RM = clean1RM.toFixed(1).replace(/\.?0+$/, '');
       
       return {
         value: clean1RM,
-        label: name,
+        label: item.exercise,
         labelTextStyle: { 
           color: colors.text.tertiary, 
           fontSize: 9,
           fontWeight: '500',
         },
-        frontColor: colors.primary[600],
-        topLabelComponent: () => (
-          <Text style={{ 
-            fontSize: 8, 
-            color: isDarkMode ? colors.text.white : colors.text.primary, 
-            fontWeight: '600',
-            marginBottom: 2 
-          }}>
-            {clean1RM.toFixed(1).replace(/\.?0+$/, '')}
-          </Text>
-        ),
+        dataPointText: formatted1RM,
+        textColor: isDarkMode ? colors.text.white : colors.text.primary,
+        textFontSize: 9,
+        textShiftY: -10,
+        textShiftX: -5,
       };
     });
   }, [recordsByExercise, colors, isDarkMode]);
+
+  // Calculate min/max for y-axis with extra top padding for data point labels
+  const lineChartMinMax = useMemo(() => {
+    if (!lineChartData || lineChartData.length === 0) return { min: 0, max: 100 };
+    
+    const values = lineChartData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+    const bottomPadding = range * 0.1 || 5; // 10% padding or 5kg minimum
+    const topPadding = range * 0.4 || 30; // 40% top padding for labels or 30kg minimum
+    
+    return {
+      min: Math.max(0, minValue - bottomPadding),
+      max: maxValue + topPadding
+    };
+  }, [lineChartData]);
 
   // Get most recent records
   const recentRecords = useMemo(() => {
@@ -601,7 +609,7 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
       )}
 
       {/* Top Exercises by 1RM Chart */}
-      {barChartData.length > 0 && (
+      {lineChartData.length > 0 && (
         <View style={{ 
           backgroundColor: colors.background.primary,
           borderRadius: 12,
@@ -609,7 +617,6 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
           marginBottom: 24,
           borderWidth: 1,
           borderColor: colors.border.light,
-          overflow: 'hidden' // Prevent chart from extending beyond container
         }}>
           <Text style={{ 
             fontSize: 16, 
@@ -620,37 +627,44 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
             Best 1RM by Exercise
           </Text>
           <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <BarChart
-              data={barChartData}
+            <LineChart
+              data={lineChartData}
               width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
               height={200}
-              barWidth={25}
-              initialSpacing={20} // Increased to prevent first bar clipping
-              spacing={12}
-              barBorderRadius={6}
-              showGradient
-              gradientColor={colors.primary[400]}
-              yAxisThickness={1}
-              xAxisThickness={1}
-              xAxisColor={colors.border.medium}
-              yAxisColor={colors.border.medium}
+              spacing={78}
+              initialSpacing={20}
+              thickness={3}
+              color={colors.primary[600]}
+              curved={true}
+              areaChart={true}
+              startFillColor={colors.primary[600] + '40'}
+              endFillColor={colors.primary[600] + '10'}
+              startOpacity={0.4}
+              endOpacity={0.1}
+              dataPointsColor={colors.primary[600]}
+              dataPointsRadius={4}
+              hideDataPoints={false}
+              hideRules={false}
+              rulesType="solid"
+              rulesColor={colors.border.light}
+              yAxisColor={colors.border.light}
+              xAxisColor={colors.border.light}
               yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
               xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
               yAxisLabelWidth={40}
-              maxValue={Math.max(...barChartData.map(d => d.value)) * 1.1 || 100}
+              maxValue={lineChartMinMax.max}
+              minValue={lineChartMinMax.min}
               noOfSections={4}
-              isAnimated
-              animationDuration={1000}
-              cappedBars
-              capColor={colors.primary[700]}
-              capThickness={3}
-              capRadius={3}
-              showValuesAsTopLabel
-              topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-              topLabelContainerStyle={{ marginBottom: 6 }}
-              rulesColor={colors.border.light}
-              rulesType="solid"
-              dashGap={0}
+              yAxisThickness={1}
+              xAxisThickness={1}
+              showTextOnDataPoints={true}
+              textBackgroundColor="transparent"
+              textColor={isDarkMode ? colors.text.white : colors.text.primary}
+              textFontSize={9}
+              textShiftY={-10}
+              textShiftX={-5}
+              labelWidth={78}
+              rotateLabel={false}
             />
           </View>
         </View>

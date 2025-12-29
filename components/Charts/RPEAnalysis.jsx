@@ -5,11 +5,14 @@ import { useThemedColors } from "../../hooks/useThemedColors";
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function RPEAnalysis({ rpeAnalysis }) {
+export default function RPEAnalysis({ rpeAnalysis, showAll = false }) {
     const colors = useThemedColors();
     if (!rpeAnalysis || rpeAnalysis.length === 0) {
         return null;
     }
+    
+    // Show all exercises in detail screen, first 4 in preview
+    const exercisesToShow = showAll ? rpeAnalysis : rpeAnalysis.slice(0, 4);
 
     const getIntensityColor = (intensity) => {
         switch (intensity) {
@@ -21,25 +24,26 @@ export default function RPEAnalysis({ rpeAnalysis }) {
     };
 
     // Helper function to format RPE data for LineChart
-    const formatRPEDataForChart = (rpeData) => {
+    const formatRPEDataForChart = (rpeData, showAll = false) => {
         if (!rpeData || rpeData.length === 0) return [];
         
-        return rpeData
-            .slice(-7)
-            .filter(point => point && point.date && point.rpe !== undefined)
-            .map((point, index) => ({
-                value: point.rpe,
-                label: index % 2 === 0 ? new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '',
-                dataPointText: point.rpe.toFixed(1),
-                labelTextStyle: { color: colors.text.tertiary, fontSize: 8 },
-                dataPointTextStyle: { color: colors.text.primary, fontSize: 8 }
-            }));
+        // For detail screen, show more data points; for preview, limit to 7
+        const dataPoints = showAll ? rpeData.slice(-14) : rpeData.slice(-7);
+        const filteredData = dataPoints.filter(point => point && point.date && point.rpe !== undefined);
+        
+        return filteredData.map((point) => ({
+            value: point.rpe,
+            label: new Date(point.date).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+            dataPointText: point.rpe.toFixed(1),
+            labelTextStyle: { color: colors.text.tertiary, fontSize: 8 },
+            dataPointTextStyle: { color: colors.text.primary, fontSize: 8 }
+        }));
     };
 
     return (
         <View>
             <View style={{ gap: 12 }}>
-                {rpeAnalysis.slice(0, 4).map((exercise, index) => {
+                {exercisesToShow.map((exercise, index) => {
                     if (!exercise || !exercise.exercise) return null;
                     return (
                         <View 
@@ -82,10 +86,10 @@ export default function RPEAnalysis({ rpeAnalysis }) {
                             
                             {/* RPE Trend Visualization */}
                             {exercise.rpeTrend && exercise.rpeTrend.length > 1 && (
-                            <View style={{ height: 96, marginBottom: 8 }}>
+                            <View style={{ marginBottom: 8, width: '100%' }}>
                                 <LineChart
-                                    data={formatRPEDataForChart(exercise.rpeTrend)}
-                                    width={screenWidth - 100}
+                                    data={formatRPEDataForChart(exercise.rpeTrend, showAll)}
+                                    width={screenWidth - (showAll ? 112 : 132)}
                                     height={90}
                                     color={getIntensityColor(exercise.intensity)}
                                     thickness={2}
@@ -101,13 +105,19 @@ export default function RPEAnalysis({ rpeAnalysis }) {
                                     xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 8 }}
                                     showVerticalLines={false}
                                     showHorizontalLines={true}
-                                    spacing={18}
-                                    initialSpacing={8}
-                                    endSpacing={8}
+                                    spacing={48}
+                                    initialSpacing={12}
+                                    endSpacing={12}
                                     maxValue={10}
                                     noOfSections={5}
                                     yAxisSide="left"
                                     xAxisSide="bottom"
+                                    curved={true}
+                                    areaChart={true}
+                                    startFillColor={getIntensityColor(exercise.intensity) + '40'}
+                                    endFillColor={getIntensityColor(exercise.intensity) + '10'}
+                                    startOpacity={0.4}
+                                    endOpacity={0.1}
                                 />
                             </View>
                             )}

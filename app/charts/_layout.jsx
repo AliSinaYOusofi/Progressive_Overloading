@@ -141,6 +141,18 @@ export default function ChartsLayout() {
                     headerBackTitle: "",
                 }}
             />
+            <Stack.Screen
+                name="training-intensity"
+                options={{
+                    title: "Training Intensity",
+                    headerStyle: {
+                        backgroundColor: colors.background.card,
+                    },
+                    headerTintColor: colors.text.primary,
+                    headerBackTitleVisible: false,
+                    headerBackTitle: "",
+                }}
+            />
         </Stack>
     );
 }

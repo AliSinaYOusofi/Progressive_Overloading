@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { ChevronDown, Filter, TrendingUp, TrendingDown, Trophy, Activity, Target, Dumbbell, Award } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
-import { BarChart } from "react-native-gifted-charts";
+import { LineChart } from "react-native-gifted-charts";
 import { getCurrentUser } from "../../lib/database";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseProgressionCard from "./ExerciseProgressionCard";
@@ -173,17 +173,16 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     fontSize: 9,
                     fontWeight: '500',
                 },
-                frontColor: colors.primary[600],
-                topLabelComponent: () => (
-                    <Text style={{ 
-                        fontSize: 8, 
-                        color: isDarkMode ? colors.text.white : colors.text.primary, 
-                        fontWeight: '600',
-                        marginBottom: 2 
-                    }}>
-                        {formatted1RM}
-                    </Text>
-                ),
+                dataPointText: formatted1RM,
+                textShiftY: -10,
+                textShiftX: -5,
+                textColor: isDarkMode ? colors.text.white : colors.text.primary,
+                textFontSize: 9,
+                dataPointTextStyle: {
+                    color: isDarkMode ? colors.text.white : colors.text.primary,
+                    fontSize: 9,
+                    fontWeight: '600',
+                },
             };
         });
     }, [exerciseList, colors, isDarkMode]);
@@ -218,17 +217,16 @@ export default function ExerciseProgression({ exerciseProgression }) {
                     fontSize: 9,
                     fontWeight: '500',
                 },
-                frontColor: color,
-                topLabelComponent: () => (
-                    <Text style={{ 
-                        fontSize: 8, 
-                        color: isDarkMode ? colors.text.white : colors.text.primary, 
-                        fontWeight: '600',
-                        marginBottom: 2 
-                    }}>
-                        {isPositive ? '+' : ''}{formattedRate}%
-                    </Text>
-                ),
+                dataPointText: `${isPositive ? '+' : ''}${formattedRate}%`,
+                textShiftY: -10,
+                textShiftX: -5,
+                textColor: isDarkMode ? colors.text.white : colors.text.primary,
+                textFontSize: 9,
+                dataPointTextStyle: {
+                    color: isDarkMode ? colors.text.white : colors.text.primary,
+                    fontSize: 9,
+                    fontWeight: '600',
+                },
             };
         });
     }, [exerciseList, colors, isDarkMode]);
@@ -473,37 +471,37 @@ export default function ExerciseProgression({ exerciseProgression }) {
                                 Top Exercises by 1RM
                             </Text>
                             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                                <BarChart
+                                <LineChart
                                     data={topExercisesChartData}
                                     width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
                                     height={200}
-                                    barWidth={25}
-                                    initialSpacing={20} // Increased to prevent first bar clipping
-                                    spacing={12}
-                                    barBorderRadius={6}
-                                    showGradient
-                                    gradientColor={colors.primary[400]}
-                                    yAxisThickness={1}
-                                    xAxisThickness={1}
-                                    xAxisColor={colors.border.medium}
-                                    yAxisColor={colors.border.medium}
+                                    spacing={100}
+                                    initialSpacing={20}
+                                    thickness={3}
+                                    color={colors.primary[600]}
+                                    curved={true}
+                                    areaChart={true}
+                                    startFillColor={colors.primary[600] + '40'}
+                                    endFillColor={colors.primary[600] + '10'}
+                                    startOpacity={0.4}
+                                    endOpacity={0.1}
+                                    dataPointsColor={colors.primary[600]}
+                                    dataPointsRadius={4}
+                                    hideDataPoints={false}
+                                    hideRules={false}
+                                    rulesType="solid"
+                                    rulesColor={colors.border.light}
+                                    yAxisColor={colors.border.light}
+                                    xAxisColor={colors.border.light}
                                     yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
                                     xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
                                     yAxisLabelWidth={40}
                                     maxValue={Math.max(...topExercisesChartData.map(d => d.value)) * 1.1 || 100}
                                     noOfSections={4}
-                                    isAnimated
-                                    animationDuration={1000}
-                                    cappedBars
-                                    capColor={colors.primary[700]}
-                                    capThickness={3}
-                                    capRadius={3}
-                                    showValuesAsTopLabel
-                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                                    topLabelContainerStyle={{ marginBottom: 6 }}
-                                    rulesColor={colors.border.light}
-                                    rulesType="solid"
-                                    dashGap={0}
+                                    yAxisThickness={1}
+                                    xAxisThickness={1}
+                                    showTextOnDataPoints={true}
+                                    textBackgroundColor="transparent"
                                 />
                             </View>
                         </View>
@@ -529,37 +527,37 @@ export default function ExerciseProgression({ exerciseProgression }) {
                                 Progression Rates
                             </Text>
                             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                                <BarChart
+                                <LineChart
                                     data={progressionChartData}
                                     width={screenWidth - 120} // Account for container padding (16*2) + screen margins (48*2)
                                     height={200}
-                                    barWidth={25}
-                                    initialSpacing={20} // Increased to prevent first bar clipping
-                                    spacing={12}
-                                    barBorderRadius={6}
-                                    showGradient
-                                    gradientColor={colors.status.success}
-                                    yAxisThickness={1}
-                                    xAxisThickness={1}
-                                    xAxisColor={colors.border.medium}
-                                    yAxisColor={colors.border.medium}
+                                    spacing={100}
+                                    initialSpacing={20}
+                                    thickness={3}
+                                    color={colors.status.success}
+                                    curved={true}
+                                    areaChart={true}
+                                    startFillColor={colors.status.success + '40'}
+                                    endFillColor={colors.status.success + '10'}
+                                    startOpacity={0.4}
+                                    endOpacity={0.1}
+                                    dataPointsColor={colors.status.success}
+                                    dataPointsRadius={4}
+                                    hideDataPoints={false}
+                                    hideRules={false}
+                                    rulesType="solid"
+                                    rulesColor={colors.border.light}
+                                    yAxisColor={colors.border.light}
+                                    xAxisColor={colors.border.light}
                                     yAxisTextStyle={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '500' }}
                                     xAxisLabelTextStyle={{ color: colors.text.tertiary, fontSize: 9, fontWeight: '500' }}
                                     yAxisLabelWidth={40}
                                     maxValue={Math.max(...progressionChartData.map(d => d.value)) * 1.1 || 50}
                                     noOfSections={4}
-                                    isAnimated
-                                    animationDuration={1000}
-                                    cappedBars
-                                    capColor={colors.status.success}
-                                    capThickness={3}
-                                    capRadius={3}
-                                    showValuesAsTopLabel
-                                    topLabelTextStyle={{ color: isDarkMode ? colors.text.white : colors.text.primary, fontSize: 8, fontWeight: '600' }}
-                                    topLabelContainerStyle={{ marginBottom: 6 }}
-                                    rulesColor={colors.border.light}
-                                    rulesType="solid"
-                                    dashGap={0}
+                                    yAxisThickness={1}
+                                    xAxisThickness={1}
+                                    showTextOnDataPoints={true}
+                                    textBackgroundColor="transparent"
                                 />
                             </View>
                         </View>

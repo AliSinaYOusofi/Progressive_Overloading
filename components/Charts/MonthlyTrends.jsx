@@ -91,16 +91,14 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
   const volumeLineData = useMemo(() => {
     const chronologicalStats = sortMonthlyStats(monthlyStats, 'date', 'asc');
     return chronologicalStats
-      .map((m, index) => {
+      .map((m) => {
         try {
           const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
           const date = new Date(dateStr);
           const label = date.toLocaleDateString("en", { month: "short" });
-          // Only show every nth label to prevent overlap
-          const showLabel = index % Math.max(1, Math.ceil(chronologicalStats.length / 6)) === 0;
           return {
             value: m?.totalVolume || 0,
-            label: showLabel ? label : '',
+            label: label,
             labelTextStyle: { 
               color: colors.text.tertiary, 
               fontSize: 9,
@@ -124,16 +122,14 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
   const setsLineData = useMemo(() => {
     const chronologicalStats = sortMonthlyStats(monthlyStats, 'date', 'asc');
     return chronologicalStats
-      .map((m, index) => {
+      .map((m) => {
         try {
           const dateStr = m.month.includes('-') ? m.month + "-01" : m.month;
           const date = new Date(dateStr);
           const label = date.toLocaleDateString("en", { month: "short" });
-          // Only show every nth label to prevent overlap
-          const showLabel = index % Math.max(1, Math.ceil(chronologicalStats.length / 6)) === 0;
           return {
             value: m?.totalSets || 0,
-            label: showLabel ? label : '',
+            label: label,
             labelTextStyle: { 
               color: colors.text.tertiary, 
               fontSize: 9,
@@ -175,12 +171,8 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
   // Calculate spacing for line charts
   const initialSpacing = 20;
   const endSpacing = 20;
-  const volumeChartSpacing = volumeLineData.length > 1 
-    ? (chartWidth - initialSpacing - endSpacing) / (volumeLineData.length - 1)
-    : chartWidth;
-  const setsChartSpacing = setsLineData.length > 1 
-    ? (chartWidth - initialSpacing - endSpacing) / (setsLineData.length - 1)
-    : chartWidth;
+  const volumeChartSpacing = 48;
+  const setsChartSpacing = 48;
 
   // Calculate month-over-month changes for each month
   const getMonthChange = (current, previous) => {
@@ -437,7 +429,11 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
               yAxisSide="left"
               xAxisSide="bottom"
               curved={true}
-              areaChart={false}
+              areaChart={true}
+              startFillColor={colors.primary[600] + '40'}
+              endFillColor={colors.primary[600] + '10'}
+              startOpacity={0.4}
+              endOpacity={0.1}
               yAxisThickness={1}
               xAxisThickness={1}
               yAxisLabelWidth={40}
@@ -497,7 +493,11 @@ export default function MonthlyTrends({ monthlyStats, onCrossCheckPress }) {
               yAxisSide="left"
               xAxisSide="bottom"
               curved={true}
-              areaChart={false}
+              areaChart={true}
+              startFillColor={colors.status.success + '40'}
+              endFillColor={colors.status.success + '10'}
+              startOpacity={0.4}
+              endOpacity={0.1}
               yAxisThickness={1}
               xAxisThickness={1}
               yAxisLabelWidth={40}
