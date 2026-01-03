@@ -20,7 +20,10 @@
     "ios": {
       "bundleIdentifier": "com.progressiveoverloading.app",
       "buildNumber": "1",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.progressiveoverloading.app",
@@ -31,6 +34,12 @@
       },
       "permissions": []
     },
-    "privacy": "public"
+    "privacy": "public",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "56db97cd-60d3-4cae-930f-c1070fc1ca00"
+      }
+    }
   }
 }
