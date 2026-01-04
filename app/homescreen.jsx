@@ -15,7 +15,6 @@ import EditSetModal from "../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../components/HomeScreen/RMInfoModal";
 import SetDetailsModal from "../components/HomeScreen/SetDetailsModal";
 import GoalDetailsModal from "../components/HomeScreen/GoalDetailsModal";
-import StreakInfoModal from "../components/HomeScreen/StreakInfoModal";
 
 export default function HomeScreen() {
     const colors = useThemedColors();
@@ -72,7 +71,6 @@ export default function HomeScreen() {
 
     // UI state
     const [showRMInfoModal, setShowRMInfoModal] = useState(false);
-    const [showStreakModal, setShowStreakModal] = useState(false);
     const [cardExpanded, setCardExpanded] = useState({
         progress: true,
         goals: true,
@@ -113,7 +111,6 @@ export default function HomeScreen() {
                 profile={profile}
                 user={user}
                 currentStreak={currentStreak}
-                setShowStreakModal={setShowStreakModal}
             />
 
             <View style={{ paddingHorizontal: 24, marginTop: -16 }}>
@@ -216,12 +213,6 @@ export default function HomeScreen() {
             <RMInfoModal 
                 visible={showRMInfoModal} 
                 onClose={() => setShowRMInfoModal(false)} 
-            />
-
-            <StreakInfoModal 
-                visible={showStreakModal} 
-                onClose={() => setShowStreakModal(false)}
-                userId={user?.id}
             />
 
             <EditSetModal

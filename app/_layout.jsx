@@ -205,6 +205,7 @@ function RootLayoutContent() {
         <Tabs.Screen name="add-goal" options={{ href: null }} />
         <Tabs.Screen name="edit-goal" options={{ href: null }} />
         <Tabs.Screen name="privacy-policy" options={{ href: null }} />
+        <Tabs.Screen name="streak-info" options={{ href: null }} />
       </Tabs>
       <NetworkStatusBanner />
       <ThemedAlertComponent />
