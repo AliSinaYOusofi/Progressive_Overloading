@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Flame } from 'lucide-react-native';
 import { useThemedColors } from '../../hooks/useThemedColors';
 import { useTheme } from '../../contexts/ThemeContext';
 
-export default function HomeScreenHeader({ profile, user, currentStreak, setShowStreakModal }) {
+export default function HomeScreenHeader({ profile, user, currentStreak }) {
+  const router = useRouter();
   const colors = useThemedColors();
   const { isDarkMode } = useTheme();
 
@@ -36,7 +38,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak, setShow
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => setShowStreakModal(true)}
+          onPress={() => router.push('/streak-info')}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
