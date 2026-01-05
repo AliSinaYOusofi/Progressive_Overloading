@@ -99,7 +99,7 @@ export default function GoalsSection({
 
   const handleDatePress = (dateStr) => {
     router.push({
-      pathname: '/goal-day-detail',
+      pathname: '/homescreen/goal-day-detail',
       params: { date: dateStr, isCompleted: isCompleted ? 'true' : 'false' }
     });
   };

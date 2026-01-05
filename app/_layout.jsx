@@ -197,15 +197,12 @@ function RootLayoutContent() {
         />
         <Tabs.Screen name="(auth)" options={{ href: null }} />
         <Tabs.Screen name="index" options={{ href: null }} />
-        <Tabs.Screen name="day-detail" options={{ href: null }} />
-        <Tabs.Screen name="goal-day-detail" options={{ href: null }} />
         <Tabs.Screen name="edit-profile" options={{ href: null }} />
         <Tabs.Screen name="log-set" options={{ href: null }} />
         <Tabs.Screen name="edit-set" options={{ href: null }} />
         <Tabs.Screen name="add-goal" options={{ href: null }} />
         <Tabs.Screen name="edit-goal" options={{ href: null }} />
         <Tabs.Screen name="privacy-policy" options={{ href: null }} />
-        <Tabs.Screen name="streak-info" options={{ href: null }} />
       </Tabs>
       <NetworkStatusBanner />
       <ThemedAlertComponent />

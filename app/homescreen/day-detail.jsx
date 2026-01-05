@@ -3,19 +3,19 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshCon
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Calendar, Dumbbell, Repeat, Layers, TrendingUp, Activity } from 'lucide-react-native';
 import { format, isToday, isYesterday } from 'date-fns';
-import { useThemedColors } from '../hooks/useThemedColors';
-import { useTheme } from '../contexts/ThemeContext';
-import { getCurrentUser, getExerciseSetsByDate } from '../lib/database';
-import SetListItem from '../components/HomeScreen/SetListItem';
-import SetGridItem from '../components/HomeScreen/SetGridItem';
-import SearchBarWithViewToggle from '../components/HomeScreen/SearchBarWithViewToggle';
-import EmptyState from '../components/HomeScreen/EmptyState';
-import SortFilterModal from '../components/HomeScreen/SortFilterModal';
-import { useSetActions } from '../hooks/useSetActions';
-import { useHomeScreenData } from '../hooks/useHomeScreenData';
-import SetDetailsModal from '../components/HomeScreen/SetDetailsModal';
-import EditSetModal from '../components/HomeScreen/EditSetModal';
-import { formatShortNumber } from '../utils/numberUtils';
+import { useThemedColors } from '../../hooks/useThemedColors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getCurrentUser, getExerciseSetsByDate } from '../../lib/database';
+import SetListItem from '../../components/HomeScreen/SetListItem';
+import SetGridItem from '../../components/HomeScreen/SetGridItem';
+import SearchBarWithViewToggle from '../../components/HomeScreen/SearchBarWithViewToggle';
+import EmptyState from '../../components/HomeScreen/EmptyState';
+import SortFilterModal from '../../components/HomeScreen/SortFilterModal';
+import { useSetActions } from '../../hooks/useSetActions';
+import { useHomeScreenData } from '../../hooks/useHomeScreenData';
+import SetDetailsModal from '../../components/HomeScreen/SetDetailsModal';
+import EditSetModal from '../../components/HomeScreen/EditSetModal';
+import { formatShortNumber } from '../../utils/numberUtils';
 
 export default function DayDetailScreen() {
   const colors = useThemedColors();

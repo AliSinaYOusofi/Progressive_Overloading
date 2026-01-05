@@ -38,7 +38,7 @@ export default function HomeScreenHeader({ profile, user, currentStreak }) {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push('/streak-info')}
+          onPress={() => router.push('/homescreen/streak-info')}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
