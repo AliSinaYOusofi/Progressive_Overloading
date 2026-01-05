@@ -85,7 +85,7 @@ export default function RecentSetsSection({
 
   const handleDatePress = (dateStr) => {
     router.push({
-      pathname: '/day-detail',
+      pathname: '/homescreen/day-detail',
       params: { date: dateStr }
     });
   };

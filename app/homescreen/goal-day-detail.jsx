@@ -3,16 +3,16 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, RefreshCon
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Calendar, Target, CheckCircle2, TrendingUp } from 'lucide-react-native';
 import { format, isToday, isYesterday } from 'date-fns';
-import { useThemedColors } from '../hooks/useThemedColors';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAppStore } from '../stores/useAppStore';
-import GoalListItem from '../components/HomeScreen/GoalListItem';
-import GoalGridItem from '../components/HomeScreen/GoalGridItem';
-import SearchBarWithViewToggle from '../components/HomeScreen/SearchBarWithViewToggle';
-import EmptyState from '../components/HomeScreen/EmptyState';
-import GoalSortFilterModal from '../components/HomeScreen/GoalSortFilterModal';
-import { useGoalActions } from '../hooks/useGoalActions';
-import GoalDetailsModal from '../components/HomeScreen/GoalDetailsModal';
+import { useThemedColors } from '../../hooks/useThemedColors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAppStore } from '../../stores/useAppStore';
+import GoalListItem from '../../components/HomeScreen/GoalListItem';
+import GoalGridItem from '../../components/HomeScreen/GoalGridItem';
+import SearchBarWithViewToggle from '../../components/HomeScreen/SearchBarWithViewToggle';
+import EmptyState from '../../components/HomeScreen/EmptyState';
+import GoalSortFilterModal from '../../components/HomeScreen/GoalSortFilterModal';
+import { useGoalActions } from '../../hooks/useGoalActions';
+import GoalDetailsModal from '../../components/HomeScreen/GoalDetailsModal';
 
 export default function GoalDayDetailScreen() {
   const colors = useThemedColors();

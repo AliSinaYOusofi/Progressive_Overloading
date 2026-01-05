@@ -10,14 +10,14 @@ import {
 } from "react-native"
 import { useRouter } from "expo-router"
 import { Flame, ChevronDown, Check, ArrowLeft, Dumbbell, Layers, Activity } from "lucide-react-native"
-import { useThemedColors } from '../hooks/useThemedColors'
-import { useTheme } from '../contexts/ThemeContext'
-import { useAppStore } from '../stores/useAppStore'
-import ActivityGraph from '../components/HomeScreen/ActivityGraph'
-import StreakStatsCards from '../components/HomeScreen/StreakStatsCards'
-import StreakTips from '../components/HomeScreen/StreakTips'
-import { getAvailableYears, filterStreakDataByYear } from '../utils/dateUtils'
-import { formatShortNumber } from '../utils/numberUtils'
+import { useThemedColors } from '../../hooks/useThemedColors'
+import { useTheme } from '../../contexts/ThemeContext'
+import { useAppStore } from '../../stores/useAppStore'
+import ActivityGraph from '../../components/HomeScreen/ActivityGraph'
+import StreakStatsCards from '../../components/HomeScreen/StreakStatsCards'
+import StreakTips from '../../components/HomeScreen/StreakTips'
+import { getAvailableYears, filterStreakDataByYear } from '../../utils/dateUtils'
+import { formatShortNumber } from '../../utils/numberUtils'
 
 export default function StreakInfoScreen() {
   const colors = useThemedColors();
@@ -56,7 +56,7 @@ export default function StreakInfoScreen() {
       
       setLoadingDateData(true);
       try {
-        const { getExerciseSetsByDate } = await import('../lib/database');
+        const { getExerciseSetsByDate } = await import('../../lib/database');
         const sets = await getExerciseSetsByDate(userId, selectedDate);
         
         // Group sets by exercise
@@ -661,3 +661,4 @@ export default function StreakInfoScreen() {
       </View>
   )
 }
+

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from "react-native";
-import { useThemedColors } from "../hooks/useThemedColors";
-import { useAppStore } from "../stores/useAppStore";
-import { useSetActions } from "../hooks/useSetActions";
-import { useGoalActions } from "../hooks/useGoalActions";
+import { useThemedColors } from "../../hooks/useThemedColors";
+import { useAppStore } from "../../stores/useAppStore";
+import { useSetActions } from "../../hooks/useSetActions";
+import { useGoalActions } from "../../hooks/useGoalActions";
 
 // Components
-import HomeScreenHeader from "../components/HomeScreen/HomeScreenHeader";
-import ProgressSection from "../components/HomeScreen/ProgressSection";
-import GoalsSection from "../components/HomeScreen/GoalsSection";
-import ExpiredGoalsSection from "../components/HomeScreen/ExpiredGoalsSection";
-import RecentSetsSection from "../components/HomeScreen/RecentSetsSection";
-import EditSetModal from "../components/HomeScreen/EditSetModal";
-import RMInfoModal from "../components/HomeScreen/RMInfoModal";
-import SetDetailsModal from "../components/HomeScreen/SetDetailsModal";
-import GoalDetailsModal from "../components/HomeScreen/GoalDetailsModal";
+import HomeScreenHeader from "../../components/HomeScreen/HomeScreenHeader";
+import ProgressSection from "../../components/HomeScreen/ProgressSection";
+import GoalsSection from "../../components/HomeScreen/GoalsSection";
+import ExpiredGoalsSection from "../../components/HomeScreen/ExpiredGoalsSection";
+import RecentSetsSection from "../../components/HomeScreen/RecentSetsSection";
+import EditSetModal from "../../components/HomeScreen/EditSetModal";
+import RMInfoModal from "../../components/HomeScreen/RMInfoModal";
+import SetDetailsModal from "../../components/HomeScreen/SetDetailsModal";
+import GoalDetailsModal from "../../components/HomeScreen/GoalDetailsModal";
 
 export default function HomeScreen() {
     const colors = useThemedColors();
@@ -233,3 +233,4 @@ export default function HomeScreen() {
         </ScrollView>
     );
 }
+
