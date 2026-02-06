@@ -197,7 +197,6 @@ function RootLayoutContent() {
         />
         <Tabs.Screen name="(auth)" options={{ href: null }} />
         <Tabs.Screen name="index" options={{ href: null }} />
-        <Tabs.Screen name="edit-profile" options={{ href: null }} />
         <Tabs.Screen name="log-set" options={{ href: null }} />
         <Tabs.Screen name="edit-set" options={{ href: null }} />
         <Tabs.Screen name="add-goal" options={{ href: null }} />

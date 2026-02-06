@@ -13,14 +13,19 @@ import {
   Modal,
 } from "react-native"
 import { Save, User, Ruler, Weight, Calendar, Users, ArrowLeft } from "lucide-react-native"
-import { useThemedColors } from "../hooks/useThemedColors"
+import { useThemedColors } from "../../hooks/useThemedColors"
 import { useRouter } from "expo-router"
-import { upsertProfile, getCurrentUser, getProfile } from "../lib/database"
+import { upsertProfile, getCurrentUser, getProfile } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
+import { useAppStore } from "../../stores/useAppStore"
 
 export default function EditProfileScreen() {
   const colors = useThemedColors();
   const router = useRouter();
+  
+  // Use Zustand store for profile data
+  const { profile: storeProfile, setProfile, user: storeUser } = useAppStore();
+  
   const [formData, setFormData] = useState({
     username: "",
     height_cm: "",
@@ -39,14 +44,23 @@ export default function EditProfileScreen() {
   const loadProfile = async () => {
     try {
       setIsInitialLoading(true);
-      const user = await getCurrentUser();
-      if (!user) {
-        Alert.alert("Error", "User not found");
-        router.back();
-        return;
+      
+      // Use cached profile if available
+      let profile = storeProfile;
+      
+      if (!profile) {
+        const user = storeUser || await getCurrentUser();
+        if (!user) {
+          Alert.alert("Error", "User not found");
+          router.back();
+          return;
+        }
+        profile = await getProfile(user.id);
+        if (profile) {
+          setProfile(profile); // Update Zustand store
+        }
       }
-
-      const profile = await getProfile(user.id);
+      
       if (profile) {
         setFormData({
           username: profile.username || profile.full_name || "",
@@ -155,7 +169,7 @@ export default function EditProfileScreen() {
 
     setIsLoading(true)
     try {
-      const user = await getCurrentUser()
+      const user = storeUser || await getCurrentUser()
       if (!user) {
         Alert.alert("Error", "User not found")
         return
@@ -170,7 +184,10 @@ export default function EditProfileScreen() {
         email: user.email
       }
       
-      await upsertProfile(user.id, updates)
+      const updatedProfile = await upsertProfile(user.id, updates)
+      
+      // Update Zustand store with new profile data
+      setProfile(updatedProfile)
       
       Alert.alert("Success", "Profile updated successfully!", [
         {

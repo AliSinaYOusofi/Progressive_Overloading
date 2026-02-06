@@ -25,17 +25,22 @@ import {
     Info,
     ExternalLink,
 } from "lucide-react-native";
-import { useThemedColors } from "../hooks/useThemedColors";
+import { useThemedColors } from "../../hooks/useThemedColors";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import { signOut, getUser } from "../lib/auth";
-import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../lib/database";
-import BMIInfoModal from "../components/Profile/BMIInfoModal";
-import SetDefaultsModal from "../components/HomeScreen/SetDefaultsModal";
+import { signOut, getUser } from "../../lib/auth";
+import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../../lib/database";
+import BMIInfoModal from "../../components/Profile/BMIInfoModal";
+import SetDefaultsModal from "../../components/HomeScreen/SetDefaultsModal";
+import { useAppStore } from "../../stores/useAppStore";
 
 export default function ProfileScreen() {
     const colors = useThemedColors();
     const router = useRouter();
+    
+    // Use Zustand store for profile data
+    const { profile: storeProfile, setProfile, user: storeUser } = useAppStore();
+    
     const [userProfile, setUserProfile] = useState(null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
@@ -62,22 +67,35 @@ export default function ProfileScreen() {
 
     const loadUserData = async (isRefresh = false) => {
         try {
-            if (!isRefresh) {
-                setIsLoading(true);
+            // If we have cached profile data and not refreshing, use it immediately (no loading spinner)
+            if (!isRefresh && storeProfile) {
+                setUserProfile(storeProfile);
+                setIsLoading(false);
+                // Still fetch stats and achievements in background, but don't show loading
+            } else {
+                if (!isRefresh) {
+                    setIsLoading(true);
+                }
             }
 
             // Get current user
-            const user = await getUser();
+            const user = storeUser || await getUser();
             if (!user) {
                 console.log("No user found");
+                setIsLoading(false);
                 return;
             }
 
-            // Load profile data
-            const profile = await getProfile(user.id);
-            setUserProfile(profile);
+            // Load profile data (only fetch if refreshing or not cached)
+            if (isRefresh || !storeProfile) {
+                const profile = await getProfile(user.id);
+                setUserProfile(profile);
+                setProfile(profile); // Update Zustand store
+            } else {
+                setUserProfile(storeProfile);
+            }
 
-            // Load user statistics
+            // Load user statistics (always fetch as they change frequently)
             const stats = await getUserStats(user.id);
             setUserStats(stats);
 
@@ -257,7 +275,7 @@ export default function ProfileScreen() {
                         </View>
                         <TouchableOpacity
                             style={styles.editButton}
-                            onPress={() => router.push('/edit-profile')}
+                            onPress={() => router.push('/profile/edit-profile')}
                         >
                             <Edit size={20} color={colors.background.primary} />
                         </TouchableOpacity>
@@ -427,7 +445,7 @@ export default function ProfileScreen() {
                         </View>
                         <TouchableOpacity
                             style={styles.completeProfileButton}
-                            onPress={() => router.push('/edit-profile')}
+                            onPress={() => router.push('/profile/edit-profile')}
                         >
                             <Edit size={20} color={colors.background.primary} style={{ marginRight: 8 }} />
                             <Text style={styles.completeProfileButtonText}>
@@ -467,7 +485,7 @@ export default function ProfileScreen() {
                     <Text style={styles.sectionTitle}>Account</Text>
                     <TouchableOpacity 
                         style={styles.actionButton}
-                        onPress={() => router.push('/edit-profile')}
+                        onPress={() => router.push('/profile/edit-profile')}
                     >
                         <View style={styles.actionIcon}>
                             <Edit size={20} color={colors.primary[600]} />
@@ -483,7 +501,7 @@ export default function ProfileScreen() {
                         </View>
                         <Text style={styles.actionText}>Workout Defaults</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
+                    {/* <TouchableOpacity style={styles.actionButton}>
                         <View style={styles.actionIcon}>
                             <Settings size={20} color={colors.primary[600]} />
                         </View>
@@ -494,7 +512,7 @@ export default function ProfileScreen() {
                             <Target size={20} color={colors.primary[600]} />
                         </View>
                         <Text style={styles.actionText}>Fitness Goals</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <TouchableOpacity
                         style={[styles.actionButton, styles.logoutButton]}
                         onPress={handleLogout}
