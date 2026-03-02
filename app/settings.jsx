@@ -22,6 +22,7 @@ import { getColors } from "../constants/ui_colors";
 import { signOut } from "../lib/auth";
 import { useTheme } from "../contexts/ThemeContext";
 import PrivacySettingsModal from "../components/Profile/PrivacySettingsModal";
+import PrivacyPolicyModal from "../components/Profile/PrivacyPolicyModal";
 import DataSharingModal from "../components/Profile/DataSharingModal";
 import AppVersionModal from "../components/Profile/AppVersionModal";
 
@@ -35,6 +36,7 @@ export default function SettingsScreen() {
     const [biometricAuth, setBiometricAuth] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+    const [showPrivacyPolicyModal, setShowPrivacyPolicyModal] = useState(false);
     const [showDataSharingModal, setShowDataSharingModal] = useState(false);
     const [showAppVersionModal, setShowAppVersionModal] = useState(false);
 
@@ -182,7 +184,7 @@ export default function SettingsScreen() {
             if (item.type === "logout") {
                 handleLogout();
             } else if (item.title === "Privacy Policy") {
-                router.push("/privacy-policy");
+                setShowPrivacyPolicyModal(true);
             } else if (item.title === "Privacy Settings") {
                 setShowPrivacyModal(true);
             } else if (item.title === "Data Sharing") {
@@ -253,6 +255,10 @@ export default function SettingsScreen() {
             <PrivacySettingsModal 
                 visible={showPrivacyModal} 
                 onClose={() => setShowPrivacyModal(false)} 
+            />
+            <PrivacyPolicyModal 
+                visible={showPrivacyPolicyModal} 
+                onClose={() => setShowPrivacyPolicyModal(false)} 
             />
             <DataSharingModal 
                 visible={showDataSharingModal} 
