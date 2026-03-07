@@ -3,7 +3,9 @@ module.exports = function (api) {
   return {
     presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
     plugins: [
-      'react-native-worklets/plugin',  // Must be last
+      // Temporarily disabled to isolate Hermes GC crash (SIGSEGV in GCScope::_newChunkAndPHV).
+      // Re-enable once root cause is confirmed. See fix_hermes_gc_crash plan.
+      // 'react-native-worklets/plugin',
     ],
   };
 };

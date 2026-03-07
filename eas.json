@@ -6,13 +6,28 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bxoyujsnxtadtdxuwoaf.supabase.co",
+        "EXPO_PUBLIC_SUPBASE_ANON": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4b3l1anNueHRhZHRkeHV3b2FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MTg1NzYsImV4cCI6MjA3MTE5NDU3Nn0.q8p1xxZy-KiBdaN72Ng9Zhc9SDuet37a4y4FuCkq7_g",
+        "EXPO_PUBLIC_SITE_URL": "https://progressive-overloading.com"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bxoyujsnxtadtdxuwoaf.supabase.co",
+        "EXPO_PUBLIC_SUPBASE_ANON": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4b3l1anNueHRhZHRkeHV3b2FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MTg1NzYsImV4cCI6MjA3MTE5NDU3Nn0.q8p1xxZy-KiBdaN72Ng9Zhc9SDuet37a4y4FuCkq7_g",
+        "EXPO_PUBLIC_SITE_URL": "https://progressive-overloading.com"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bxoyujsnxtadtdxuwoaf.supabase.co",
+        "EXPO_PUBLIC_SUPBASE_ANON": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4b3l1anNueHRhZHRkeHV3b2FmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MTg1NzYsImV4cCI6MjA3MTE5NDU3Nn0.q8p1xxZy-KiBdaN72Ng9Zhc9SDuet37a4y4FuCkq7_g",
+        "EXPO_PUBLIC_SITE_URL": "https://progressive-overloading.com"
+      }
     },
     "ios-simulator": {
       "extends": "development",
