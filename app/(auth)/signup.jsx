@@ -111,11 +111,16 @@ const SignUpScreen = () => {
     password === confirmPassword &&
     acceptTerms
 
-    const handleModalClose = () => {
-        setShowVerificationModal(false)
-        // After successful signup, show signin screen
-        // The auth state listener will handle navigation automatically
-    }
+  const handleModalClose = () => {
+    setShowVerificationModal(false)
+    router.push({
+      pathname: "/(auth)/signin",
+      params: {
+        email,
+        password,
+      },
+    })
+  }
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
@@ -126,7 +131,7 @@ const SignUpScreen = () => {
         visible={showVerificationModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowVerificationModal(false)}
+        onRequestClose={handleModalClose}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
