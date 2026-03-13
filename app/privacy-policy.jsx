@@ -53,7 +53,7 @@ export default function PrivacyPolicyScreen() {
     },
     {
       title: "Contact Us",
-      content: "If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us at:\n\nEmail: privacy@progressiveoverloading.com\n\nLast Updated: January 2024"
+      content: "If you have any questions about this Privacy Policy or wish to exercise your rights, please contact us at:\n\nEmail: senayousofiali@gmail.com\n\nLast Updated: January 2026"
     }
   ];
 
