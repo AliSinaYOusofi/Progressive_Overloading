@@ -44,6 +44,8 @@ const SignUpScreen = () => {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("Something went wrong while sending the confirmation email. Please try again.")
 
   const [nameError, setNameError] = useState("")
   const [emailError, setEmailError] = useState("")
@@ -85,11 +87,15 @@ const SignUpScreen = () => {
       const { data, error } = await signUp(email, password, name)
       if (error) {
         console.log(error)
+        setErrorMessage(error.message || "Something went wrong while sending the confirmation email. Please try again.")
+        setShowErrorModal(true)
         return
       }
       setShowVerificationModal(true)
     } catch (error) {
-      console.log(error, ' *(***********')
+      console.log(error, " *(***********")
+      setErrorMessage(error.message || "Something went wrong while sending the confirmation email. Please try again.")
+      setShowErrorModal(true)
     } finally {
       setIsLoading(false)
     }
@@ -155,6 +161,35 @@ const SignUpScreen = () => {
                 onPress={handleModalClose}
               >
                 <Text style={styles.modalPrimaryButtonText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconCircle, { backgroundColor: colors.status.error }]}>
+                <Text style={{ color: colors.text.white, fontWeight: "700", fontSize: 18 }}>!</Text>
+              </View>
+              <Text style={styles.modalTitle}>Unable to send email</Text>
+            </View>
+            <Text style={styles.modalBody}>
+              {errorMessage}
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <Text style={styles.modalPrimaryButtonText}>OK</Text>
               </TouchableOpacity>
             </View>
           </View>
