@@ -1,23 +1,36 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
+import { BarChart2 } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
 import { getProgressiveOverloadComparison } from "../../lib/database";
 import ProgressiveOverloadInsights from "../../components/Charts/ProgressiveOverloadInsights";
 import TimeframeFilter from "../../components/Charts/TimeframeFilter";
 
+const TIMEFRAME_LABELS = {
+    7: "7 days",
+    30: "1 month",
+    90: "3 months",
+    180: "6 months",
+    365: "1 year",
+};
+
+function getTimeframeLabel(tf) {
+    if (tf === "all" || tf === 36500) return "all time";
+    return TIMEFRAME_LABELS[tf] || `${tf} days`;
+}
+
 export default function ProgressiveOverloadScreen() {
     const colors = useThemedColors();
     const [comparisonData, setComparisonData] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
+    const [loadCompleted, setLoadCompleted] = useState(false);
+    const [selectedTimeframe, setSelectedTimeframe] = useState(30);
     
-    // Use selective subscriptions from store - subscribe to entire nested object
     const user = useAppStore(state => state.user);
     const progressiveOverloadInsightsData = useAppStore(state => state.chartsData.progressiveOverloadInsights);
     const loadProgressiveOverloadInsights = useAppStore(state => state.loadProgressiveOverloadInsights);
     
-    // Extract timeframe-specific data using useMemo to avoid infinite loops
     const progressiveOverloadInsights = useMemo(() => {
       const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
       return progressiveOverloadInsightsData[timeframeValue] || [];
@@ -25,8 +38,8 @@ export default function ProgressiveOverloadScreen() {
 
     useEffect(() => {
         if (user) {
+            setLoadCompleted(false);
             loadProgressiveOverloadInsights(selectedTimeframe).then(() => {
-                // Fetch comparison data if needed
                 const timeframeValue = selectedTimeframe === 'all' ? 36500 : selectedTimeframe;
                 if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
                     getProgressiveOverloadComparison(user.id, timeframeValue).then(comparison => {
@@ -37,13 +50,13 @@ export default function ProgressiveOverloadScreen() {
                 } else {
                     setComparisonData(null);
                 }
-            });
+            }).finally(() => setLoadCompleted(true));
         }
     }, [user, selectedTimeframe]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        // Check cache first - don't force refresh
+        setLoadCompleted(false);
         loadProgressiveOverloadInsights(newTimeframe, false).then(() => {
             const timeframeValue = newTimeframe === 'all' ? 36500 : newTimeframe;
             if (timeframeValue !== 36500 && typeof timeframeValue === 'number' && timeframeValue <= 365) {
@@ -54,15 +67,13 @@ export default function ProgressiveOverloadScreen() {
             setComparisonData(comparison);
         }).catch(error => {
             console.error("Error loading comparison data:", error);
-        });
+        }).finally(() => setLoadCompleted(true));
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
-        // Calculate days difference from start to end date
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        // Use daysDiff as the timeframe - this will calculate from today backwards
-        // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
+        setLoadCompleted(false);
         loadProgressiveOverloadInsights(daysDiff, true).then(() => {
             if (daysDiff <= 365) {
                 return getProgressiveOverloadComparison(user.id, daysDiff);
@@ -72,7 +83,7 @@ export default function ProgressiveOverloadScreen() {
             setComparisonData(comparison);
         }).catch(error => {
             console.error("Error loading comparison data:", error);
-        });
+        }).finally(() => setLoadCompleted(true));
     };
 
     const onRefresh = () => {
@@ -90,10 +101,9 @@ export default function ProgressiveOverloadScreen() {
         });
     };
 
-    // Show loading only if no data exists and we're waiting for initial load
-    const isLoading = !progressiveOverloadInsights || progressiveOverloadInsights.length === 0;
-    
-    if (isLoading && !refreshing) {
+    const hasData = progressiveOverloadInsights && progressiveOverloadInsights.length > 0;
+
+    if (!loadCompleted && !hasData && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
@@ -112,18 +122,55 @@ export default function ProgressiveOverloadScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
-                {/* Timeframe Filter */}
                 <TimeframeFilter 
                     selectedTimeframe={selectedTimeframe}
                     onTimeframeChange={handleTimeframeChange}
                     onCustomDateRange={handleCustomDateRange}
                 />
 
-                <ProgressiveOverloadInsights 
-                    progressiveOverloadInsights={progressiveOverloadInsights}
-                    parentTimeframe={selectedTimeframe}
-                    comparisonData={comparisonData}
-                />
+                {hasData ? (
+                    <ProgressiveOverloadInsights 
+                        progressiveOverloadInsights={progressiveOverloadInsights}
+                        parentTimeframe={selectedTimeframe}
+                        comparisonData={comparisonData}
+                    />
+                ) : (
+                    <View style={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingVertical: 60,
+                        paddingHorizontal: 24,
+                    }}>
+                        <View style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: 32,
+                            backgroundColor: colors.primary[100] || colors.background.input,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: 20,
+                        }}>
+                            <BarChart2 size={28} color={colors.primary[600]} />
+                        </View>
+                        <Text style={{
+                            fontSize: 18,
+                            fontWeight: '700',
+                            color: colors.text.primary,
+                            textAlign: 'center',
+                            marginBottom: 8,
+                        }}>
+                            No data in this range
+                        </Text>
+                        <Text style={{
+                            fontSize: 15,
+                            color: colors.text.secondary,
+                            textAlign: 'center',
+                            lineHeight: 22,
+                        }}>
+                            There are no progressive overload insights for the past {getTimeframeLabel(selectedTimeframe)}. Try selecting a longer date range or log more workouts to analyze your progression.
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
         </View>
     );

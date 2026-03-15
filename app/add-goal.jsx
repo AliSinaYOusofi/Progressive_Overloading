@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { 
   View, 
   Text, 
@@ -15,11 +15,13 @@ import {
 import { Calendar, CheckCircle2, RotateCcw, Trash2, ChevronDown, AlertCircle, Clock, ArrowLeft } from "lucide-react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, differenceInDays, differenceInYears, differenceInMonths, startOfDay } from 'date-fns';
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../hooks/useThemedColors";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppStore } from "../stores/useAppStore";
 import { createFitnessGoal, updateFitnessGoal, deleteFitnessGoal } from "../lib/database";
+import AnimatedSlideIn from "../components/AnimatedSlideIn";
 
 export default function AddGoalScreen() {
   const colors = useThemedColors();
@@ -51,6 +53,11 @@ export default function AddGoalScreen() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+  const [focusTrigger, setFocusTrigger] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    setFocusTrigger((t) => t + 1);
+  }, []));
 
   // Weight units only for goals
   const weightUnits = [
@@ -472,23 +479,25 @@ export default function AddGoalScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          disabled={isSubmitting}
-        >
-          <ArrowLeft size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>
-            {isEditing ? "Edit Goal" : "Add Fitness Goal"}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isEditing ? "Update your fitness goal" : "Set a new fitness goal"}
-          </Text>
+      <AnimatedSlideIn index={0} trigger={focusTrigger}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            disabled={isSubmitting}
+          >
+            <ArrowLeft size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>
+              {isEditing ? "Edit Goal" : "Add Fitness Goal"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isEditing ? "Update your fitness goal" : "Set a new fitness goal"}
+            </Text>
+          </View>
         </View>
-      </View>
+      </AnimatedSlideIn>
 
       <ScrollView 
         style={{ flex: 1 }}
@@ -497,27 +506,29 @@ export default function AddGoalScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Description Section */}
-        <View style={{ marginTop: 0, marginBottom: 32, alignItems: 'center' }}>
-          <Text style={{ 
-            fontSize: 28, 
-            fontWeight: '700',
-            color: colors.text.primary, 
-            textAlign: 'center',
-            marginBottom: 12,
-          }}>
-            {isEditing ? "Edit Goal" : "Add Fitness Goal"}
-          </Text>
-          <Text style={{ 
-            fontSize: 16, 
-            color: colors.text.secondary, 
-            textAlign: 'center',
-            lineHeight: 22,
-          }}>
-            {isEditing 
-              ? "Update your fitness goal and track your progress" 
-              : "Set a new fitness goal and track your progress over time"}
-          </Text>
-        </View>
+        <AnimatedSlideIn index={1} trigger={focusTrigger}>
+          <View style={{ marginTop: 0, marginBottom: 32, alignItems: 'center' }}>
+            <Text style={{ 
+              fontSize: 28, 
+              fontWeight: '700',
+              color: colors.text.primary, 
+              textAlign: 'center',
+              marginBottom: 12,
+            }}>
+              {isEditing ? "Edit Goal" : "Add Fitness Goal"}
+            </Text>
+            <Text style={{ 
+              fontSize: 16, 
+              color: colors.text.secondary, 
+              textAlign: 'center',
+              lineHeight: 22,
+            }}>
+              {isEditing 
+                ? "Update your fitness goal and track your progress" 
+                : "Set a new fitness goal and track your progress over time"}
+            </Text>
+          </View>
+        </AnimatedSlideIn>
 
         {/* Success Message */}
         {successMessage ? (
@@ -609,50 +620,55 @@ export default function AddGoalScreen() {
         ) : null}
 
         {/* Goal Title */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Goal Title</Text>
-          <TextInput
-            placeholder="e.g. Bench Press 225 lbs"
-            value={formState.title}
-            onChangeText={text => setFormState(prev => ({ ...prev, title: text }))}
-            style={{ 
-              borderWidth: 1, 
-              borderColor: colors.border.light, 
-              borderRadius: 12, 
-              paddingHorizontal: 16, 
-              paddingVertical: 12, 
-              color: colors.text.primary,
-              backgroundColor: colors.background.card || "white"
-            }}
-            placeholderTextColor={colors.text.tertiary}
-            editable={!isSubmitting}
-          />
-        </View>
+        <AnimatedSlideIn index={2} trigger={focusTrigger}>
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Goal Title</Text>
+            <TextInput
+              placeholder="e.g. Bench Press 225 lbs"
+              value={formState.title}
+              onChangeText={text => setFormState(prev => ({ ...prev, title: text }))}
+              style={{ 
+                borderWidth: 1, 
+                borderColor: colors.border.light, 
+                borderRadius: 12, 
+                paddingHorizontal: 16, 
+                paddingVertical: 12, 
+                color: colors.text.primary,
+                backgroundColor: colors.background.card || "white"
+              }}
+              placeholderTextColor={colors.text.tertiary}
+              editable={!isSubmitting}
+            />
+          </View>
+        </AnimatedSlideIn>
 
         {/* Description */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Description (Optional)</Text>
-          <TextInput
-            placeholder="Describe your goal in detail"
-            value={formState.description}
-            onChangeText={text => setFormState(prev => ({ ...prev, description: text }))}
-            style={{ 
-              borderWidth: 1, 
-              borderColor: colors.border.light, 
-              borderRadius: 12, 
-              paddingHorizontal: 16, 
-              paddingVertical: 12, 
-              color: colors.text.primary,
-              backgroundColor: colors.background.card || "white"
-            }}
-            placeholderTextColor={colors.text.tertiary}
-            multiline
-            numberOfLines={3}
-            editable={!isSubmitting}
-          />
-        </View>
+        <AnimatedSlideIn index={3} trigger={focusTrigger}>
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Description (Optional)</Text>
+            <TextInput
+              placeholder="Describe your goal in detail"
+              value={formState.description}
+              onChangeText={text => setFormState(prev => ({ ...prev, description: text }))}
+              style={{ 
+                borderWidth: 1, 
+                borderColor: colors.border.light, 
+                borderRadius: 12, 
+                paddingHorizontal: 16, 
+                paddingVertical: 12, 
+                color: colors.text.primary,
+                backgroundColor: colors.background.card || "white"
+              }}
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              numberOfLines={3}
+              editable={!isSubmitting}
+            />
+          </View>
+        </AnimatedSlideIn>
 
         {/* Current Value / Target Value / Unit */}
+        <AnimatedSlideIn index={4} trigger={focusTrigger}>
         <View style={{ flexDirection: 'row', marginBottom: 24 }}>
           <View style={{ flex: 1, marginRight: 8 }}>
             <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Current Value</Text>
@@ -719,8 +735,10 @@ export default function AddGoalScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        </AnimatedSlideIn>
 
         {/* Target Date */}
+        <AnimatedSlideIn index={5} trigger={focusTrigger}>
         <View style={{ marginBottom: 24 }}>
           <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Target Date (Optional)</Text>
           <TouchableOpacity
@@ -794,46 +812,49 @@ export default function AddGoalScreen() {
             Leave empty for no deadline
           </Text>
         </View>
+        </AnimatedSlideIn>
 
         {/* Action Buttons */}
-        <View style={{ flexDirection: 'row', marginTop: 8 }}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            disabled={isSubmitting}
-            style={{ 
-              flex: 1, 
-              backgroundColor: colors.action.cancel, 
-              borderRadius: 12, 
-              paddingVertical: 16, 
-              marginRight: 8, 
-              alignItems: 'center',
-              opacity: isSubmitting ? 0.5 : 1 
-            }}
-          >
-            <Text style={{ color: colors.action.cancelText, fontWeight: '600' }}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleSubmit} 
-            disabled={isSubmitting}
-            style={{ 
-              flex: 1, 
-              backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
-              borderRadius: 12, 
-              paddingVertical: 16, 
-              marginLeft: 8, 
-              alignItems: 'center',
-              opacity: isSubmitting ? 0.7 : 1 
-            }}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={colors.text.white} />
-            ) : (
-              <Text style={{ color: colors.text.white, fontWeight: '600' }}>
-                {isEditing ? "Save Changes" : "Add Goal"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        <AnimatedSlideIn index={6} trigger={focusTrigger}>
+          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              disabled={isSubmitting}
+              style={{ 
+                flex: 1, 
+                backgroundColor: colors.action.cancel, 
+                borderRadius: 12, 
+                paddingVertical: 16, 
+                marginRight: 8, 
+                alignItems: 'center',
+                opacity: isSubmitting ? 0.5 : 1 
+              }}
+            >
+              <Text style={{ color: colors.action.cancelText, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={handleSubmit} 
+              disabled={isSubmitting}
+              style={{ 
+                flex: 1, 
+                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
+                borderRadius: 12, 
+                paddingVertical: 16, 
+                marginLeft: 8, 
+                alignItems: 'center',
+                opacity: isSubmitting ? 0.7 : 1 
+              }}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={colors.text.white} />
+              ) : (
+                <Text style={{ color: colors.text.white, fontWeight: '600' }}>
+                  {isEditing ? "Save Changes" : "Add Goal"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </AnimatedSlideIn>
       </ScrollView>
 
       {/* Unit Dropdown Modal */}

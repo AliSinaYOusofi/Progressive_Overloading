@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Modal } from "react-native";
 import { ChevronDown, ArrowLeft } from "lucide-react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../hooks/useThemedColors";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";
@@ -8,6 +9,7 @@ import { useAppStore } from "../stores/useAppStore";
 import { getCurrentUser } from "../lib/database";
 import exerciseNames from "../exercise_names.json";
 import { useExerciseMuscleGroups } from "../hooks/useExerciseMuscleGroups";
+import AnimatedSlideIn from "../components/AnimatedSlideIn";
 
 export default function LogSetScreen() {
     const colors = useThemedColors();
@@ -15,6 +17,11 @@ export default function LogSetScreen() {
     const router = useRouter();
     const { user, addExerciseSet, refreshRecentSets, refreshProgress } = useAppStore();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [focusTrigger, setFocusTrigger] = useState(0);
+
+    useFocusEffect(useCallback(() => {
+        setFocusTrigger((t) => t + 1);
+    }, []));
 
     const [exerciseName, setExerciseName] = useState("");
     const [weight, setWeight] = useState("");
@@ -335,19 +342,21 @@ export default function LogSetScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <ArrowLeft size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.title}>Log Exercise</Text>
-                    <Text style={styles.subtitle}>Track your workout progress</Text>
+            <AnimatedSlideIn index={0} trigger={focusTrigger}>
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.back()}
+                    >
+                        <ArrowLeft size={24} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.title}>Log Exercise</Text>
+                        <Text style={styles.subtitle}>Track your workout progress</Text>
+                    </View>
+                    <View style={{ width: 40 }} />
                 </View>
-                <View style={{ width: 40 }} />
-            </View>
+            </AnimatedSlideIn>
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
@@ -361,25 +370,27 @@ export default function LogSetScreen() {
                     keyboardShouldPersistTaps="handled"
                 >
                     {/* Description Section */}
-                    <View style={{ marginTop: 0, marginBottom: 32, alignItems: 'center' }}>
-                        <Text style={{ 
-                            fontSize: 28, 
-                            fontWeight: '700',
-                            color: colors.text.primary, 
-                            textAlign: 'center',
-                            marginBottom: 12,
-                        }}>
-                            Log Exercise
-                        </Text>
-                        <Text style={{ 
-                            fontSize: 16, 
-                            color: colors.text.secondary, 
-                            textAlign: 'center',
-                            lineHeight: 22,
-                        }}>
-                            Record your exercise sets and track your strength progress over time
-                        </Text>
-                    </View>
+                    <AnimatedSlideIn index={1} trigger={focusTrigger}>
+                        <View style={{ marginTop: 0, marginBottom: 32, alignItems: 'center' }}>
+                            <Text style={{ 
+                                fontSize: 28, 
+                                fontWeight: '700',
+                                color: colors.text.primary, 
+                                textAlign: 'center',
+                                marginBottom: 12,
+                            }}>
+                                Log Exercise
+                            </Text>
+                            <Text style={{ 
+                                fontSize: 16, 
+                                color: colors.text.secondary, 
+                                textAlign: 'center',
+                                lineHeight: 22,
+                            }}>
+                                Record your exercise sets and track your strength progress over time
+                            </Text>
+                        </View>
+                    </AnimatedSlideIn>
 
                     {/* Success Message */}
                     {successMessage ? (
@@ -422,6 +433,7 @@ export default function LogSetScreen() {
                     ) : null}
 
                     {/* Exercise Input */}
+                    <AnimatedSlideIn index={2} trigger={focusTrigger}>
                     <View style={{ marginBottom: 20, position: "relative", zIndex: 1 }}>
                         <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Exercise</Text>
                         <TextInput
@@ -529,8 +541,10 @@ export default function LogSetScreen() {
                             </View>
                         )}
                     </View>
+                    </AnimatedSlideIn>
 
                     {/* Weight, Reps, Sets, Unit Row */}
+                    <AnimatedSlideIn index={3} trigger={focusTrigger}>
                     <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text.secondary, marginBottom: 8, fontSize: 14, fontWeight: "500" }}>Weight</Text>
@@ -643,31 +657,34 @@ export default function LogSetScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    </AnimatedSlideIn>
 
                     {/* Submit Button */}
-                    <TouchableOpacity
-                        onPress={handleSubmit}
-                        disabled={isSubmitting}
-                        style={{ 
-                            backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
-                            borderRadius: 12, 
-                            paddingVertical: 16, 
-                            alignItems: "center", 
-                            marginTop: 8,
-                            shadowColor: colors.shadow?.colored || (isDarkMode ? colors.primary[200] : colors.primary[600]),
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 4,
-                            opacity: isSubmitting ? 0.7 : 1,
-                        }}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                            <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>Save Set</Text>
-                        )}
-                    </TouchableOpacity>
+                    <AnimatedSlideIn index={4} trigger={focusTrigger}>
+                        <TouchableOpacity
+                            onPress={handleSubmit}
+                            disabled={isSubmitting}
+                            style={{ 
+                                backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
+                                borderRadius: 12, 
+                                paddingVertical: 16, 
+                                alignItems: "center", 
+                                marginTop: 8,
+                                shadowColor: colors.shadow?.colored || (isDarkMode ? colors.primary[200] : colors.primary[600]),
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 8,
+                                elevation: 4,
+                                opacity: isSubmitting ? 0.7 : 1,
+                            }}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                                <Text style={{ color: "white", fontWeight: "600", fontSize: 16 }}>Save Set</Text>
+                            )}
+                        </TouchableOpacity>
+                    </AnimatedSlideIn>
                 </ScrollView>
             </KeyboardAvoidingView>
 

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
 import { useSetActions } from "../../hooks/useSetActions";
 import { useGoalActions } from "../../hooks/useGoalActions";
+import AnimatedItem from "../../components/AnimatedItem";
 
 // Components
 import HomeScreenHeader from "../../components/HomeScreen/HomeScreenHeader";
@@ -69,6 +71,12 @@ export default function HomeScreen() {
         removeFitnessGoal,
     });
 
+    // Animation trigger
+    const [focusTrigger, setFocusTrigger] = useState(0);
+    useFocusEffect(useCallback(() => {
+        setFocusTrigger((t) => t + 1);
+    }, []));
+
     // UI state
     const [showRMInfoModal, setShowRMInfoModal] = useState(false);
     const [cardExpanded, setCardExpanded] = useState({
@@ -107,77 +115,89 @@ export default function HomeScreen() {
             }
         >
             {/* Header */}
-            <HomeScreenHeader
-                profile={profile}
-                user={user}
-                currentStreak={currentStreak}
-            />
+            <AnimatedItem index={0} trigger={focusTrigger}>
+                <HomeScreenHeader
+                    profile={profile}
+                    user={user}
+                    currentStreak={currentStreak}
+                />
+            </AnimatedItem>
 
             <View style={{ paddingHorizontal: 24, marginTop: -16 }}>
                 {/* Progress Section */}
-                <ProgressSection
-                    progressByExercise={progressByExercise}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    handleOpenLogSet={setActions.handleOpenLogSet}
-                    setShowRMInfoModal={setShowRMInfoModal}
-                />
+                <AnimatedItem index={1} trigger={focusTrigger}>
+                    <ProgressSection
+                        progressByExercise={progressByExercise}
+                        cardExpanded={cardExpanded}
+                        toggleCardExpansion={toggleCardExpansion}
+                        handleOpenLogSet={setActions.handleOpenLogSet}
+                        setShowRMInfoModal={setShowRMInfoModal}
+                    />
+                </AnimatedItem>
 
                 {/* Goals Section */}
-                <GoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                    isCompleted={false}
-                />
+                <AnimatedItem index={2} trigger={focusTrigger}>
+                    <GoalsSection
+                        fitnessGoals={fitnessGoals}
+                        cardExpanded={cardExpanded}
+                        toggleCardExpansion={toggleCardExpansion}
+                        openAddGoalModal={goalActions.openAddGoalModal}
+                        openGoalDetails={goalActions.openGoalDetails}
+                        openEditGoalModal={goalActions.openEditGoalModal}
+                        handleToggleComplete={goalActions.handleToggleComplete}
+                        handleDeleteGoal={goalActions.handleDeleteGoal}
+                        completeLoadingGoalId={goalActions.completeLoadingGoalId}
+                        deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
+                        isCompleted={false}
+                    />
+                </AnimatedItem>
 
                 {/* Expired Goals Section */}
-                <ExpiredGoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                />
+                <AnimatedItem index={3} trigger={focusTrigger}>
+                    <ExpiredGoalsSection
+                        fitnessGoals={fitnessGoals}
+                        cardExpanded={cardExpanded}
+                        toggleCardExpansion={toggleCardExpansion}
+                        openAddGoalModal={goalActions.openAddGoalModal}
+                        openGoalDetails={goalActions.openGoalDetails}
+                        openEditGoalModal={goalActions.openEditGoalModal}
+                        handleToggleComplete={goalActions.handleToggleComplete}
+                        handleDeleteGoal={goalActions.handleDeleteGoal}
+                        completeLoadingGoalId={goalActions.completeLoadingGoalId}
+                        deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
+                    />
+                </AnimatedItem>
 
                 {/* Completed Goals Section */}
-                <GoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                    isCompleted={true}
-                />
+                <AnimatedItem index={4} trigger={focusTrigger}>
+                    <GoalsSection
+                        fitnessGoals={fitnessGoals}
+                        cardExpanded={cardExpanded}
+                        toggleCardExpansion={toggleCardExpansion}
+                        openAddGoalModal={goalActions.openAddGoalModal}
+                        openGoalDetails={goalActions.openGoalDetails}
+                        openEditGoalModal={goalActions.openEditGoalModal}
+                        handleToggleComplete={goalActions.handleToggleComplete}
+                        handleDeleteGoal={goalActions.handleDeleteGoal}
+                        completeLoadingGoalId={goalActions.completeLoadingGoalId}
+                        deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
+                        isCompleted={true}
+                    />
+                </AnimatedItem>
 
                 {/* Recent Sets Section */}
-                <RecentSetsSection
-                    recentSets={recentSets}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    handleOpenLogSet={setActions.handleOpenLogSet}
-                    openSetDetails={setActions.openSetDetails}
-                    openEditSetModal={setActions.openEditSetModal}
-                    handleDeleteSetFromList={setActions.handleDeleteSetFromList}
-                    deleteLoadingSetId={setActions.deleteLoadingSetId}
-                />
+                <AnimatedItem index={5} trigger={focusTrigger}>
+                    <RecentSetsSection
+                        recentSets={recentSets}
+                        cardExpanded={cardExpanded}
+                        toggleCardExpansion={toggleCardExpansion}
+                        handleOpenLogSet={setActions.handleOpenLogSet}
+                        openSetDetails={setActions.openSetDetails}
+                        openEditSetModal={setActions.openEditSetModal}
+                        handleDeleteSetFromList={setActions.handleDeleteSetFromList}
+                        deleteLoadingSetId={setActions.deleteLoadingSetId}
+                    />
+                </AnimatedItem>
             </View>
 
             {/* Modals */}

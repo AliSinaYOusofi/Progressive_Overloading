@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../../stores/useAppStore";
+import AnimatedItem from "../../components/AnimatedItem";
 
 // Import chart components
 import QuickStats from "../../components/Charts/QuickStats";
@@ -92,6 +94,22 @@ export default function ChartsScreen() {
       goalAnalytics,
     }), [userStats, exerciseProgression, volumeProgression, strengthStandards, monthlyStats, personalRecords, weeklyProgress, rpeAnalysis, progressiveOverloadInsights, muscleGroupHeatmap, goalAnalytics]);
     
+    const [focusTrigger, setFocusTrigger] = useState(0);
+    const skipNextAnimationRef = useRef(false);
+
+    const handleChartPress = useCallback((path) => {
+        skipNextAnimationRef.current = true;
+        router.push(path);
+    }, [router]);
+
+    useFocusEffect(useCallback(() => {
+        if (skipNextAnimationRef.current) {
+            skipNextAnimationRef.current = false;
+            return;
+        }
+        setFocusTrigger((t) => t + 1);
+    }, []));
+
     const chartsLoading = useAppStore(state => state.chartsLoading);
     const chartsRefreshing = useAppStore(state => state.chartsRefreshing);
     const chartsError = useAppStore(state => state.chartsError);
@@ -152,10 +170,12 @@ export default function ChartsScreen() {
                 }
             >
                 {/* Header */}
-                <View style={{ alignItems: 'center', marginBottom: 40 }}>
-                    <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Insights</Text>
-                    <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center', fontWeight: '400' }}>Track your strength gains and performance</Text>
-                </View>
+                <AnimatedItem index={0} trigger={focusTrigger}>
+                    <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                        <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Insights</Text>
+                        <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center', fontWeight: '400' }}>Track your strength gains and performance</Text>
+                    </View>
+                </AnimatedItem>
 
                 {/* Error Banner - Show if there's an error but we have some data */}
                 {chartsError && chartsData.userStats && (
@@ -191,105 +211,127 @@ export default function ChartsScreen() {
                 )}
 
                 {/* Quick Stats - Always Visible */}
-                <QuickStats 
-                    userStats={chartsData.userStats}
-                    personalRecords={chartsData.personalRecords}
-                />
+                <AnimatedItem index={1} trigger={focusTrigger}>
+                    <QuickStats 
+                        userStats={chartsData.userStats}
+                        personalRecords={chartsData.personalRecords}
+                    />
+                </AnimatedItem>
 
                 {/* Exercise Progression Charts */}
-                <PremiumChartCard
-                    icon={ExerciseProgressionIcon}
-                    title="Exercise Progression"
-                    subtitle="Track your one-rep max (1RM) progression over time for each exercise. See how your strength has improved and identify your strongest movements."
-                    onPress={() => router.push('/charts/exercise-progression')}
-                />
+                <AnimatedItem index={2} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={ExerciseProgressionIcon}
+                        title="Exercise Progression"
+                        subtitle="Track your one-rep max (1RM) progression over time for each exercise. See how your strength has improved and identify your strongest movements."
+                        onPress={() => handleChartPress('/charts/exercise-progression')}
+                    />
+                </AnimatedItem>
 
                 {/* Volume Progression */}
-                <PremiumChartCard
-                    icon={VolumeProgressionIcon}
-                    title="Volume Progression"
-                    subtitle="Monitor your total training volume - the cumulative weight lifted per day. Understand your workload patterns and training consistency over time."
-                    onPress={() => router.push('/charts/volume-progression')}
-                />
+                <AnimatedItem index={3} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={VolumeProgressionIcon}
+                        title="Volume Progression"
+                        subtitle="Monitor your total training volume - the cumulative weight lifted per day. Understand your workload patterns and training consistency over time."
+                        onPress={() => handleChartPress('/charts/volume-progression')}
+                    />
+                </AnimatedItem>
 
                 {/* Strength Standards */}
                 {chartsData.strengthStandards && chartsData.strengthStandards.length > 0 && (
-                    <CollapsibleSection
-                        title="Strength Standards"
-                        subtitle="Compare your strength levels relative to your bodyweight. See how you rank across different exercises and identify areas for improvement."
-                        icon={StrengthStandardsIcon}
-                        defaultExpanded={false}
-                    >
-                        <StrengthStandards strengthStandards={chartsData.strengthStandards} />
-                    </CollapsibleSection>
+                    <AnimatedItem index={4} trigger={focusTrigger}>
+                        <CollapsibleSection
+                            title="Strength Standards"
+                            subtitle="Compare your strength levels relative to your bodyweight. See how you rank across different exercises and identify areas for improvement."
+                            icon={StrengthStandardsIcon}
+                            defaultExpanded={false}
+                        >
+                            <StrengthStandards strengthStandards={chartsData.strengthStandards} />
+                        </CollapsibleSection>
+                    </AnimatedItem>
                 )}
 
                 {/* Personal Records */}
                 {chartsData.personalRecords && chartsData.personalRecords.length > 0 && (
-                    <PremiumChartCard
-                        icon={PersonalRecordsIcon}
-                        title="Personal Records"
-                        subtitle={`View all your personal best performances across exercises. Celebrate your achievements and track your strongest lifts for each movement.`}
-                        badge={chartsData.personalRecords.length > 0 ? `${chartsData.personalRecords.length}` : null}
-                        onPress={() => router.push('/charts/personal-records')}
-                    />
+                    <AnimatedItem index={5} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={PersonalRecordsIcon}
+                            title="Personal Records"
+                            subtitle={`View all your personal best performances across exercises. Celebrate your achievements and track your strongest lifts for each movement.`}
+                            badge={chartsData.personalRecords.length > 0 ? `${chartsData.personalRecords.length}` : null}
+                            onPress={() => handleChartPress('/charts/personal-records')}
+                        />
+                    </AnimatedItem>
                 )}
 
                 {/* Weekly Progress */}
-                <PremiumChartCard
-                    icon={WeeklyProgressIcon}
-                    title="Weekly Progress"
-                    subtitle="Get a detailed breakdown of your training week. See sets, exercises, and volume logged each day to understand your weekly training patterns."
-                    onPress={() => router.push('/charts/weekly-progress')}
-                />
+                <AnimatedItem index={6} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={WeeklyProgressIcon}
+                        title="Weekly Progress"
+                        subtitle="Get a detailed breakdown of your training week. See sets, exercises, and volume logged each day to understand your weekly training patterns."
+                        onPress={() => handleChartPress('/charts/weekly-progress')}
+                    />
+                </AnimatedItem>
 
                 {/* Monthly Trends */}
                 {chartsData.monthlyStats && chartsData.monthlyStats.length > 0 && (
-                    <PremiumChartCard
-                        icon={MonthlyTrendsIcon}
-                        title="Monthly Trends"
-                        subtitle="Analyze your training trends over months. Track sets, exercises, and overall activity to spot long-term patterns and consistency in your training."
-                        onPress={() => router.push('/charts/monthly-trends')}
-                    />
+                    <AnimatedItem index={7} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={MonthlyTrendsIcon}
+                            title="Monthly Trends"
+                            subtitle="Analyze your training trends over months. Track sets, exercises, and overall activity to spot long-term patterns and consistency in your training."
+                            onPress={() => handleChartPress('/charts/monthly-trends')}
+                        />
+                    </AnimatedItem>
                 )}
 
                 {/* Progressive Overload Insights */}
                 {chartsData.progressiveOverloadInsights && chartsData.progressiveOverloadInsights.length > 0 && (
-                    <PremiumChartCard
-                        icon={ProgressiveOverloadIcon}
-                        title="Progressive Overload Analysis"
-                        subtitle="Discover insights about your strength progression. Identify when you're effectively overloading and when you might need to adjust your training approach."
-                        onPress={() => router.push('/charts/progressive-overload')}
-                    />
+                    <AnimatedItem index={8} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={ProgressiveOverloadIcon}
+                            title="Progressive Overload Analysis"
+                            subtitle="Discover insights about your strength progression. Identify when you're effectively overloading and when you might need to adjust your training approach."
+                            onPress={() => handleChartPress('/charts/progressive-overload')}
+                        />
+                    </AnimatedItem>
                 )}
 
                 {/* Training Intensity (RPE) */}
                 {rpeAnalysis && rpeAnalysis.length > 0 && (
-                    <PremiumChartCard
-                        icon={RPEAnalysisIcon}
-                        title="Training Intensity (RPE)"
-                        subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
-                        badge="BETA"
-                        onPress={() => router.push('/charts/training-intensity')}
-                    />
+                    <AnimatedItem index={9} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={RPEAnalysisIcon}
+                            title="Training Intensity (RPE)"
+                            subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
+                            badge="BETA"
+                            onPress={() => handleChartPress('/charts/training-intensity')}
+                        />
+                    </AnimatedItem>
                 )}
 
                 {/* Muscle Group Heatmap */}
-                <PremiumChartCard
-                    icon={MuscleGroupIcon}
-                    title="Muscle Group Heatmap"
-                    subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
-                    badge="BETA"
-                    onPress={() => router.push('/charts/muscle-groups-heatmap')}
-                />
+                <AnimatedItem index={10} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={MuscleGroupIcon}
+                        title="Muscle Group Heatmap"
+                        subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
+                        badge="BETA"
+                        onPress={() => handleChartPress('/charts/muscle-groups-heatmap')}
+                    />
+                </AnimatedItem>
 
                 {/* Goal Analytics */}
-                <PremiumChartCard
-                    icon={GoalAnalyticsIcon}
-                    title="Goal Analytics"
-                    subtitle="Track your fitness goals progress, completion rates, and trends. Analyze your goal-setting patterns and achievement rates over time."
-                    onPress={() => router.push('/charts/goal-analytics')}
-                />
+                <AnimatedItem index={11} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={GoalAnalyticsIcon}
+                        title="Goal Analytics"
+                        subtitle="Track your fitness goals progress, completion rates, and trends. Analyze your goal-setting patterns and achievement rates over time."
+                        onPress={() => handleChartPress('/charts/goal-analytics')}
+                    />
+                </AnimatedItem>
 
             </ScrollView>
         </View>

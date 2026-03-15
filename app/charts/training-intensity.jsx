@@ -15,6 +15,7 @@ export default function TrainingIntensityScreen() {
     const colors = useThemedColors();
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
     const [refreshing, setRefreshing] = useState(false);
+    const [loadCompleted, setLoadCompleted] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [sortBy, setSortBy] = useState('name');
@@ -158,23 +159,22 @@ export default function TrainingIntensityScreen() {
 
     useEffect(() => {
         if (user) {
-            loadRPEAnalysis(selectedTimeframe);
+            setLoadCompleted(false);
+            loadRPEAnalysis(selectedTimeframe).finally(() => setLoadCompleted(true));
         }
     }, [user, selectedTimeframe, loadRPEAnalysis]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        // Check cache first - don't force refresh
-        loadRPEAnalysis(newTimeframe, false);
+        setLoadCompleted(false);
+        loadRPEAnalysis(newTimeframe, false).finally(() => setLoadCompleted(true));
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
-        // Calculate days difference from start to end date
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        // Use daysDiff as the timeframe - this will calculate from today backwards
-        // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
-        loadRPEAnalysis(daysDiff, true);
+        setLoadCompleted(false);
+        loadRPEAnalysis(daysDiff, true).finally(() => setLoadCompleted(true));
     };
 
     const handleSortChange = (newSortBy, newSortOrder) => {
@@ -950,10 +950,9 @@ export default function TrainingIntensityScreen() {
         });
     };
 
-    // Show loading only if no data exists and we're waiting for initial load
-    const isLoading = !rawRpeAnalysis || rawRpeAnalysis.length === 0;
-    
-    if (isLoading && !refreshing) {
+    const hasData = rawRpeAnalysis && rawRpeAnalysis.length > 0;
+
+    if (!loadCompleted && !hasData && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
