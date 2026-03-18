@@ -19,6 +19,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated"
 import { scheduleOnRN } from "react-native-worklets"
 import { getAvailableYears, filterStreakDataByYear } from '../../utils/dateUtils'
+import { MODAL_LAYOUT } from "../../constants/modal"
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -233,7 +234,7 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
       onRequestClose={onClose}
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
           <TouchableOpacity 
             activeOpacity={1} 
             onPress={onClose}
@@ -244,8 +245,7 @@ export default function StreakInfoModal({ visible, onClose, userId }) {
               style={[
                 { 
                   backgroundColor: colors.background.card,
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
+                  borderRadius: MODAL_LAYOUT.borderRadius,
                   height: screenHeight * 0.85,
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: -4 },

@@ -64,12 +64,13 @@ export const useGoalActions = ({
   const [deleteLoadingGoalId, setDeleteLoadingGoalId] = useState(null);
 
   const openAddGoalModal = () => {
-    router.push('/add-goal');
+    // Navigate to add-goal screen (homescreen stack so it works with NativeTabs on iOS)
+    router.push('/homescreen/add-goal');
   };
 
   const openEditGoalModal = (goal) => {
     router.push({
-      pathname: '/edit-goal',
+      pathname: '/homescreen/add-goal',
       params: { goalId: goal.id.toString() }
     });
   };

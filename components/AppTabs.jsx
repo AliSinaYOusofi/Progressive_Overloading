@@ -84,7 +84,6 @@ export default function AppTabs({ colors }) {
       <Tabs.Screen name="log-set" options={{ href: null }} />
       <Tabs.Screen name="edit-set" options={{ href: null }} />
       <Tabs.Screen name="add-goal" options={{ href: null }} />
-      <Tabs.Screen name="edit-goal" options={{ href: null }} />
       <Tabs.Screen name="privacy-policy" options={{ href: null }} />
     </Tabs>
   )

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
-import { BarChart2 } from "lucide-react-native";
+import { BarChart2, Target } from "lucide-react-native";
+import ChartEmptyState from "../../components/Charts/ChartEmptyState";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
 import GoalAnalytics from "../../components/Charts/GoalAnalytics";
@@ -112,41 +113,11 @@ export default function GoalAnalyticsScreen() {
                 {hasData ? (
                     <GoalAnalytics goalAnalytics={goalAnalytics} />
                 ) : (
-                    <View style={{
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: 60,
-                        paddingHorizontal: 24,
-                    }}>
-                        <View style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: 32,
-                            backgroundColor: colors.primary[100] || colors.background.input,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 20,
-                        }}>
-                            <BarChart2 size={28} color={colors.primary[600]} />
-                        </View>
-                        <Text style={{
-                            fontSize: 18,
-                            fontWeight: '700',
-                            color: colors.text.primary,
-                            textAlign: 'center',
-                            marginBottom: 8,
-                        }}>
-                            No data in this range
-                        </Text>
-                        <Text style={{
-                            fontSize: 15,
-                            color: colors.text.secondary,
-                            textAlign: 'center',
-                            lineHeight: 22,
-                        }}>
-                            There are no goal analytics for the past {getTimeframeLabel(selectedTimeframe)}. Try selecting a longer date range or create some fitness goals to start tracking your progress.
-                        </Text>
-                    </View>
+                    <ChartEmptyState
+                        icon={Target}
+                        title="No Goal Data"
+                        message={`No goal analytics for the past ${getTimeframeLabel(selectedTimeframe)}. Try a longer range or create some fitness goals.`}
+                    />
                 )}
             </ScrollView>
         </View>

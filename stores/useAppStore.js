@@ -22,6 +22,8 @@ import {
   getStreakAnalytics,
 } from '../lib/database';
 
+const DASHBOARD_TIMEFRAME = 30;
+
 /**
  * Zustand store for managing homescreen data
  * Provides centralized state management for user, goals, sets, and progress
@@ -177,7 +179,7 @@ export const useAppStore = create((set, get) => ({
   // Fetch functions
   loadRecentSets: async (userId) => {
     try {
-      const sets = await getExerciseSetsByUser(userId, 500);
+      const sets = await getExerciseSetsByUser(userId, 500, DASHBOARD_TIMEFRAME);
       set({ recentSets: sets || [] });
       return sets;
     } catch (error) {
@@ -185,10 +187,10 @@ export const useAppStore = create((set, get) => ({
       return [];
     }
   },
-  
+
   loadProgressFromSets: async (userId) => {
     try {
-      const rows = await getExerciseProgressRows(userId, 1000);
+      const rows = await getExerciseProgressRows(userId, 1000, DASHBOARD_TIMEFRAME);
       set({ progressByExercise: rows || [] });
       return rows;
     } catch (error) {
@@ -335,16 +337,16 @@ export const useAppStore = create((set, get) => ({
       };
       
       const now = Date.now();
-      set({
+      set((currentState) => ({
         dayDetailData: {
-          ...state.dayDetailData,
+          ...currentState.dayDetailData,
           [dateKey]: dayDetail
         },
         dayDetailCache: {
-          ...state.dayDetailCache,
+          ...currentState.dayDetailCache,
           [cacheKey]: now
         }
-      });
+      }));
       
       return dayDetail;
     } catch (error) {
@@ -450,16 +452,16 @@ export const useAppStore = create((set, get) => ({
       };
       
       const now = Date.now();
-      set({
+      set((currentState) => ({
         muscleGroupExerciseData: {
-          ...state.muscleGroupExerciseData,
+          ...currentState.muscleGroupExerciseData,
           [cacheKey]: muscleGroupData
         },
         muscleGroupExerciseCache: {
-          ...state.muscleGroupExerciseCache,
+          ...currentState.muscleGroupExerciseCache,
           [cacheKey]: now
         }
-      });
+      }));
       
       return muscleGroupData;
     } catch (error) {
@@ -502,16 +504,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getExerciseProgressionData(state.user.id, null, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           exerciseProgression: {
-            ...state.chartsData.exerciseProgression,
+            ...currentState.chartsData.exerciseProgression,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading exercise progression:', error);
@@ -534,16 +536,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getVolumeProgressionData(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           volumeProgression: {
-            ...state.chartsData.volumeProgression,
+            ...currentState.chartsData.volumeProgression,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading volume progression:', error);
@@ -566,16 +568,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getPersonalRecords(state.user.id, 100, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           personalRecords: {
-            ...state.chartsData.personalRecords,
+            ...currentState.chartsData.personalRecords,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading personal records:', error);
@@ -598,16 +600,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getWeeklyProgress(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           weeklyProgress: {
-            ...state.chartsData.weeklyProgress,
+            ...currentState.chartsData.weeklyProgress,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading weekly progress:', error);
@@ -630,16 +632,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getMonthlyStats(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           monthlyStats: {
-            ...state.chartsData.monthlyStats,
+            ...currentState.chartsData.monthlyStats,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading monthly stats:', error);
@@ -662,16 +664,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getRPEAnalysis(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           rpeAnalysis: {
-            ...state.chartsData.rpeAnalysis,
+            ...currentState.chartsData.rpeAnalysis,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading RPE analysis:', error);
@@ -694,16 +696,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getProgressiveOverloadInsights(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           progressiveOverloadInsights: {
-            ...state.chartsData.progressiveOverloadInsights,
+            ...currentState.chartsData.progressiveOverloadInsights,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading progressive overload insights:', error);
@@ -726,16 +728,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getMuscleGroupHeatmapData(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           muscleGroupHeatmap: {
-            ...state.chartsData.muscleGroupHeatmap,
+            ...currentState.chartsData.muscleGroupHeatmap,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading muscle group heatmap:', error);
@@ -778,16 +780,16 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await getGoalAnalytics(state.user.id, timeframeValue);
       const now = Date.now();
-      set({
-        chartsData: { 
-          ...state.chartsData, 
+      set((currentState) => ({
+        chartsData: {
+          ...currentState.chartsData,
           goalAnalytics: {
-            ...state.chartsData.goalAnalytics,
+            ...currentState.chartsData.goalAnalytics,
             [timeframeValue]: data
           }
         },
-        chartsCache: { ...state.chartsCache, [cacheKey]: now },
-      });
+        chartsCache: { ...currentState.chartsCache, [cacheKey]: now },
+      }));
       return data;
     } catch (error) {
       console.error('Error loading goal analytics:', error);
@@ -930,75 +932,77 @@ export const useAppStore = create((set, get) => ({
       
       // Update state with all fetched data - merge nested structures properly
       if (Object.keys(updates).length > 0) {
-        const mergedChartsData = { ...state.chartsData };
-        
-        // Merge nested timeframe data structures
-        if (updates.exerciseProgression) {
-          mergedChartsData.exerciseProgression = {
-            ...mergedChartsData.exerciseProgression,
-            ...updates.exerciseProgression
+        set((currentState) => {
+          const mergedChartsData = { ...currentState.chartsData };
+
+          // Merge nested timeframe data structures
+          if (updates.exerciseProgression) {
+            mergedChartsData.exerciseProgression = {
+              ...mergedChartsData.exerciseProgression,
+              ...updates.exerciseProgression
+            };
+          }
+          if (updates.volumeProgression) {
+            mergedChartsData.volumeProgression = {
+              ...mergedChartsData.volumeProgression,
+              ...updates.volumeProgression
+            };
+          }
+          if (updates.monthlyStats) {
+            mergedChartsData.monthlyStats = {
+              ...mergedChartsData.monthlyStats,
+              ...updates.monthlyStats
+            };
+          }
+          if (updates.personalRecords) {
+            mergedChartsData.personalRecords = {
+              ...mergedChartsData.personalRecords,
+              ...updates.personalRecords
+            };
+          }
+          if (updates.weeklyProgress) {
+            mergedChartsData.weeklyProgress = {
+              ...mergedChartsData.weeklyProgress,
+              ...updates.weeklyProgress
+            };
+          }
+          if (updates.progressiveOverloadInsights) {
+            mergedChartsData.progressiveOverloadInsights = {
+              ...mergedChartsData.progressiveOverloadInsights,
+              ...updates.progressiveOverloadInsights
+            };
+          }
+          if (updates.muscleGroupHeatmap) {
+            mergedChartsData.muscleGroupHeatmap = {
+              ...mergedChartsData.muscleGroupHeatmap,
+              ...updates.muscleGroupHeatmap
+            };
+          }
+          if (updates.goalAnalytics) {
+            mergedChartsData.goalAnalytics = {
+              ...mergedChartsData.goalAnalytics,
+              ...updates.goalAnalytics
+            };
+          }
+
+          // Direct updates for non-nested data
+          if (updates.userStats !== undefined) {
+            mergedChartsData.userStats = updates.userStats;
+          }
+          if (updates.strengthStandards !== undefined) {
+            mergedChartsData.strengthStandards = updates.strengthStandards;
+          }
+          if (updates.rpeAnalysis !== undefined) {
+            mergedChartsData.rpeAnalysis = {
+              ...currentState.chartsData.rpeAnalysis,
+              ...updates.rpeAnalysis
+            };
+          }
+
+          return {
+            chartsData: mergedChartsData,
+            chartsCache: { ...currentState.chartsCache, ...cacheUpdates },
           };
-        }
-        if (updates.volumeProgression) {
-          mergedChartsData.volumeProgression = {
-            ...mergedChartsData.volumeProgression,
-            ...updates.volumeProgression
-          };
-        }
-        if (updates.monthlyStats) {
-          mergedChartsData.monthlyStats = {
-            ...mergedChartsData.monthlyStats,
-            ...updates.monthlyStats
-          };
-        }
-        if (updates.personalRecords) {
-          mergedChartsData.personalRecords = {
-            ...mergedChartsData.personalRecords,
-            ...updates.personalRecords
-          };
-        }
-        if (updates.weeklyProgress) {
-          mergedChartsData.weeklyProgress = {
-            ...mergedChartsData.weeklyProgress,
-            ...updates.weeklyProgress
-          };
-        }
-        if (updates.progressiveOverloadInsights) {
-          mergedChartsData.progressiveOverloadInsights = {
-            ...mergedChartsData.progressiveOverloadInsights,
-            ...updates.progressiveOverloadInsights
-          };
-        }
-        if (updates.muscleGroupHeatmap) {
-          mergedChartsData.muscleGroupHeatmap = {
-            ...mergedChartsData.muscleGroupHeatmap,
-            ...updates.muscleGroupHeatmap
-          };
-        }
-        if (updates.goalAnalytics) {
-          mergedChartsData.goalAnalytics = {
-            ...mergedChartsData.goalAnalytics,
-            ...updates.goalAnalytics
-          };
-        }
-        
-        // Direct updates for non-nested data
-        if (updates.userStats !== undefined) {
-          mergedChartsData.userStats = updates.userStats;
-        }
-        if (updates.strengthStandards !== undefined) {
-          mergedChartsData.strengthStandards = updates.strengthStandards;
-        }
-        if (updates.rpeAnalysis !== undefined) {
-          mergedChartsData.rpeAnalysis = {
-            ...state.chartsData.rpeAnalysis,
-            ...updates.rpeAnalysis
-          };
-        }
-        
-        set({
-          chartsData: mergedChartsData,
-          chartsCache: { ...state.chartsCache, ...cacheUpdates },
         });
       }
     } catch (error) {
@@ -1037,10 +1041,10 @@ export const useAppStore = create((set, get) => ({
         getProfile(currentUser.id),
         getCurrentStreak(currentUser.id),
         getFitnessGoals(currentUser.id),
-        getExerciseProgressRows(currentUser.id, 1000),
+        getExerciseProgressRows(currentUser.id, 1000, DASHBOARD_TIMEFRAME),
       ]);
-      
-      const sets = await getExerciseSetsByUser(currentUser.id, 500);
+
+      const sets = await getExerciseSetsByUser(currentUser.id, 500, DASHBOARD_TIMEFRAME);
       
       set({
         profile: profileData || null,
@@ -1075,19 +1079,30 @@ export const useAppStore = create((set, get) => ({
   // Load streak analytics with caching
   loadStreakAnalytics: async (forceRefresh = false) => {
     const state = get();
-    if (!state.user) return null;
-    
+    if (!state.user) {
+      console.log('[Store] loadStreakAnalytics: no user, returning null');
+      return null;
+    }
+
     const cacheKey = 'streakAnalytics';
-    
+
     // Check cache
     if (!forceRefresh && state.streakAnalyticsCache && state.isCacheValid(cacheKey)) {
+      console.log('[Store] loadStreakAnalytics: using cache');
       return state.streakAnalytics;
     }
-    
+
+    console.log('[Store] loadStreakAnalytics: fetching fresh data for user', state.user.id);
     set({ streakAnalyticsLoading: true, streakAnalyticsError: null });
-    
+
     try {
       const data = await getStreakAnalytics(state.user.id, 365);
+      console.log('[Store] loadStreakAnalytics: got data', {
+        currentStreak: data?.currentStreak,
+        totalWorkoutDays: data?.totalWorkoutDays,
+        workoutDatesCount: data?.workoutDates?.length,
+        activityMapKeys: data?.activityMap ? Object.keys(data.activityMap).filter(k => data.activityMap[k]).length : 0,
+      });
       const now = Date.now();
       set({
         streakAnalytics: data,

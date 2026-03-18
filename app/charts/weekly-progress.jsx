@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity, Dimensions } from "react-native";
 import { Calendar, CheckCircle2, XCircle, TrendingUp, Activity, ChevronRight, GitCompare, BarChart2 } from "lucide-react-native";
+import ChartEmptyState from "../../components/Charts/ChartEmptyState";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAppStore } from "../../stores/useAppStore";
@@ -206,41 +207,11 @@ export default function WeeklyProgressScreen() {
                 }
             >
                 {!hasData ? (
-                    <View style={{
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: 60,
-                        paddingHorizontal: 24,
-                    }}>
-                        <View style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: 32,
-                            backgroundColor: colors.primary[100] || colors.background.input,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: 20,
-                        }}>
-                            <BarChart2 size={28} color={colors.primary[600]} />
-                        </View>
-                        <Text style={{
-                            fontSize: 18,
-                            fontWeight: '700',
-                            color: colors.text.primary,
-                            textAlign: 'center',
-                            marginBottom: 8,
-                        }}>
-                            No data in this range
-                        </Text>
-                        <Text style={{
-                            fontSize: 15,
-                            color: colors.text.secondary,
-                            textAlign: 'center',
-                            lineHeight: 22,
-                        }}>
-                            There's no weekly progress data available. Log some workouts to start tracking your weekly training patterns.
-                        </Text>
-                    </View>
+                    <ChartEmptyState
+                        icon={Calendar}
+                        title="No Weekly Data"
+                        message="Log some workouts to start tracking your weekly training patterns."
+                    />
                 ) : (
                     <View>
                         {/* Summary Statistics */}

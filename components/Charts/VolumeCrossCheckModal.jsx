@@ -8,6 +8,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColo
 import { scheduleOnRN } from "react-native-worklets";
 import { getVolumeList, prepareComparisonData } from "./utils/volumeProgressionUtils";
 import { formatShortNumber } from "../../utils/numberUtils";
+import { MODAL_LAYOUT } from "../../constants/modal";
 
 export default function VolumeCrossCheckModal({ visible, onClose, volumeProgression }) {
     const colors = useThemedColors();
@@ -143,7 +144,7 @@ export default function VolumeCrossCheckModal({ visible, onClose, volumeProgress
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+                <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
                     <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TextInput, TouchableOpacity, Dimensions } from "react-native";
 import { Search, X, Filter, Activity, TrendingUp, TrendingDown, Minus, Target, Award, Zap } from "lucide-react-native";
+import ChartEmptyState from "../../components/Charts/ChartEmptyState";
 import { LineChart } from "react-native-gifted-charts";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
@@ -890,55 +891,23 @@ export default function TrainingIntensityScreen() {
     const renderEmptyComponent = () => {
         if (searchQuery.trim()) {
             return (
-                <View style={{
-                    backgroundColor: colors.background.card,
-                    borderRadius: 12,
-                    padding: 24,
-                    alignItems: 'center',
-                    marginTop: 20
-                }}>
-                    <Text style={{
-                        fontSize: 16,
-                        color: colors.text.secondary,
-                        textAlign: 'center'
-                    }}>
-                        No exercises found matching "{searchQuery}".
-                    </Text>
-                    <Text style={{
-                        fontSize: 14,
-                        color: colors.text.tertiary,
-                        textAlign: 'center',
-                        marginTop: 8
-                    }}>
-                        Try adjusting your search query.
-                    </Text>
+                <View style={{ marginTop: 20 }}>
+                    <ChartEmptyState
+                        icon={Search}
+                        title="No Matches"
+                        message={`No exercises found matching "${searchQuery}". Try adjusting your search.`}
+                    />
                 </View>
             );
         }
-        
+
         return (
-            <View style={{
-                backgroundColor: colors.background.card,
-                borderRadius: 12,
-                padding: 24,
-                alignItems: 'center',
-                marginTop: 20
-            }}>
-                <Text style={{
-                    fontSize: 16,
-                    color: colors.text.secondary,
-                    textAlign: 'center'
-                }}>
-                    No RPE data available for the selected timeframe.
-                </Text>
-                <Text style={{
-                    fontSize: 14,
-                    color: colors.text.tertiary,
-                    textAlign: 'center',
-                    marginTop: 8
-                }}>
-                    Start logging sets with RPE values to see your training intensity analysis.
-                </Text>
+            <View style={{ marginTop: 20 }}>
+                <ChartEmptyState
+                    icon={Activity}
+                    title="No RPE Data"
+                    message="Start logging sets with RPE values to see your training intensity analysis."
+                />
             </View>
         );
     };

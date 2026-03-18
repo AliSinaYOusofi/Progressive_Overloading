@@ -3,14 +3,12 @@ import React from "react";
 import {
     View,
     Text,
-    StyleSheet,
     ScrollView,
     TouchableOpacity,
     Alert,
     ActivityIndicator,
     RefreshControl,
-    Modal,
-    Linking,
+    Platform,
 } from "react-native";
 import {
     User,
@@ -19,13 +17,21 @@ import {
     Target,
     Calendar,
     Award,
-    Settings,
     LogOut,
     AlertTriangle,
     Info,
-    ExternalLink,
+    ChevronRight,
+    Heart,
+    Ruler,
+    Weight,
+    Users,
+    Dumbbell,
+    RefreshCw,
+    AlertCircle,
 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
 import { signOut, getUser } from "../../lib/auth";
@@ -33,14 +39,16 @@ import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from
 import BMIInfoModal from "../../components/Profile/BMIInfoModal";
 import SetDefaultsModal from "../../components/HomeScreen/SetDefaultsModal";
 import { useAppStore } from "../../stores/useAppStore";
+import AnimatedSlideIn from "../../components/AnimatedSlideIn";
 
 export default function ProfileScreen() {
     const colors = useThemedColors();
+    const { isDarkMode } = useTheme();
     const router = useRouter();
-    
+
     // Use Zustand store for profile data
     const { profile: storeProfile, setProfile, user: storeUser } = useAppStore();
-    
+
     const [userProfile, setUserProfile] = useState(null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
@@ -53,76 +61,58 @@ export default function ProfileScreen() {
     const [showBMIModal, setShowBMIModal] = useState(false);
     const [showDefaultsModal, setShowDefaultsModal] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [focusTrigger, setFocusTrigger] = useState(0);
 
     useEffect(() => {
         loadUserData();
     }, []);
 
-    // Refresh data when screen comes into focus (e.g., after editing profile)
+    // Refresh data when screen comes into focus
     useFocusEffect(
         React.useCallback(() => {
             loadUserData(true);
+            setFocusTrigger(t => t + 1);
         }, [])
     );
 
     const loadUserData = async (isRefresh = false) => {
         try {
-            // If we have cached profile data and not refreshing, use it immediately (no loading spinner)
             if (!isRefresh && storeProfile) {
                 setUserProfile(storeProfile);
                 setIsLoading(false);
-                // Still fetch stats and achievements in background, but don't show loading
             } else {
                 if (!isRefresh) {
                     setIsLoading(true);
                 }
             }
 
-            // Get current user
             const user = storeUser || await getUser();
             if (!user) {
-                console.log("No user found");
                 setIsLoading(false);
                 return;
             }
 
-            // Load profile data (only fetch if refreshing or not cached)
             if (isRefresh || !storeProfile) {
                 const profile = await getProfile(user.id);
                 setUserProfile(profile);
-                setProfile(profile); // Update Zustand store
+                setProfile(profile);
             } else {
                 setUserProfile(storeProfile);
             }
 
-            // Load user statistics (always fetch as they change frequently)
             const stats = await getUserStats(user.id);
             setUserStats(stats);
 
-            // Load achievements
             const userAchievements = await getUserAchievements(user.id);
             setAchievements(userAchievements);
 
-            // Clear any previous errors
             setHasError(false);
         } catch (error) {
             console.error("Error loading user data:", error);
             setHasError(true);
-            if (!isRefresh) {
-                Alert.alert("Error", "Failed to load user data");
-            }
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleProfileUpdate = (updates) => {
-        setUserProfile((prev) => ({
-            ...prev,
-            ...updates,
-        }));
-        // Refresh the data to ensure consistency
-        loadUserData(true);
     };
 
     const handleLogout = async () => {
@@ -134,14 +124,8 @@ export default function ProfileScreen() {
                 onPress: async () => {
                     try {
                         await signOut();
-                        // The layout will automatically show auth screens
-                        // No need to navigate manually
                     } catch (error) {
-                        console.log("Logout error:", error);
-                        Alert.alert(
-                            "Error",
-                            "Failed to sign out. Please try again."
-                        );
+                        Alert.alert("Error", "Failed to sign out. Please try again.");
                     }
                 },
             },
@@ -151,7 +135,7 @@ export default function ProfileScreen() {
     const handleDeleteAccount = async () => {
         Alert.alert(
             "Delete Account",
-            "This will initiate the account deletion process. You will be signed out and need to contact support to complete the deletion.",
+            "This will permanently delete your account and all data. This action cannot be undone.",
             [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -159,24 +143,15 @@ export default function ProfileScreen() {
                     style: "destructive",
                     onPress: async () => {
                         try {
-                            // Get current user
                             const user = await getUser();
                             if (!user) {
                                 Alert.alert("Error", "User not found");
                                 return;
                             }
-
                             await signOut();
                             await deleteUserAccount(user.id);
                         } catch (error) {
-                            console.error(
-                                "Error in delete account flow:",
-                                error
-                            );
-                            Alert.alert(
-                                "Error",
-                                "Failed to process delete account request. Please try again."
-                            );
+                            Alert.alert("Error", "Failed to delete account. Please try again.");
                         }
                     },
                 },
@@ -185,78 +160,101 @@ export default function ProfileScreen() {
     };
 
     const getFitnessLevel = (workoutCount) => {
-        if (workoutCount === 0) return "Beginner";
-        if (workoutCount < 10) return "Novice";
-        if (workoutCount < 30) return "Intermediate";
-        if (workoutCount < 100) return "Advanced";
-        return "Expert";
+        if (workoutCount === 0) return { label: "Beginner", color: colors.text.tertiary };
+        if (workoutCount < 10) return { label: "Novice", color: colors.status.info };
+        if (workoutCount < 30) return { label: "Intermediate", color: colors.primary[600] };
+        if (workoutCount < 100) return { label: "Advanced", color: colors.status.warning };
+        return { label: "Expert", color: colors.status.success };
     };
 
-    const getBMICategory = (bmi) => {
-        if (bmi < 18.5)
-            return { category: "Underweight", color: colors.status.warning };
-        if (bmi < 25)
-            return { category: "Normal", color: colors.status.success };
-        if (bmi < 30)
-            return { category: "Overweight", color: colors.status.warning };
-        return { category: "Obese", color: colors.status.error };
+    const getBMI = () => {
+        if (!userProfile?.height_cm || !userProfile?.weight_kg) return null;
+        const bmi = (userProfile.weight_kg / Math.pow(userProfile.height_cm / 100, 2)).toFixed(1);
+        let category = "Normal", color = colors.status.success;
+        if (bmi < 18.5) { category = "Underweight"; color = colors.status.warning; }
+        else if (bmi >= 25 && bmi < 30) { category = "Overweight"; color = colors.status.warning; }
+        else if (bmi >= 30) { category = "Obese"; color = colors.status.error; }
+        return { bmi, category, color };
     };
 
-    const styles = getStyles(colors);
+    const getAge = () => {
+        if (!userProfile?.date_of_birth) return null;
+        return Math.floor((new Date() - new Date(userProfile.date_of_birth)) / (1000 * 60 * 60 * 24 * 365.25));
+    };
 
-    if (isLoading && !hasError) {
+    const fitnessLevel = getFitnessLevel(userStats.workoutCount);
+    const bmiData = getBMI();
+    const age = getAge();
+
+    // Profile completion
+    const profileFields = ["height_cm", "weight_kg", "date_of_birth", "gender"];
+    const completedFields = profileFields.filter(f => userProfile?.[f]);
+    const completionPercent = Math.round((completedFields.length / profileFields.length) * 100);
+    const isProfileComplete = completionPercent === 100;
+
+    // Loading state
+    if (isLoading && !hasError && !userProfile) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary[600]} />
-                <Text style={styles.loadingText}>Loading profile...</Text>
+            <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: "center", alignItems: "center" }}>
+                <View style={{
+                    width: 56, height: 56, borderRadius: 28,
+                    backgroundColor: colors.primary[600] + "12",
+                    alignItems: "center", justifyContent: "center", marginBottom: 16,
+                }}>
+                    <ActivityIndicator size="small" color={colors.primary[600]} />
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.primary, marginBottom: 4 }}>
+                    Loading Profile
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.text.tertiary }}>
+                    Fetching your details...
+                </Text>
             </View>
         );
     }
 
+    // Error state
     if (hasError && !userProfile) {
         return (
-            <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>Failed to load profile</Text>
+            <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 }}>
+                <View style={{
+                    width: 60, height: 60, borderRadius: 30,
+                    backgroundColor: colors.status.error + "12",
+                    alignItems: "center", justifyContent: "center", marginBottom: 16,
+                }}>
+                    <AlertCircle size={28} color={colors.status.error} />
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary, marginBottom: 6, textAlign: "center" }}>
+                    Something went wrong
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.text.tertiary, textAlign: "center", marginBottom: 24, lineHeight: 20 }}>
+                    Failed to load your profile data
+                </Text>
                 <TouchableOpacity
-                    style={styles.retryButton}
-                    onPress={() => {
-                        setHasError(false);
-                        loadUserData();
+                    onPress={() => { setHasError(false); loadUserData(); }}
+                    style={{
+                        flexDirection: "row", alignItems: "center", gap: 8,
+                        backgroundColor: colors.primary[600] + "12",
+                        paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12,
                     }}
                 >
-                    <Text style={styles.retryButtonText}>Retry</Text>
+                    <RefreshCw size={18} color={colors.primary[600]} />
+                    <Text style={{ fontSize: 15, fontWeight: "600", color: colors.primary[600] }}>Retry</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
     const statsData = [
-        {
-            label: "Workouts Completed",
-            value: userStats.workoutCount.toString(),
-            icon: Target,
-        },
-        {
-            label: "Current Streak",
-            value: `${userStats.currentStreak} days`,
-            icon: Calendar,
-        },
-        {
-            label: "Personal Records",
-            value: userStats.personalRecordsCount.toString(),
-            icon: Trophy,
-        },
-        {
-            label: "Goal Progress",
-            value: `${userStats.goalProgress}%`,
-            icon: Award,
-        },
+        { label: "Workouts", value: userStats.workoutCount.toString(), icon: Dumbbell, color: colors.primary[600], bg: colors.primary[50] },
+        { label: "Streak", value: `${userStats.currentStreak}d`, icon: Calendar, color: colors.status.success, bg: colors.status.successLight },
+        { label: "PRs", value: userStats.personalRecordsCount.toString(), icon: Trophy, color: colors.status.warning, bg: colors.status.warningLight },
+        { label: "Goals", value: `${userStats.goalProgress}%`, icon: Target, color: colors.status.info, bg: colors.status.infoLight },
     ];
 
     return (
-        <View style={styles.container}>
+        <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
             <ScrollView
-                style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -267,299 +265,514 @@ export default function ProfileScreen() {
                     />
                 }
             >
-                {/* Profile Header */}
-                <View style={styles.profileHeader}>
-                    <View style={styles.avatarContainer}>
-                        <View style={styles.avatar}>
-                            <User size={40} color={colors.primary[600]} />
-                        </View>
-                        <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => router.push('/profile/edit-profile')}
-                        >
-                            <Edit size={20} color={colors.background.primary} />
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={styles.userName}>
-                        {
-                            userProfile?.full_name ||
-                            "User"
+                {/* Premium Gradient Header */}
+                <AnimatedSlideIn index={0} trigger={focusTrigger}>
+                    <LinearGradient
+                        colors={isDarkMode
+                            ? [colors.primary[50], colors.background.primary]
+                            : [colors.primary[100], colors.primary[50], colors.background.primary]
                         }
-                    </Text>
-                    <Text style={styles.userEmail}>
-                        {userProfile?.email || "No email available"}
-                    </Text>
-                    <Text style={styles.userLevel}>
-                        Fitness Level: {getFitnessLevel(userStats.workoutCount)}
-                    </Text>
-
-                    {/* Profile Completion */}
-                    {(() => {
-                        const profileFields = [
-                            "height_cm",
-                            "weight_kg",
-                            "date_of_birth",
-                            "gender",
-                        ];
-                        const completedFields = profileFields.filter(
-                            (field) => userProfile?.[field]
-                        );
-                        const completionPercentage = Math.round(
-                            (completedFields.length / profileFields.length) *
-                                100
-                        );
-
-                        return (
-                            <View style={styles.profileCompletion}>
-                                <View style={styles.completionBar}>
-                                    <View
-                                        style={[
-                                            styles.completionFill,
-                                            {
-                                                width: `${completionPercentage}%`,
-                                            },
-                                        ]}
-                                    />
-                                </View>
-                                <Text style={styles.completionText}>
-                                    Profile {completionPercentage}% Complete
-                                </Text>
-                            </View>
-                        );
-                    })()}
-
-                    {/* Additional Profile Info */}
-                    <View style={styles.profileDetails}>
-                        {userProfile?.height_cm && (
-                            <View style={styles.profileDetail}>
-                                <Text style={styles.profileDetailLabel}>
-                                    Height:
-                                </Text>
-                                <Text style={styles.profileDetailValue}>
-                                    {userProfile.height_cm} cm
-                                </Text>
-                            </View>
-                        )}
-                        {userProfile?.weight_kg && (
-                            <View style={styles.profileDetail}>
-                                <Text style={styles.profileDetailLabel}>
-                                    Weight:
-                                </Text>
-                                <Text style={styles.profileDetailValue}>
-                                    {userProfile.weight_kg} kg
-                                </Text>
-                            </View>
-                        )}
-                        {userProfile?.date_of_birth && (
-                            <View style={styles.profileDetail}>
-                                <Text style={styles.profileDetailLabel}>
-                                    Age:
-                                </Text>
-                                <Text style={styles.profileDetailValue}>
-                                    {Math.floor(
-                                        (new Date() -
-                                            new Date(
-                                                userProfile.date_of_birth
-                                            )) /
-                                            (1000 * 60 * 60 * 24 * 365.25)
-                                    )}{" "}
-                                    years
-                                </Text>
-                            </View>
-                        )}
-                        {userProfile?.gender && (
-                            <View style={styles.profileDetail}>
-                                <Text style={styles.profileDetailLabel}>
-                                    Gender:
-                                </Text>
-                                <Text style={styles.profileDetailValue}>
-                                    {userProfile.gender
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                        userProfile.gender
-                                            .slice(1)
-                                            .replace(/_/g, " ")}
-                                </Text>
-                            </View>
-                        )}
-                        {userProfile?.height_cm &&
-                            userProfile?.weight_kg &&
-                            (() => {
-                                const bmi = (
-                                    userProfile.weight_kg /
-                                    Math.pow(userProfile.height_cm / 100, 2)
-                                ).toFixed(1);
-                                const bmiInfo = getBMICategory(
-                                    Number.parseFloat(bmi)
-                                );
-                                return (
-                                                                         <View style={styles.profileDetail}>
-                                         <View style={styles.bmiLabelContainer}>
-                                             <Text style={styles.profileDetailLabel}>
-                                                 BMI:
-                                             </Text>
-                                             <TouchableOpacity 
-                                                 style={styles.bmiInfoButton}
-                                                 onPress={() => setShowBMIModal(true)}
-                                             >
-                                                 <Info size={14} color={colors.primary[600]} />
-                                             </TouchableOpacity>
-                                         </View>
-                                         <View style={styles.bmiContainer}>
-                                             <Text
-                                                 style={
-                                                     styles.profileDetailValue
-                                                 }
-                                             >
-                                                 {bmi}
-                                             </Text>
-                                             <Text
-                                                 style={[
-                                                     styles.bmiCategory,
-                                                     { color: bmiInfo.color },
-                                                 ]}
-                                             >
-                                                 {bmiInfo.category}
-                                             </Text>
-                                         </View>
-                                     </View>
-                                );
-                            })()}
-                    </View>
-                </View>
-
-                {/* Complete Profile Section */}
-                {(!userProfile?.height_cm ||
-                    !userProfile?.weight_kg ||
-                    !userProfile?.date_of_birth ||
-                    !userProfile?.gender) && (
-                    <View style={styles.completeProfileSection}>
-                        <View style={styles.completeProfileHeader}>
-                            <Text style={styles.completeProfileTitle}>
-                                Complete Your Profile
-                            </Text>
-                            <Text style={styles.completeProfileSubtitle}>
-                                Add your height, weight, date of birth, and
-                                gender to get personalized insights
-                            </Text>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.completeProfileButton}
-                            onPress={() => router.push('/profile/edit-profile')}
-                        >
-                            <Edit size={20} color={colors.background.primary} style={{ marginRight: 8 }} />
-                            <Text style={styles.completeProfileButtonText}>
-                                Complete Profile
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Stats Grid */}
-                <View style={styles.statsSection}>
-                    <Text style={styles.sectionTitle}>Your Stats</Text>
-                    <View style={styles.statsGrid}>
-                        {statsData.map((stat, index) => (
-                            <View key={index} style={styles.statCard}>
-                                <View style={styles.statIcon}>
-                                    <stat.icon
-                                        size={20}
-                                        color={colors.primary[600]}
-                                    />
-                                </View>
-                                <Text style={styles.statValue}>
-                                    {stat.value}
-                                </Text>
-                                <Text style={styles.statLabel}>
-                                    {stat.label}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Achievements */}
-
-                {/* Profile Actions */}
-                <View style={styles.actionsSection}>
-                    <Text style={styles.sectionTitle}>Account</Text>
-                    <TouchableOpacity 
-                        style={styles.actionButton}
-                        onPress={() => router.push('/profile/edit-profile')}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0.3, y: 1 }}
+                        style={{
+                            paddingHorizontal: 24,
+                            paddingTop: Platform.OS === "ios" ? 64 : 44,
+                            paddingBottom: 32,
+                            alignItems: "center",
+                        }}
                     >
-                        <View style={styles.actionIcon}>
-                            <Edit size={20} color={colors.primary[600]} />
+                        {/* Avatar */}
+                        <View style={{ position: "relative", marginBottom: 20 }}>
+                            <View style={{
+                                width: 88, height: 88, borderRadius: 44,
+                                backgroundColor: colors.primary[600] + "15",
+                                alignItems: "center", justifyContent: "center",
+                                borderWidth: 3, borderColor: colors.primary[600] + "30",
+                            }}>
+                                <User size={40} color={colors.primary[600]} />
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => router.push('/profile/edit-profile')}
+                                style={{
+                                    position: "absolute", bottom: -2, right: -2,
+                                    width: 34, height: 34, borderRadius: 17,
+                                    backgroundColor: colors.primary[600],
+                                    alignItems: "center", justifyContent: "center",
+                                    borderWidth: 3, borderColor: colors.background.primary,
+                                    shadowColor: colors.primary[600],
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
+                                }}
+                            >
+                                <Edit size={14} color="#FFFFFF" />
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.actionText}>Edit Profile</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={styles.actionButton}
-                        onPress={() => setShowDefaultsModal(true)}
-                    >
-                        <View style={styles.actionIcon}>
-                            <Target size={20} color={colors.primary[600]} />
-                        </View>
-                        <Text style={styles.actionText}>Workout Defaults</Text>
-                    </TouchableOpacity>
-                    {/* <TouchableOpacity style={styles.actionButton}>
-                        <View style={styles.actionIcon}>
-                            <Settings size={20} color={colors.primary[600]} />
-                        </View>
-                        <Text style={styles.actionText}>Account Settings</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
-                        <View style={styles.actionIcon}>
-                            <Target size={20} color={colors.primary[600]} />
-                        </View>
-                        <Text style={styles.actionText}>Fitness Goals</Text>
-                    </TouchableOpacity> */}
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.logoutButton]}
-                        onPress={handleLogout}
-                    >
-                        <View style={styles.actionIcon}>
-                            <LogOut size={20} color={colors.status.error} />
-                        </View>
-                        <Text style={[styles.actionText, styles.logoutText]}>
-                            Sign Out
+
+                        {/* Name & Email */}
+                        <Text style={{
+                            fontSize: 26, fontWeight: "800",
+                            color: colors.text.primary, letterSpacing: -0.5,
+                            marginBottom: 4,
+                        }}>
+                            {userProfile?.full_name || "User"}
                         </Text>
-                    </TouchableOpacity>
+                        <Text style={{
+                            fontSize: 14, color: colors.text.tertiary,
+                            fontWeight: "500", marginBottom: 12,
+                        }}>
+                            {userProfile?.email || "No email available"}
+                        </Text>
 
-                    {/* Separator */}
-                    <View style={styles.actionSeparator} />
-
-                    {/* Delete Account Warning */}
-                    <View style={styles.dangerZone}>
-                        <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
-                        
-                        <View style={styles.deleteWarning}>
-                            <AlertTriangle size={16} color={colors.status.error} />
-                            <Text style={styles.deleteWarningText}>
-                                This action cannot be undone
+                        {/* Fitness Level Badge */}
+                        <View style={{
+                            backgroundColor: fitnessLevel.color + "15",
+                            paddingHorizontal: 16, paddingVertical: 6,
+                            borderRadius: 20, borderWidth: 1,
+                            borderColor: fitnessLevel.color + "30",
+                        }}>
+                            <Text style={{
+                                fontSize: 13, fontWeight: "700",
+                                color: fitnessLevel.color, letterSpacing: 0.3,
+                            }}>
+                                {fitnessLevel.label}
                             </Text>
                         </View>
 
-                        <TouchableOpacity
-                            style={styles.deleteAccountButton}
-                            onPress={handleDeleteAccount}
-                        >
-                            <AlertTriangle size={18} color={colors.status.error} />
-                            <Text style={styles.deleteAccountText}>
-                                Delete Account
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
+                        {/* Profile Completion Bar */}
+                        {!isProfileComplete && (
+                            <View style={{ width: "100%", marginTop: 20 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                                    <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text.secondary }}>
+                                        Profile Completion
+                                    </Text>
+                                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary[600] }}>
+                                        {completionPercent}%
+                                    </Text>
+                                </View>
+                                <View style={{
+                                    width: "100%", height: 6,
+                                    backgroundColor: colors.primary[600] + "15",
+                                    borderRadius: 3, overflow: "hidden",
+                                }}>
+                                    <View style={{
+                                        width: `${completionPercent}%`, height: "100%",
+                                        backgroundColor: colors.primary[600], borderRadius: 3,
+                                    }} />
+                                </View>
+                            </View>
+                        )}
+                    </LinearGradient>
+                </AnimatedSlideIn>
+
+                <View style={{ paddingHorizontal: 20 }}>
+                    {/* Stats Grid */}
+                    <AnimatedSlideIn index={1} trigger={focusTrigger}>
+                        <View style={{
+                            flexDirection: "row", flexWrap: "wrap",
+                            gap: 10, marginBottom: 20,
+                        }}>
+                            {statsData.map((stat, index) => (
+                                <View key={index} style={{
+                                    width: "48%", flexGrow: 1,
+                                    backgroundColor: colors.background.card,
+                                    borderRadius: 14, padding: 16,
+                                    alignItems: "center",
+                                    borderWidth: 1, borderColor: colors.border.light,
+                                    shadowColor: colors.shadow?.light || "rgba(0,0,0,0.05)",
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 1, shadowRadius: 6, elevation: 2,
+                                }}>
+                                    <View style={{
+                                        width: 36, height: 36, borderRadius: 10,
+                                        backgroundColor: stat.color + "15",
+                                        alignItems: "center", justifyContent: "center",
+                                        marginBottom: 8,
+                                    }}>
+                                        <stat.icon size={18} color={stat.color} />
+                                    </View>
+                                    <Text style={{
+                                        fontSize: 22, fontWeight: "800",
+                                        color: colors.text.primary, marginBottom: 2,
+                                    }}>
+                                        {stat.value}
+                                    </Text>
+                                    <Text style={{
+                                        fontSize: 12, fontWeight: "600",
+                                        color: colors.text.tertiary,
+                                        textAlign: "center",
+                                    }}>
+                                        {stat.label}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    </AnimatedSlideIn>
+
+                    {/* Body Details Card */}
+                    {(userProfile?.height_cm || userProfile?.weight_kg || age || userProfile?.gender) && (
+                        <AnimatedSlideIn index={2} trigger={focusTrigger}>
+                            <View style={{
+                                backgroundColor: colors.background.card,
+                                borderRadius: 16, padding: 20,
+                                borderWidth: 1, borderColor: colors.border.light,
+                                marginBottom: 20,
+                                shadowColor: colors.shadow?.light || "rgba(0,0,0,0.05)",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+                            }}>
+                                {/* Section Header */}
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 }}>
+                                    <View style={{
+                                        width: 36, height: 36, borderRadius: 10,
+                                        backgroundColor: colors.primary[600] + "15",
+                                        alignItems: "center", justifyContent: "center",
+                                    }}>
+                                        <User size={20} color={colors.primary[600]} />
+                                    </View>
+                                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text.primary }}>
+                                        Body Details
+                                    </Text>
+                                </View>
+
+                                {/* Detail Rows */}
+                                <View style={{ gap: 10 }}>
+                                    {userProfile?.height_cm && (
+                                        <View style={{
+                                            flexDirection: "row", alignItems: "center",
+                                            backgroundColor: colors.background.primary,
+                                            borderRadius: 12, padding: 14,
+                                            borderWidth: 1, borderColor: colors.border.light,
+                                        }}>
+                                            <View style={{
+                                                width: 32, height: 32, borderRadius: 8,
+                                                backgroundColor: colors.status.info + "15",
+                                                alignItems: "center", justifyContent: "center",
+                                                marginRight: 12,
+                                            }}>
+                                                <Ruler size={16} color={colors.status.info} />
+                                            </View>
+                                            <Text style={{ flex: 1, fontSize: 14, fontWeight: "500", color: colors.text.secondary }}>
+                                                Height
+                                            </Text>
+                                            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                                                {userProfile.height_cm} cm
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    {userProfile?.weight_kg && (
+                                        <View style={{
+                                            flexDirection: "row", alignItems: "center",
+                                            backgroundColor: colors.background.primary,
+                                            borderRadius: 12, padding: 14,
+                                            borderWidth: 1, borderColor: colors.border.light,
+                                        }}>
+                                            <View style={{
+                                                width: 32, height: 32, borderRadius: 8,
+                                                backgroundColor: colors.status.warning + "15",
+                                                alignItems: "center", justifyContent: "center",
+                                                marginRight: 12,
+                                            }}>
+                                                <Weight size={16} color={colors.status.warning} />
+                                            </View>
+                                            <Text style={{ flex: 1, fontSize: 14, fontWeight: "500", color: colors.text.secondary }}>
+                                                Weight
+                                            </Text>
+                                            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                                                {userProfile.weight_kg} kg
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    {age && (
+                                        <View style={{
+                                            flexDirection: "row", alignItems: "center",
+                                            backgroundColor: colors.background.primary,
+                                            borderRadius: 12, padding: 14,
+                                            borderWidth: 1, borderColor: colors.border.light,
+                                        }}>
+                                            <View style={{
+                                                width: 32, height: 32, borderRadius: 8,
+                                                backgroundColor: colors.primary[600] + "15",
+                                                alignItems: "center", justifyContent: "center",
+                                                marginRight: 12,
+                                            }}>
+                                                <Calendar size={16} color={colors.primary[600]} />
+                                            </View>
+                                            <Text style={{ flex: 1, fontSize: 14, fontWeight: "500", color: colors.text.secondary }}>
+                                                Age
+                                            </Text>
+                                            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                                                {age} years
+                                            </Text>
+                                        </View>
+                                    )}
+
+                                    {userProfile?.gender && (
+                                        <View style={{
+                                            flexDirection: "row", alignItems: "center",
+                                            backgroundColor: colors.background.primary,
+                                            borderRadius: 12, padding: 14,
+                                            borderWidth: 1, borderColor: colors.border.light,
+                                        }}>
+                                            <View style={{
+                                                width: 32, height: 32, borderRadius: 8,
+                                                backgroundColor: colors.status.success + "15",
+                                                alignItems: "center", justifyContent: "center",
+                                                marginRight: 12,
+                                            }}>
+                                                <Users size={16} color={colors.status.success} />
+                                            </View>
+                                            <Text style={{ flex: 1, fontSize: 14, fontWeight: "500", color: colors.text.secondary }}>
+                                                Gender
+                                            </Text>
+                                            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text.primary }}>
+                                                {userProfile.gender.charAt(0).toUpperCase() + userProfile.gender.slice(1).replace(/_/g, " ")}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* BMI Card */}
+                                {bmiData && (
+                                    <TouchableOpacity
+                                        onPress={() => setShowBMIModal(true)}
+                                        activeOpacity={0.7}
+                                        style={{
+                                            marginTop: 12,
+                                            backgroundColor: bmiData.color + "10",
+                                            borderRadius: 12, padding: 14,
+                                            borderWidth: 1, borderColor: bmiData.color + "25",
+                                            flexDirection: "row", alignItems: "center", gap: 12,
+                                        }}
+                                    >
+                                        <View style={{
+                                            width: 40, height: 40, borderRadius: 20,
+                                            backgroundColor: bmiData.color + "18",
+                                            alignItems: "center", justifyContent: "center",
+                                        }}>
+                                            <Heart size={18} color={bmiData.color} />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text.secondary, marginBottom: 2 }}>
+                                                Body Mass Index
+                                            </Text>
+                                            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                                                <Text style={{ fontSize: 22, fontWeight: "800", color: bmiData.color }}>
+                                                    {bmiData.bmi}
+                                                </Text>
+                                                <Text style={{ fontSize: 13, fontWeight: "600", color: bmiData.color }}>
+                                                    {bmiData.category}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <Info size={18} color={bmiData.color} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </AnimatedSlideIn>
+                    )}
+
+                    {/* Complete Profile CTA */}
+                    {!isProfileComplete && (
+                        <AnimatedSlideIn index={3} trigger={focusTrigger}>
+                            <TouchableOpacity
+                                onPress={() => router.push('/profile/edit-profile')}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient
+                                    colors={[colors.primary[500], colors.primary[700]]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        borderRadius: 16, padding: 20,
+                                        marginBottom: 20,
+                                        flexDirection: "row", alignItems: "center",
+                                    }}
+                                >
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{
+                                            fontSize: 17, fontWeight: "700",
+                                            color: "#FFFFFF", marginBottom: 4,
+                                        }}>
+                                            Complete Your Profile
+                                        </Text>
+                                        <Text style={{
+                                            fontSize: 13, color: "rgba(255,255,255,0.8)",
+                                            fontWeight: "500", lineHeight: 18,
+                                        }}>
+                                            Add your details for personalized insights
+                                        </Text>
+                                    </View>
+                                    <View style={{
+                                        width: 40, height: 40, borderRadius: 20,
+                                        backgroundColor: "rgba(255,255,255,0.2)",
+                                        alignItems: "center", justifyContent: "center",
+                                    }}>
+                                        <ChevronRight size={22} color="#FFFFFF" />
+                                    </View>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </AnimatedSlideIn>
+                    )}
+
+                    {/* Account Section */}
+                    <AnimatedSlideIn index={4} trigger={focusTrigger}>
+                        <View style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 16, padding: 6,
+                            borderWidth: 1, borderColor: colors.border.light,
+                            marginBottom: 20,
+                            shadowColor: colors.shadow?.light || "rgba(0,0,0,0.05)",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+                        }}>
+                            {/* Section Header */}
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 14, paddingBottom: 6 }}>
+                                <Text style={{
+                                    fontSize: 13, fontWeight: "600",
+                                    color: colors.text.tertiary,
+                                    textTransform: "uppercase", letterSpacing: 0.5,
+                                }}>
+                                    Account
+                                </Text>
+                            </View>
+
+                            {/* Edit Profile */}
+                            <TouchableOpacity
+                                onPress={() => router.push('/profile/edit-profile')}
+                                style={{
+                                    flexDirection: "row", alignItems: "center",
+                                    padding: 14, borderRadius: 12,
+                                }}
+                                activeOpacity={0.6}
+                            >
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 10,
+                                    backgroundColor: colors.primary[600] + "12",
+                                    alignItems: "center", justifyContent: "center",
+                                    marginRight: 14,
+                                }}>
+                                    <Edit size={18} color={colors.primary[600]} />
+                                </View>
+                                <Text style={{ flex: 1, fontSize: 16, fontWeight: "500", color: colors.text.primary }}>
+                                    Edit Profile
+                                </Text>
+                                <ChevronRight size={18} color={colors.text.tertiary} />
+                            </TouchableOpacity>
+
+                            {/* Workout Defaults */}
+                            <TouchableOpacity
+                                onPress={() => setShowDefaultsModal(true)}
+                                style={{
+                                    flexDirection: "row", alignItems: "center",
+                                    padding: 14, borderRadius: 12,
+                                }}
+                                activeOpacity={0.6}
+                            >
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 10,
+                                    backgroundColor: colors.status.info + "12",
+                                    alignItems: "center", justifyContent: "center",
+                                    marginRight: 14,
+                                }}>
+                                    <Target size={18} color={colors.status.info} />
+                                </View>
+                                <Text style={{ flex: 1, fontSize: 16, fontWeight: "500", color: colors.text.primary }}>
+                                    Workout Defaults
+                                </Text>
+                                <ChevronRight size={18} color={colors.text.tertiary} />
+                            </TouchableOpacity>
+
+                            {/* Divider */}
+                            <View style={{
+                                height: 1, backgroundColor: colors.border.light,
+                                marginHorizontal: 14, marginVertical: 4,
+                            }} />
+
+                            {/* Sign Out */}
+                            <TouchableOpacity
+                                onPress={handleLogout}
+                                style={{
+                                    flexDirection: "row", alignItems: "center",
+                                    padding: 14, borderRadius: 12,
+                                }}
+                                activeOpacity={0.6}
+                            >
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 10,
+                                    backgroundColor: colors.status.error + "12",
+                                    alignItems: "center", justifyContent: "center",
+                                    marginRight: 14,
+                                }}>
+                                    <LogOut size={18} color={colors.status.error} />
+                                </View>
+                                <Text style={{ flex: 1, fontSize: 16, fontWeight: "500", color: colors.status.error }}>
+                                    Sign Out
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </AnimatedSlideIn>
+
+                    {/* Danger Zone */}
+                    <AnimatedSlideIn index={5} trigger={focusTrigger}>
+                        <View style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 16, padding: 20,
+                            borderWidth: 1, borderColor: colors.status.error + "20",
+                            marginBottom: 140,
+                        }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                                <AlertTriangle size={16} color={colors.status.error} />
+                                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.status.error }}>
+                                    Danger Zone
+                                </Text>
+                            </View>
+
+                            <View style={{
+                                backgroundColor: colors.status.error + "08",
+                                borderRadius: 10, padding: 12,
+                                marginBottom: 16,
+                                borderWidth: 1, borderColor: colors.status.error + "15",
+                            }}>
+                                <Text style={{
+                                    fontSize: 13, color: colors.text.secondary,
+                                    lineHeight: 18, fontWeight: "500",
+                                }}>
+                                    Deleting your account will permanently remove all your workout data, goals, and progress. This action cannot be undone.
+                                </Text>
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={handleDeleteAccount}
+                                style={{
+                                    flexDirection: "row", alignItems: "center",
+                                    justifyContent: "center", gap: 8,
+                                    backgroundColor: colors.background.primary,
+                                    borderWidth: 1.5, borderColor: colors.status.error + "40",
+                                    borderRadius: 12, paddingVertical: 14,
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <AlertTriangle size={16} color={colors.status.error} />
+                                <Text style={{
+                                    fontSize: 15, fontWeight: "600",
+                                    color: colors.status.error,
+                                }}>
+                                    Delete Account
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </AnimatedSlideIn>
                 </View>
             </ScrollView>
 
             <BMIInfoModal visible={showBMIModal} onClose={() => setShowBMIModal(false)} />
 
-            {/* Workout Defaults Modal */}
             <SetDefaultsModal
                 visible={showDefaultsModal}
                 onClose={() => {
                     setShowDefaultsModal(false);
-                    // Reload profile to get updated defaults
                     loadUserData(true);
                 }}
                 currentDefaults={userProfile ? {
@@ -571,516 +784,3 @@ export default function ProfileScreen() {
         </View>
     );
 }
-
-const getStyles = (colors) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background.primary,
-    },
-    scrollView: {
-        flex: 1,
-        paddingHorizontal: 24,
-        paddingTop: 60,
-        paddingBottom: 280, // Increased from 200 to 280 to ensure delete button is fully visible above tab bar
-    },
-    profileHeader: {
-        alignItems: "center",
-        marginBottom: 30,
-    },
-    avatarContainer: {
-        position: "relative",
-        marginBottom: 16,
-    },
-    avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: colors.primary[50],
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 3,
-        borderColor: colors.primary[200],
-    },
-    editButton: {
-        position: "absolute",
-        bottom: -4,
-        right: -4,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.primary[600],
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 3,
-        borderColor: colors.background.primary,
-        shadowColor: colors.shadow.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    userName: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginBottom: 4,
-    },
-    userEmail: {
-        fontSize: 16,
-        color: colors.text.secondary,
-        marginBottom: 8,
-    },
-    userLevel: {
-        fontSize: 14,
-        color: colors.primary[600],
-        fontWeight: "500",
-        marginBottom: 16,
-    },
-    profileDetails: {
-        width: "100%",
-        marginTop: 8,
-    },
-    profileDetail: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 6,
-        paddingHorizontal: 16,
-        backgroundColor: colors.background.card,
-        borderRadius: 8,
-        marginBottom: 8,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    profileDetailLabel: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        fontWeight: "500",
-    },
-    profileDetailValue: {
-        fontSize: 14,
-        color: colors.text.primary,
-        fontWeight: "600",
-    },
-    bmiContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-    },
-    bmiCategory: {
-        fontSize: 12,
-        fontWeight: "500",
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 12,
-        backgroundColor: colors.background.primary,
-    },
-    completeProfileSection: {
-        backgroundColor: colors.primary[50],
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: colors.primary[200],
-    },
-    completeProfileHeader: {
-        marginBottom: 16,
-    },
-    completeProfileTitle: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: colors.primary[700],
-        marginBottom: 8,
-    },
-    completeProfileSubtitle: {
-        fontSize: 14,
-        color: colors.primary[600],
-        lineHeight: 20,
-    },
-    completeProfileButton: {
-        backgroundColor: colors.primary[600],
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        borderRadius: 12,
-        alignItems: "center",
-        flexDirection: "row",
-        justifyContent: "center",
-        shadowColor: colors.shadow.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 4,
-    },
-    completeProfileButtonText: {
-        color: colors.background.primary,
-        fontSize: 16,
-        fontWeight: "500",
-    },
-    profileCompletion: {
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    completionBar: {
-        width: "100%",
-        height: 6,
-        backgroundColor: colors.primary[100],
-        borderRadius: 3,
-        marginBottom: 8,
-        overflow: "hidden",
-    },
-    completionFill: {
-        height: "100%",
-        backgroundColor: colors.primary[600],
-        borderRadius: 3,
-    },
-    completionText: {
-        fontSize: 12,
-        color: colors.primary[600],
-        fontWeight: "500",
-    },
-    statsSection: {
-        marginBottom: 30,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: colors.text.primary,
-        marginBottom: 16,
-    },
-    statsGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-    },
-    statCard: {
-        width: "48%",
-        backgroundColor: colors.background.card,
-        padding: 16,
-        borderRadius: 12,
-        alignItems: "center",
-        marginBottom: 16,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    statIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.primary[50],
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 8,
-    },
-    statValue: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginBottom: 4,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-        textAlign: "center",
-    },
-    achievementsSection: {
-        marginBottom: 30,
-    },
-    achievementCard: {
-        flexDirection: "row",
-        backgroundColor: colors.background.card,
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 12,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    achievementIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: colors.status.warningLight,
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 16,
-    },
-    achievementContent: {
-        flex: 1,
-    },
-    achievementName: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: colors.text.primary,
-        marginBottom: 4,
-    },
-    achievementDescription: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        marginBottom: 4,
-    },
-    achievementDate: {
-        fontSize: 12,
-        color: colors.text.tertiary,
-    },
-    actionsSection: {
-        marginBottom: 150, // Increased from 100 to 150 for even more spacing from bottom
-    },
-    actionButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.background.card,
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 12,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    actionIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.primary[50],
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 16,
-    },
-    actionText: {
-        fontSize: 16,
-        color: colors.text.primary,
-        fontWeight: "500",
-    },
-    logoutButton: {
-        borderWidth: 1,
-        borderColor: colors.status.errorLight,
-    },
-    logoutText: {
-        color: colors.status.error,
-    },
-    dangerZone: {
-        backgroundColor: colors.background.card,
-        borderRadius: 16,
-        padding: 20,
-        marginTop: 24,
-        marginBottom: 50,
-        borderWidth: 1,
-        borderColor: colors.status.error + '20', // 20% opacity
-        shadowColor: colors.status.error,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    dangerZoneTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: colors.status.error,
-        marginBottom: 16,
-        textAlign: "center",
-    },
-    deleteWarning: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: colors.status.error + '10', // 10% opacity
-        borderRadius: 12,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: colors.status.error + '30', // 30% opacity
-    },
-    deleteWarningText: {
-        fontSize: 14,
-        color: colors.status.error,
-        fontWeight: "500",
-        marginLeft: 8,
-    },
-    deleteAccountButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.background.primary,
-        borderWidth: 2,
-        borderColor: colors.status.error,
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        gap: 8,
-    },
-    deleteAccountText: {
-        color: colors.status.error,
-        fontSize: 16,
-        fontWeight: "600",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.background.primary,
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        color: colors.text.secondary,
-    },
-    noAchievementsCard: {
-        alignItems: "center",
-        paddingVertical: 30,
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        marginBottom: 12,
-        shadowColor: colors.shadow.light,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    noAchievementsText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginTop: 10,
-    },
-    noAchievementsSubtext: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        marginTop: 5,
-        textAlign: "center",
-    },
-    errorContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: colors.background.primary,
-        paddingHorizontal: 24,
-    },
-    errorText: {
-        fontSize: 18,
-        color: colors.text.secondary,
-        marginBottom: 20,
-        textAlign: "center",
-    },
-    retryButton: {
-        backgroundColor: colors.primary[600],
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 8,
-    },
-    retryButtonText: {
-        color: colors.background.primary,
-        fontSize: 16,
-        fontWeight: "500",
-    },
-    bmiLabelContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-    },
-    bmiInfoButton: {
-        padding: 2,
-    },
-    bmiModalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
-    },
-    bmiModalContainer: {
-        backgroundColor: colors.background.card,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        maxHeight: '80%',
-        shadowColor: colors.shadow.dark,
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    bmiModalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    bmiModalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: colors.text.primary,
-    },
-    bmiModalClose: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.background.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bmiModalCloseText: {
-        fontSize: 20,
-        color: colors.text.secondary,
-        fontWeight: '300',
-    },
-    bmiModalDescription: {
-        fontSize: 16,
-        color: colors.text.secondary,
-        lineHeight: 24,
-        marginBottom: 20,
-    },
-    bmiRanges: {
-        marginBottom: 24,
-    },
-    bmiRangesTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.text.primary,
-        marginBottom: 12,
-    },
-    bmiRange: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        backgroundColor: colors.background.primary,
-        borderRadius: 8,
-        marginBottom: 6,
-    },
-    bmiRangeLabel: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        fontWeight: '500',
-    },
-    bmiRangeValue: {
-        fontSize: 14,
-        color: colors.text.primary,
-        fontWeight: '600',
-    },
-    learnMoreButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primary[50],
-        borderWidth: 1,
-        borderColor: colors.primary[200],
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        gap: 8,
-    },
-    learnMoreText: {
-        fontSize: 16,
-        color: colors.primary[600],
-        fontWeight: '600',
-    },
-});

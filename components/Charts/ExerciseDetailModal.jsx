@@ -18,6 +18,7 @@ import TrendInfoModal from "./TrendInfoModal"
 import ExerciseMetricCard from "./ExerciseMetricCard"
 import TrendCard from "./TrendCard"
 import AllTimeStatsSection from "./AllTimeStatsSection"
+import { MODAL_LAYOUT } from "../../constants/modal"
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler"
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated"
 import { scheduleOnRN } from "react-native-worklets"
@@ -325,26 +326,24 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <TouchableOpacity 
-            activeOpacity={1} 
-            onPress={onClose}
-            style={{ flex: 1 }}
-          />
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={onClose}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}
+        >
           <GestureDetector gesture={panGesture}>
-            <Animated.View 
+            <Animated.View
               style={[
-                { 
+                {
                   backgroundColor: colors.background.card,
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
+                  borderRadius: MODAL_LAYOUT.borderRadius,
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: -2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                  elevation: 10,
-                  maxHeight: screenHeight * 0.9, 
-                  minHeight: screenHeight * 0.75 
+                  shadowOffset: { width: 0, height: -8 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 24,
+                  elevation: 24,
+                  maxHeight: screenHeight * 0.9,
+                  minHeight: screenHeight * 0.75
                 },
                 animatedStyle
               ]}
@@ -963,7 +962,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
           )}
             </Animated.View>
           </GestureDetector>
-        </View>
+        </TouchableOpacity>
       </GestureHandlerRootView>
 
       {/* Trend Info Modal */}

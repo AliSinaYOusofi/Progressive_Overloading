@@ -8,6 +8,7 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { getCurrentUser, updateProfile } from "../../lib/database";
+import { MODAL_LAYOUT } from "../../constants/modal";
 
 export default function SetDefaultsModal({ visible, onClose, currentDefaults }) {
     const colors = useThemedColors();
@@ -150,14 +151,13 @@ export default function SetDefaultsModal({ visible, onClose, currentDefaults }) 
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
                 >
-                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
                         <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
                         <GestureDetector gesture={panGesture}>
                             <Animated.View style={[
-                                { 
-                                    backgroundColor: colors.background.card || "white", 
-                                    borderTopLeftRadius: 24, 
-                                    borderTopRightRadius: 24,
+                                {
+                                    backgroundColor: colors.background.card || "white",
+                                    borderRadius: MODAL_LAYOUT.borderRadius,
                                     shadowColor: "#000",
                                     shadowOffset: { width: 0, height: -2 },
                                     shadowOpacity: 0.1,

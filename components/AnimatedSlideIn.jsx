@@ -9,7 +9,7 @@ import Animated, {
   cancelAnimation,
 } from "react-native-reanimated";
 
-const AnimatedSlideIn = ({ children, index, trigger, delay = 80, duration = 450 }) => {
+const AnimatedSlideIn = ({ children, index, trigger, delay = 80, duration = 450, style: extraStyle }) => {
   const opacity = useSharedValue(0);
   const translateX = useSharedValue(-40);
 
@@ -35,7 +35,7 @@ const AnimatedSlideIn = ({ children, index, trigger, delay = 80, duration = 450 
     transform: [{ translateX: translateX.value }],
   }));
 
-  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+  return <Animated.View style={[animatedStyle, extraStyle]}>{children}</Animated.View>;
 };
 
 export default AnimatedSlideIn;
