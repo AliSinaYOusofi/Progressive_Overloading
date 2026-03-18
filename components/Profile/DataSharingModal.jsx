@@ -6,6 +6,7 @@ import ModalCloseButton from "../ModalCloseButton";
 import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { MODAL_LAYOUT } from "../../constants/modal";
 
 export default function DataSharingModal({ visible, onClose }) {
     const colors = useThemedColors();
@@ -98,14 +99,13 @@ export default function DataSharingModal({ visible, onClose }) {
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+                <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
                     <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[
                             { 
                                 backgroundColor: colors.background.card, 
-                                borderTopLeftRadius: 24, 
-                                borderTopRightRadius: 24,
+                                borderRadius: MODAL_LAYOUT.borderRadius,
                                 shadowColor: "#000",
                                 shadowOffset: { width: 0, height: -2 },
                                 shadowOpacity: 0.1,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TextInput, TouchableOpacity, Dimensions } from "react-native";
 import { Search, X, Filter, Activity, TrendingUp, TrendingDown, Minus, Target, Award, Zap } from "lucide-react-native";
+import ChartEmptyState from "../../components/Charts/ChartEmptyState";
 import { LineChart } from "react-native-gifted-charts";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
@@ -15,6 +16,7 @@ export default function TrainingIntensityScreen() {
     const colors = useThemedColors();
     const [selectedTimeframe, setSelectedTimeframe] = useState(30); // days
     const [refreshing, setRefreshing] = useState(false);
+    const [loadCompleted, setLoadCompleted] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [sortBy, setSortBy] = useState('name');
@@ -158,23 +160,22 @@ export default function TrainingIntensityScreen() {
 
     useEffect(() => {
         if (user) {
-            loadRPEAnalysis(selectedTimeframe);
+            setLoadCompleted(false);
+            loadRPEAnalysis(selectedTimeframe).finally(() => setLoadCompleted(true));
         }
     }, [user, selectedTimeframe, loadRPEAnalysis]);
 
     const handleTimeframeChange = (newTimeframe) => {
         setSelectedTimeframe(newTimeframe);
-        // Check cache first - don't force refresh
-        loadRPEAnalysis(newTimeframe, false);
+        setLoadCompleted(false);
+        loadRPEAnalysis(newTimeframe, false).finally(() => setLoadCompleted(true));
     };
 
     const handleCustomDateRange = (startDate, endDate) => {
-        // Calculate days difference from start to end date
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        // Use daysDiff as the timeframe - this will calculate from today backwards
-        // Note: This means custom ranges are relative to today, not absolute dates
         setSelectedTimeframe(daysDiff);
-        loadRPEAnalysis(daysDiff, true);
+        setLoadCompleted(false);
+        loadRPEAnalysis(daysDiff, true).finally(() => setLoadCompleted(true));
     };
 
     const handleSortChange = (newSortBy, newSortOrder) => {
@@ -890,55 +891,23 @@ export default function TrainingIntensityScreen() {
     const renderEmptyComponent = () => {
         if (searchQuery.trim()) {
             return (
-                <View style={{
-                    backgroundColor: colors.background.card,
-                    borderRadius: 12,
-                    padding: 24,
-                    alignItems: 'center',
-                    marginTop: 20
-                }}>
-                    <Text style={{
-                        fontSize: 16,
-                        color: colors.text.secondary,
-                        textAlign: 'center'
-                    }}>
-                        No exercises found matching "{searchQuery}".
-                    </Text>
-                    <Text style={{
-                        fontSize: 14,
-                        color: colors.text.tertiary,
-                        textAlign: 'center',
-                        marginTop: 8
-                    }}>
-                        Try adjusting your search query.
-                    </Text>
+                <View style={{ marginTop: 20 }}>
+                    <ChartEmptyState
+                        icon={Search}
+                        title="No Matches"
+                        message={`No exercises found matching "${searchQuery}". Try adjusting your search.`}
+                    />
                 </View>
             );
         }
-        
+
         return (
-            <View style={{
-                backgroundColor: colors.background.card,
-                borderRadius: 12,
-                padding: 24,
-                alignItems: 'center',
-                marginTop: 20
-            }}>
-                <Text style={{
-                    fontSize: 16,
-                    color: colors.text.secondary,
-                    textAlign: 'center'
-                }}>
-                    No RPE data available for the selected timeframe.
-                </Text>
-                <Text style={{
-                    fontSize: 14,
-                    color: colors.text.tertiary,
-                    textAlign: 'center',
-                    marginTop: 8
-                }}>
-                    Start logging sets with RPE values to see your training intensity analysis.
-                </Text>
+            <View style={{ marginTop: 20 }}>
+                <ChartEmptyState
+                    icon={Activity}
+                    title="No RPE Data"
+                    message="Start logging sets with RPE values to see your training intensity analysis."
+                />
             </View>
         );
     };
@@ -950,10 +919,9 @@ export default function TrainingIntensityScreen() {
         });
     };
 
-    // Show loading only if no data exists and we're waiting for initial load
-    const isLoading = !rawRpeAnalysis || rawRpeAnalysis.length === 0;
-    
-    if (isLoading && !refreshing) {
+    const hasData = rawRpeAnalysis && rawRpeAnalysis.length > 0;
+
+    if (!loadCompleted && !hasData && !refreshing) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />

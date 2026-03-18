@@ -615,10 +615,7 @@ export default function GoalDayDetailScreen() {
         onClose={() => goalActions.setIsGoalDetailsVisible(false)}
         selectedGoal={goalActions.selectedGoal}
         onToggleComplete={(goal) => goalActions.handleToggleComplete(goal, true)}
-        onEdit={(goal) => {
-          goalActions.setIsGoalDetailsVisible(false);
-          goalActions.openEditGoalModal(goal);
-        }}
+        onEdit={(goal) => goalActions.openEditGoalModal(goal)}
         onDelete={(goalId) => goalActions.handleDeleteGoal(goalId, true)}
         isCompleteLoading={goalActions.modalCompleteLoadingGoalId !== null}
         isDeleteLoading={goalActions.modalDeleteLoadingGoalId !== null}

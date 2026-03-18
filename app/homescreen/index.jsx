@@ -1,25 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { useAppStore } from "../../stores/useAppStore";
 import { useSetActions } from "../../hooks/useSetActions";
 import { useGoalActions } from "../../hooks/useGoalActions";
+import AnimatedItem from "../../components/AnimatedItem";
 
-// Components
-import HomeScreenHeader from "../../components/HomeScreen/HomeScreenHeader";
-import ProgressSection from "../../components/HomeScreen/ProgressSection";
-import GoalsSection from "../../components/HomeScreen/GoalsSection";
-import ExpiredGoalsSection from "../../components/HomeScreen/ExpiredGoalsSection";
-import RecentSetsSection from "../../components/HomeScreen/RecentSetsSection";
+import DashboardHeader from "../../components/HomeScreen/DashboardHeader";
+import QuickStatsGrid from "../../components/HomeScreen/QuickStatsGrid";
+import WeeklyActivityCard from "../../components/HomeScreen/WeeklyActivityCard";
+import MonthlyActivityCard from "../../components/HomeScreen/MonthlyActivityCard";
+import ConsistencyRingCard from "../../components/HomeScreen/ConsistencyRingCard";
+import TodayWorkoutCard from "../../components/HomeScreen/TodayWorkoutCard";
+import VolumeTrendCard from "../../components/HomeScreen/VolumeTrendCard";
+import MuscleBalanceCard from "../../components/HomeScreen/MuscleBalanceCard";
+import OverloadSpotlightCard from "../../components/HomeScreen/OverloadSpotlightCard";
+import ActiveGoalsCard from "../../components/HomeScreen/ActiveGoalsCard";
+import RecentPRsCard from "../../components/HomeScreen/RecentPRsCard";
+
 import EditSetModal from "../../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../../components/HomeScreen/RMInfoModal";
 import SetDetailsModal from "../../components/HomeScreen/SetDetailsModal";
 import GoalDetailsModal from "../../components/HomeScreen/GoalDetailsModal";
+import WeeklyDayDetailModal from "../../components/Charts/WeeklyDayDetailModal";
+import ExerciseDetailModal from "../../components/Charts/ExerciseDetailModal";
 
 export default function HomeScreen() {
     const colors = useThemedColors();
-    
-    // Zustand store
+
     const {
         user,
         profile,
@@ -37,61 +46,98 @@ export default function HomeScreen() {
         updateFitnessGoal,
         removeFitnessGoal,
         setFitnessGoals,
+        addExerciseSet,
+        refreshRecentSets,
+        refreshProgress,
     } = useAppStore();
 
-    // Initialize data on mount
+    const volumeProgressionData = useAppStore(state => state.chartsData.volumeProgression);
+    const loadVolumeProgression = useAppStore(state => state.loadVolumeProgression);
+
+    const muscleGroupHeatmapData = useAppStore(state => state.chartsData.muscleGroupHeatmap);
+    const loadMuscleGroupHeatmap = useAppStore(state => state.loadMuscleGroupHeatmap);
+
+    const overloadInsightsData = useAppStore(state => state.chartsData.progressiveOverloadInsights);
+    const loadProgressiveOverloadInsights = useAppStore(state => state.loadProgressiveOverloadInsights);
+
+    const volumeProgression = useMemo(() => {
+        return volumeProgressionData[30] || [];
+    }, [volumeProgressionData]);
+
+    const muscleHeatmap = useMemo(() => {
+        return muscleGroupHeatmapData[30] || [];
+    }, [muscleGroupHeatmapData]);
+
+    const overloadInsights = useMemo(() => {
+        return overloadInsightsData[30] || [];
+    }, [overloadInsightsData]);
+
     useEffect(() => {
         if (!user) {
             initializeUserData();
         }
     }, [user, initializeUserData]);
 
-    // Get store actions for sets
-    const { addExerciseSet, refreshRecentSets, refreshProgress } = useAppStore();
-    
-    // Set actions hook
-    const setActions = useSetActions({ 
-        user, 
-        loadProgressFromSets, 
+    useEffect(() => {
+        if (user) {
+            loadVolumeProgression(30);
+            loadMuscleGroupHeatmap(30);
+            loadProgressiveOverloadInsights(30);
+        }
+    }, [user, loadVolumeProgression, loadMuscleGroupHeatmap, loadProgressiveOverloadInsights]);
+
+    const setActions = useSetActions({
+        user,
+        loadProgressFromSets,
         loadRecentSets,
         addExerciseSet,
         refreshRecentSets,
         refreshProgress,
     });
 
-    // Goal actions hook
-    const goalActions = useGoalActions({ 
-        user, 
-        fitnessGoals, 
+    const goalActions = useGoalActions({
+        user,
+        fitnessGoals,
         setFitnessGoals,
         addFitnessGoal,
         updateFitnessGoal,
         removeFitnessGoal,
     });
 
-    // UI state
-    const [showRMInfoModal, setShowRMInfoModal] = useState(false);
-    const [cardExpanded, setCardExpanded] = useState({
-        progress: true,
-        goals: true,
-        expiredGoals: true,
-        completedGoals: true,
-        recentSets: true,
-    });
+    const [focusTrigger, setFocusTrigger] = useState(0);
+    useFocusEffect(useCallback(() => {
+        setFocusTrigger((t) => t + 1);
+    }, []));
 
-    const toggleCardExpansion = (cardType) => {
-        setCardExpanded(prev => ({
-            ...prev,
-            [cardType]: !prev[cardType]
-        }));
-    };
+    const [showRMInfoModal, setShowRMInfoModal] = useState(false);
+    const [showDayDetailModal, setShowDayDetailModal] = useState(false);
+    const [selectedDayDate, setSelectedDayDate] = useState(null);
+    const [showExerciseDetailModal, setShowExerciseDetailModal] = useState(false);
+    const [selectedExerciseName, setSelectedExerciseName] = useState(null);
+
+    const handleDayPress = useCallback((date) => {
+        setSelectedDayDate(date);
+        setShowDayDetailModal(true);
+    }, []);
+
+    const handleExercisePress = useCallback((exerciseName) => {
+        setSelectedExerciseName(exerciseName);
+        setShowExerciseDetailModal(true);
+    }, []);
+
+    const handleRefresh = useCallback(() => {
+        refreshAll();
+        loadVolumeProgression(30, true);
+        loadMuscleGroupHeatmap(30, true);
+        loadProgressiveOverloadInsights(30, true);
+    }, [refreshAll, loadVolumeProgression, loadMuscleGroupHeatmap, loadProgressiveOverloadInsights]);
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: "center", alignItems: "center" }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
                 <Text style={{ color: colors.text.secondary, marginTop: 16 }}>
-                    Loading your progress...
+                    Loading your dashboard...
                 </Text>
             </View>
         );
@@ -101,95 +147,89 @@ export default function HomeScreen() {
         <ScrollView
             style={{ flex: 1, backgroundColor: colors.background.primary }}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: 120 }}
             refreshControl={
-                <RefreshControl refreshing={isRefreshing} onRefresh={refreshAll} />
+                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
             }
         >
-            {/* Header */}
-            <HomeScreenHeader
-                profile={profile}
-                user={user}
-                currentStreak={currentStreak}
-            />
-
-            <View style={{ paddingHorizontal: 24, marginTop: -16 }}>
-                {/* Progress Section */}
-                <ProgressSection
-                    progressByExercise={progressByExercise}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    handleOpenLogSet={setActions.handleOpenLogSet}
-                    setShowRMInfoModal={setShowRMInfoModal}
+            <AnimatedItem index={0} trigger={focusTrigger}>
+                <DashboardHeader
+                    profile={profile}
+                    user={user}
+                    currentStreak={currentStreak}
                 />
+            </AnimatedItem>
 
-                {/* Goals Section */}
-                <GoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                    isCompleted={false}
-                />
+            <View style={{ paddingHorizontal: 20, gap: 16, marginTop: 16 }}>
+                <AnimatedItem index={1} trigger={focusTrigger}>
+                    <QuickStatsGrid
+                        recentSets={recentSets}
+                        progressByExercise={progressByExercise}
+                        fitnessGoals={fitnessGoals}
+                        currentStreak={currentStreak}
+                    />
+                </AnimatedItem>
 
-                {/* Expired Goals Section */}
-                <ExpiredGoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                />
+                <AnimatedItem index={2} trigger={focusTrigger}>
+                    <WeeklyActivityCard
+                        recentSets={recentSets}
+                        onDayPress={handleDayPress}
+                    />
+                </AnimatedItem>
 
-                {/* Completed Goals Section */}
-                <GoalsSection
-                    fitnessGoals={fitnessGoals}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    openAddGoalModal={goalActions.openAddGoalModal}
-                    openGoalDetails={goalActions.openGoalDetails}
-                    openEditGoalModal={goalActions.openEditGoalModal}
-                    handleToggleComplete={goalActions.handleToggleComplete}
-                    handleDeleteGoal={goalActions.handleDeleteGoal}
-                    completeLoadingGoalId={goalActions.completeLoadingGoalId}
-                    deleteLoadingGoalId={goalActions.deleteLoadingGoalId}
-                    isCompleted={true}
-                />
+                <AnimatedItem index={3} trigger={focusTrigger}>
+                    <MonthlyActivityCard
+                        recentSets={recentSets}
+                        onDayPress={handleDayPress}
+                    />
+                </AnimatedItem>
 
-                {/* Recent Sets Section */}
-                <RecentSetsSection
-                    recentSets={recentSets}
-                    cardExpanded={cardExpanded}
-                    toggleCardExpansion={toggleCardExpansion}
-                    handleOpenLogSet={setActions.handleOpenLogSet}
-                    openSetDetails={setActions.openSetDetails}
-                    openEditSetModal={setActions.openEditSetModal}
-                    handleDeleteSetFromList={setActions.handleDeleteSetFromList}
-                    deleteLoadingSetId={setActions.deleteLoadingSetId}
-                />
+                <AnimatedItem index={4} trigger={focusTrigger}>
+                    <ConsistencyRingCard
+                        recentSets={recentSets}
+                        currentStreak={currentStreak}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={5} trigger={focusTrigger}>
+                    <TodayWorkoutCard
+                        recentSets={recentSets}
+                        onLogExercise={setActions.handleOpenLogSet}
+                        onExercisePress={handleExercisePress}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={6} trigger={focusTrigger}>
+                    <VolumeTrendCard volumeProgression={volumeProgression} />
+                </AnimatedItem>
+
+                <AnimatedItem index={7} trigger={focusTrigger}>
+                    <MuscleBalanceCard heatmapData={muscleHeatmap} />
+                </AnimatedItem>
+
+                <AnimatedItem index={8} trigger={focusTrigger}>
+                    <OverloadSpotlightCard overloadInsights={overloadInsights} />
+                </AnimatedItem>
+
+                <AnimatedItem index={9} trigger={focusTrigger}>
+                    <ActiveGoalsCard
+                        fitnessGoals={fitnessGoals}
+                        onGoalPress={goalActions.openGoalDetails}
+                        onAddGoal={goalActions.openAddGoalModal}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={10} trigger={focusTrigger}>
+                    <RecentPRsCard progressByExercise={progressByExercise} />
+                </AnimatedItem>
             </View>
 
-            {/* Modals */}
             <GoalDetailsModal
                 visible={goalActions.isGoalDetailsVisible}
                 onClose={() => goalActions.setIsGoalDetailsVisible(false)}
                 selectedGoal={goalActions.selectedGoal}
                 onToggleComplete={(goal) => goalActions.handleToggleComplete(goal, true)}
-                onEdit={(goal) => {
-                    goalActions.setIsGoalDetailsVisible(false);
-                    goalActions.openEditGoalModal(goal);
-                }}
+                onEdit={(goal) => goalActions.openEditGoalModal(goal)}
                 onDelete={(goalId) => goalActions.handleDeleteGoal(goalId, true)}
                 isCompleteLoading={goalActions.modalCompleteLoadingGoalId !== null}
                 isDeleteLoading={goalActions.modalDeleteLoadingGoalId !== null}
@@ -210,9 +250,23 @@ export default function HomeScreen() {
                 deleteLoadingId={setActions.modalDeleteLoadingSetId}
             />
 
-            <RMInfoModal 
-                visible={showRMInfoModal} 
-                onClose={() => setShowRMInfoModal(false)} 
+            <RMInfoModal
+                visible={showRMInfoModal}
+                onClose={() => setShowRMInfoModal(false)}
+            />
+
+            <WeeklyDayDetailModal
+                visible={showDayDetailModal}
+                onClose={() => setShowDayDetailModal(false)}
+                dayDate={selectedDayDate}
+                userId={user?.id}
+            />
+
+            <ExerciseDetailModal
+                visible={showExerciseDetailModal}
+                onClose={() => setShowExerciseDetailModal(false)}
+                exerciseName={selectedExerciseName}
+                userId={user?.id}
             />
 
             <EditSetModal
@@ -233,4 +287,3 @@ export default function HomeScreen() {
         </ScrollView>
     );
 }
-

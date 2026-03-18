@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
     View,
     Text,
@@ -14,6 +14,8 @@ import { validateEmail } from "./signup";
 import { colors } from "../../constants/ui_colors";
 import { router } from "expo-router";
 import { resetPassword } from "../../lib/auth";
+import { useFocusEffect } from "@react-navigation/native";
+import AnimatedItem from "../../components/AnimatedItem";
 
 const ForgotPasswordScreen = () => {
     const [email, setEmail] = useState("");
@@ -21,6 +23,11 @@ const ForgotPasswordScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [responseMessage, setResponseMessage] = useState("");
     const [isSuccess, setIsSuccess] = useState(false);
+    const [focusTrigger, setFocusTrigger] = useState(0);
+
+    useFocusEffect(useCallback(() => {
+        setFocusTrigger((t) => t + 1);
+    }, []));
 
     const clearResponseMessage = () => {
         setResponseMessage("");
@@ -73,12 +80,14 @@ const ForgotPasswordScreen = () => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.title}>Reset Password</Text>
-                    <Text style={styles.subtitle}>
-                        Enter your email address and we'll send you a link to reset your password
-                    </Text>
-                </View>
+                <AnimatedItem index={0} trigger={focusTrigger}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Reset Password</Text>
+                        <Text style={styles.subtitle}>
+                            Enter your email address and we'll send you a link to reset your password
+                        </Text>
+                    </View>
+                </AnimatedItem>
 
                 {/* Response Message */}
                 {responseMessage ? (
@@ -106,62 +115,68 @@ const ForgotPasswordScreen = () => {
                 {/* Form */}
                 <View style={styles.form}>
                     {/* Email Input */}
-                    <View style={styles.inputContainer}>
-                        <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
-                            <Mail
-                                size={20}
-                                color={colors.text.placeholder}
-                                style={styles.inputIcon}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email address"
-                                placeholderTextColor={colors.text.placeholder}
-                                value={email}
-                                onChangeText={(v) => {
-                                    setEmail(v);
-                                    setEmailError(validateEmail(v));
-                                    clearResponseMessage();
-                                }}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                editable={!isLoading}
-                            />
+                    <AnimatedItem index={1} trigger={focusTrigger}>
+                        <View style={styles.inputContainer}>
+                            <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
+                                <Mail
+                                    size={20}
+                                    color={colors.text.placeholder}
+                                    style={styles.inputIcon}
+                                />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Email address"
+                                    placeholderTextColor={colors.text.placeholder}
+                                    value={email}
+                                    onChangeText={(v) => {
+                                        setEmail(v);
+                                        setEmailError(validateEmail(v));
+                                        clearResponseMessage();
+                                    }}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    editable={!isLoading}
+                                />
+                            </View>
+                            {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
                         </View>
-                        {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
-                    </View>
+                    </AnimatedItem>
 
                     {/* Reset Password Button */}
-                    <TouchableOpacity
-                        style={[
-                            styles.resetButton,
-                            (!isFormValid || isLoading) && styles.disabledButton,
-                        ]}
-                        onPress={handleResetPassword}
-                        disabled={!isFormValid || isLoading}
-                    >
-                        <Text
+                    <AnimatedItem index={2} trigger={focusTrigger}>
+                        <TouchableOpacity
                             style={[
-                                styles.resetButtonText,
-                                (!isFormValid || isLoading) && styles.disabledButtonText,
+                                styles.resetButton,
+                                (!isFormValid || isLoading) && styles.disabledButton,
                             ]}
+                            onPress={handleResetPassword}
+                            disabled={!isFormValid || isLoading}
                         >
-                            {isLoading ? "Sending..." : "Send Reset Link"}
-                        </Text>
-                        {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
-                    </TouchableOpacity>
+                            <Text
+                                style={[
+                                    styles.resetButtonText,
+                                    (!isFormValid || isLoading) && styles.disabledButtonText,
+                                ]}
+                            >
+                                {isLoading ? "Sending..." : "Send Reset Link"}
+                            </Text>
+                            {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
+                        </TouchableOpacity>
+                    </AnimatedItem>
                 </View>
 
                 {/* Footer */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        Remember your password?{" "}
-                    </Text>
-                    <TouchableOpacity onPress={() => router.push("/(auth)/signin")}>
-                        <Text style={styles.signInLink}>Sign In</Text>
-                    </TouchableOpacity>
-                </View>
+                <AnimatedItem index={3} trigger={focusTrigger}>
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>
+                            Remember your password?{" "}
+                        </Text>
+                        <TouchableOpacity onPress={() => router.push("/(auth)/signin")}>
+                            <Text style={styles.signInLink}>Sign In</Text>
+                        </TouchableOpacity>
+                    </View>
+                </AnimatedItem>
             </ScrollView>
         </KeyboardAvoidingView>
     );

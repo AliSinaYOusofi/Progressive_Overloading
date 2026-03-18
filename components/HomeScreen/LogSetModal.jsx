@@ -9,6 +9,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColo
 import { scheduleOnRN } from "react-native-worklets";
 import exerciseNames from "../../exercise_names.json";
 import { useExerciseMuscleGroups } from "../../hooks/useExerciseMuscleGroups";
+import { MODAL_LAYOUT } from "../../constants/modal";
 
 export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, defaults }) {
     const colors = useThemedColors();
@@ -289,14 +290,13 @@ export default function LogSetModal({ visible, onClose, onSubmit, isSubmitting, 
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
                 >
-                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
                         <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
                         <GestureDetector gesture={panGesture}>
                             <Animated.View style={[
                                 { 
-                                    backgroundColor: colors.background.card || "white", 
-                                    borderTopLeftRadius: 24, 
-                                    borderTopRightRadius: 24,
+                                    backgroundColor: colors.background.card || "white",
+                                    borderRadius: MODAL_LAYOUT.borderRadius,
                                     shadowColor: "#000",
                                     shadowOffset: { width: 0, height: -2 },
                                     shadowOpacity: 0.1,

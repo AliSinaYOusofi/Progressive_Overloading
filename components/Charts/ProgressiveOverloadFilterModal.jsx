@@ -7,6 +7,7 @@ import ModalCloseButton from '../ModalCloseButton';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { MODAL_LAYOUT } from "../../constants/modal";
 
 const SORT_OPTIONS = [
   { 
@@ -128,7 +129,7 @@ export default function ProgressiveOverloadFilterModal({
       onRequestClose={onClose}
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
           <TouchableOpacity 
             activeOpacity={1} 
             onPress={onClose}
@@ -139,8 +140,7 @@ export default function ProgressiveOverloadFilterModal({
               style={[
                 { 
                   backgroundColor: colors.background.card,
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
+                  borderRadius: MODAL_LAYOUT.borderRadius,
                   maxHeight: '70%',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: -4 },

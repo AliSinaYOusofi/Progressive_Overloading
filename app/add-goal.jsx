@@ -1,42 +1,59 @@
-import React, { useEffect, useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  TextInput, 
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
   ScrollView,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Modal,
-  StyleSheet
+  StyleSheet,
+  Dimensions
 } from "react-native";
-import { Calendar, CheckCircle2, RotateCcw, Trash2, ChevronDown, AlertCircle, Clock, ArrowLeft } from "lucide-react-native";
+import {
+  Calendar, CheckCircle2, RotateCcw, Trash2, ChevronDown,
+  AlertCircle, Clock, ArrowLeft, Target, Type, AlignLeft,
+  Crosshair, Check
+} from "lucide-react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, differenceInDays, differenceInYears, differenceInMonths, startOfDay } from 'date-fns';
+import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle } from "react-native-svg";
 import { useThemedColors } from "../hooks/useThemedColors";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppStore } from "../stores/useAppStore";
 import { createFitnessGoal, updateFitnessGoal, deleteFitnessGoal } from "../lib/database";
+import AnimatedSlideIn from "../components/AnimatedSlideIn";
+
+const PROGRESS_RING_SIZE = 100;
+const PROGRESS_STROKE_WIDTH = 10;
+const PROGRESS_RADIUS = (PROGRESS_RING_SIZE - PROGRESS_STROKE_WIDTH) / 2;
+const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
 
 export default function AddGoalScreen() {
   const colors = useThemedColors();
   const { isDarkMode } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user, fitnessGoals, addFitnessGoal, updateFitnessGoal: updateGoalInStore } = useAppStore();
-  
+  const { user, fitnessGoals, setFitnessGoals, addFitnessGoal, updateFitnessGoal: updateGoalInStore } = useAppStore();
+
   // Get goal data from params if editing
-  const editingGoalId = params.goalId ? parseInt(params.goalId) : null;
-  const editingGoal = editingGoalId ? fitnessGoals?.find(g => g.id === editingGoalId) : null;
+  const goalIdParam = Array.isArray(params.goalId) ? params.goalId[0] : params.goalId;
+  const editingGoalId = goalIdParam ? String(goalIdParam).trim() : null;
+  const editingGoal = editingGoalId
+    ? fitnessGoals?.find(g => String(g.id).trim().toLowerCase() === editingGoalId.toLowerCase())
+    : null;
   const isEditing = Boolean(editingGoalId && editingGoal);
   const isCompleted = editingGoal?.is_completed || false;
 
-  const [formState, setFormState] = useState({ 
-    title: "", 
-    description: "", 
+  const [formState, setFormState] = useState({
+    title: "",
+    description: "",
     target_value: "",
     current_value: "",
     unit: "",
@@ -51,6 +68,27 @@ export default function AddGoalScreen() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+  const [focusTrigger, setFocusTrigger] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Computed values
+  const filledFields = [
+    formState.title.trim(),
+    formState.current_value.trim(),
+    formState.target_value.trim(),
+  ].filter(Boolean).length;
+  const totalRequiredFields = 3;
+
+  const currentVal = parseFloat(formState.current_value) || 0;
+  const targetVal = parseFloat(formState.target_value) || 0;
+  const liveProgress = targetVal > 0 ? Math.min((currentVal / targetVal) * 100, 100) : 0;
+  const showProgressRing = currentVal > 0 && targetVal > 0;
+  const progressStrokeDashoffset = PROGRESS_CIRCUMFERENCE - (PROGRESS_CIRCUMFERENCE * liveProgress) / 100;
+
+  useFocusEffect(useCallback(() => {
+    setFocusTrigger((t) => t + 1);
+  }, []));
 
   // Weight units only for goals
   const weightUnits = [
@@ -64,7 +102,7 @@ export default function AddGoalScreen() {
   useEffect(() => {
     const fetchUserDefaults = async () => {
       if (isEditing) return; // Skip for editing mode
-      
+
       try {
         const { getCurrentUser, getProfile } = await import("../lib/database");
         const currentUser = user || await getCurrentUser();
@@ -73,16 +111,13 @@ export default function AddGoalScreen() {
           if (profile && profile.default_weight_unit) {
             setFormState(prev => ({ ...prev, unit: profile.default_weight_unit }));
           } else {
-            // Fallback to "lb" if no default is set
             setFormState(prev => ({ ...prev, unit: prev.unit || "lb" }));
           }
         } else {
-          // Fallback to "lb" if no user
           setFormState(prev => ({ ...prev, unit: prev.unit || "lb" }));
         }
       } catch (error) {
         console.error('Error fetching user defaults:', error);
-        // Fallback to "lb" on error
         setFormState(prev => ({ ...prev, unit: prev.unit || "lb" }));
       }
     };
@@ -93,9 +128,9 @@ export default function AddGoalScreen() {
   useEffect(() => {
     if (isEditing && editingGoal) {
       const defaultUnit = editingGoal.unit && editingGoal.unit.trim() !== "" ? editingGoal.unit : "lb";
-      const parsedDate = editingGoal.target_date 
-        ? (editingGoal.target_date instanceof Date 
-            ? editingGoal.target_date 
+      const parsedDate = editingGoal.target_date
+        ? (editingGoal.target_date instanceof Date
+            ? editingGoal.target_date
             : new Date(editingGoal.target_date))
         : null;
       setFormState({
@@ -174,8 +209,8 @@ export default function AddGoalScreen() {
         title: formState.title.trim(),
         description: formState.description.trim() || null,
         target_value: parseFloat(formState.target_value) || 0,
-        current_value: formState.current_value !== undefined && formState.current_value !== null && `${formState.current_value}`.trim() !== "" 
-          ? parseFloat(formState.current_value) || 0 
+        current_value: formState.current_value !== undefined && formState.current_value !== null && `${formState.current_value}`.trim() !== ""
+          ? parseFloat(formState.current_value) || 0
           : 0,
         unit: formState.unit || "lb",
         target_date: targetDate ? format(targetDate, 'yyyy-MM-dd') : null
@@ -190,6 +225,9 @@ export default function AddGoalScreen() {
         addFitnessGoal(savedGoal);
         setSuccessMessage("Goal created successfully!");
       }
+      setIsSaved(true);
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      setTimeout(() => setIsSaved(false), 5000);
     } catch (error) {
       const { getUserFriendlyError, logError } = await import("../utils/errorHandler");
       logError(error, 'add-goal');
@@ -201,7 +239,7 @@ export default function AddGoalScreen() {
 
   const handleDelete = async () => {
     if (!editingGoalId) return;
-    
+
     Alert.alert(
       "Delete Goal",
       "Are you sure you want to delete this goal? This action cannot be undone.",
@@ -214,11 +252,11 @@ export default function AddGoalScreen() {
             setIsDeleting(true);
             setErrorMessage("");
             setSuccessMessage("");
-            
+
             // Optimistic update - remove from state immediately
-            const deletedGoal = fitnessGoals.find((goal) => goal.id === editingGoalId);
-            setFitnessGoals((prev) => prev.filter((goal) => goal.id !== editingGoalId));
-            
+            const deletedGoal = fitnessGoals.find((goal) => String(goal.id) === editingGoalId);
+            setFitnessGoals((prev) => prev.filter((goal) => String(goal.id) !== editingGoalId));
+
             try {
               await deleteFitnessGoal(editingGoalId);
               setSuccessMessage("Goal deleted successfully!");
@@ -241,24 +279,24 @@ export default function AddGoalScreen() {
 
   const handleToggleComplete = async () => {
     if (!editingGoal) return;
-    
+
     setIsTogglingComplete(true);
     setErrorMessage("");
     setSuccessMessage("");
-    
+
     const updates = editingGoal.is_completed
       ? { is_completed: false, completed_at: null }
       : {
           is_completed: true,
           completed_at: new Date().toISOString(),
         };
-    
+
     // Optimistic update - update state immediately
     const previousGoal = editingGoal;
     setFitnessGoals((prev) =>
       prev.map((g) => (g.id === editingGoal.id ? { ...g, ...updates } : g))
     );
-    
+
     try {
       await updateFitnessGoal(editingGoal.id, updates);
       setSuccessMessage(editingGoal.is_completed ? "Goal reopened successfully!" : "Goal completed successfully!");
@@ -307,11 +345,11 @@ export default function AddGoalScreen() {
   // Calculate and format time until target date with color info
   const getTimeUntilDateInfo = (date) => {
     if (!date) return null;
-    
+
     const today = startOfDay(new Date());
     const target = startOfDay(date);
     const days = differenceInDays(target, today);
-    
+
     let timeText = "";
     if (days < 0) {
       timeText = `${Math.abs(days)} day${Math.abs(days) !== 1 ? 's' : ''} ago`;
@@ -324,7 +362,7 @@ export default function AddGoalScreen() {
     } else {
       const months = differenceInMonths(target, today);
       const years = differenceInYears(target, today);
-      
+
       if (months >= 12) {
         const remainingMonths = months - (years * 12);
         if (remainingMonths === 0) {
@@ -341,7 +379,7 @@ export default function AddGoalScreen() {
         }
       }
     }
-    
+
     if (days < 0) {
       return {
         text: timeText,
@@ -408,131 +446,253 @@ export default function AddGoalScreen() {
     }
   };
 
+  const getProgressRingColor = () => {
+    if (liveProgress >= 75) return colors.status.success;
+    if (liveProgress >= 40) return colors.primary[600];
+    return colors.status.warning;
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background.primary,
     },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingTop: Platform.OS === "ios" ? 60 : 40,
-      paddingBottom: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border.light,
-      backgroundColor: colors.background.card,
-      shadowColor: colors.shadow?.dark || "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    backButton: {
-      padding: 8,
-      marginRight: 12,
-    },
-    headerContent: {
-      flex: 1,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: "700",
-      color: colors.text.primary,
-      marginBottom: 4,
-    },
-    subtitle: {
-      fontSize: 14,
-      color: colors.text.secondary,
-      fontWeight: "400",
+      paddingHorizontal: 24,
+      paddingTop: Platform.OS === "ios" ? 64 : 44,
+      paddingBottom: 28,
     },
     scrollContent: {
-      padding: 24,
-      paddingBottom: 120, // Extra padding to account for tab bar
+      padding: 20,
+      paddingBottom: 120,
     },
-    actionButtons: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginBottom: 16,
+    // Form completion dots
+    completionBar: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 24,
     },
-    actionButton: {
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      paddingHorizontal: 12, 
-      paddingVertical: 8, 
-      borderRadius: 12, 
-      marginLeft: 8,
+    completionDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    // Section card
+    sectionCard: {
+      backgroundColor: colors.background.card,
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      marginBottom: 20,
+      shadowColor: colors.shadow?.light || "rgba(0,0,0,0.05)",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 18,
+    },
+    sectionIconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.primary[600] + "15",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text.primary,
+    },
+    // Premium inputs
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.background.input,
+      borderWidth: 1.5,
+      borderColor: colors.border.light,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    inputField: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text.primary,
+      paddingVertical: Platform.OS === "ios" ? 14 : 12,
+      paddingHorizontal: 0,
+    },
+    inputLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.text.secondary,
+      marginBottom: 8,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    // Progress bar
+    miniProgressBar: {
+      height: 6,
+      backgroundColor: colors.border.light,
+      borderRadius: 3,
+      overflow: "hidden",
+    },
+    miniProgressFill: {
+      height: "100%",
+      backgroundColor: colors.primary[600],
+      borderRadius: 3,
+    },
+    // CTA
+    ctaButton: {
+      borderRadius: 14,
+      paddingVertical: 18,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ctaButtonText: {
+      color: "#FFFFFF",
+      fontSize: 17,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+    },
+    cancelLink: {
+      alignItems: "center",
+      paddingVertical: 14,
+      marginTop: 8,
+    },
+    cancelLinkText: {
+      color: colors.text.tertiary,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    // Edit mode
+    editActionCard: {
+      backgroundColor: colors.background.card,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border.light,
+      marginBottom: 20,
+      flexDirection: "row",
+      gap: 12,
+    },
+    editActionButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 14,
+      borderRadius: 12,
+      gap: 8,
     },
   });
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          disabled={isSubmitting}
+      {/* Hero Header with Gradient */}
+      <AnimatedSlideIn index={0} trigger={focusTrigger}>
+        <LinearGradient
+          colors={isDarkMode
+            ? [colors.primary[50], colors.background.primary]
+            : [colors.primary[100], colors.primary[50], colors.background.primary]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.3, y: 1 }}
+          style={styles.header}
         >
-          <ArrowLeft size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>
-            {isEditing ? "Edit Goal" : "Add Fitness Goal"}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isEditing ? "Update your fitness goal" : "Set a new fitness goal"}
-          </Text>
-        </View>
-      </View>
+          <TouchableOpacity
+            style={{ padding: 8, alignSelf: "flex-start", marginBottom: 16 }}
+            onPress={() => router.back()}
+            disabled={isSubmitting}
+          >
+            <ArrowLeft size={24} color={colors.text.primary} />
+          </TouchableOpacity>
 
-      <ScrollView 
+          <View style={{
+            width: 56, height: 56, borderRadius: 16,
+            backgroundColor: colors.primary[600] + "20",
+            alignItems: "center", justifyContent: "center",
+            marginBottom: 16,
+          }}>
+            <Target size={28} color={colors.primary[600]} />
+          </View>
+
+          <Text style={{
+            fontSize: 28, fontWeight: "800",
+            color: colors.text.primary, letterSpacing: -0.5,
+            marginBottom: 6,
+          }}>
+            {isEditing ? "Edit Goal" : "New Fitness Goal"}
+          </Text>
+          <Text style={{
+            fontSize: 15, color: colors.text.secondary,
+            fontWeight: "500", lineHeight: 20,
+          }}>
+            {isEditing
+              ? "Update your goal details and track progress"
+              : "Define your target and start tracking today"}
+          </Text>
+        </LinearGradient>
+      </AnimatedSlideIn>
+
+      <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Description Section */}
-        <View style={{ marginTop: 0, marginBottom: 32, alignItems: 'center' }}>
-          <Text style={{ 
-            fontSize: 28, 
-            fontWeight: '700',
-            color: colors.text.primary, 
-            textAlign: 'center',
-            marginBottom: 12,
-          }}>
-            {isEditing ? "Edit Goal" : "Add Fitness Goal"}
-          </Text>
-          <Text style={{ 
-            fontSize: 16, 
-            color: colors.text.secondary, 
-            textAlign: 'center',
-            lineHeight: 22,
-          }}>
-            {isEditing 
-              ? "Update your fitness goal and track your progress" 
-              : "Set a new fitness goal and track your progress over time"}
-          </Text>
-        </View>
+        {/* Form Completion Indicator */}
+        <AnimatedSlideIn index={1} trigger={focusTrigger}>
+          <View style={styles.completionBar}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[
+                styles.completionDot,
+                { backgroundColor: i < filledFields ? colors.primary[600] : colors.border.light },
+              ]} />
+            ))}
+            <Text style={{
+              fontSize: 12, fontWeight: "600",
+              color: filledFields === totalRequiredFields ? colors.status.success : colors.text.tertiary,
+              marginLeft: 4,
+            }}>
+              {filledFields}/{totalRequiredFields} required
+            </Text>
+          </View>
+        </AnimatedSlideIn>
 
         {/* Success Message */}
         {successMessage ? (
-          <View style={{ 
+          <View style={{
             marginBottom: 16,
             backgroundColor: colors.status.success + '20',
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 12,
             borderLeftWidth: 4,
             borderLeftColor: colors.status.success,
+            flexDirection: "row",
+            alignItems: "center",
           }}>
-            <Text style={{ 
-              color: colors.status.success, 
-              fontSize: 14, 
+            <CheckCircle2 size={16} color={colors.status.success} style={{ marginRight: 8 }} />
+            <Text style={{
+              color: colors.status.success,
+              fontSize: 14,
               fontWeight: "600",
+              flex: 1,
             }}>
               {successMessage}
             </Text>
@@ -541,350 +701,431 @@ export default function AddGoalScreen() {
 
         {/* Error Message */}
         {errorMessage ? (
-          <View style={{ 
+          <View style={{
             marginBottom: 16,
             backgroundColor: colors.status.error + '20',
             padding: 12,
-            borderRadius: 8,
+            borderRadius: 12,
             borderLeftWidth: 4,
             borderLeftColor: colors.status.error,
+            flexDirection: "row",
+            alignItems: "center",
           }}>
-            <Text style={{ 
-              color: colors.status.error, 
-              fontSize: 14, 
+            <AlertCircle size={16} color={colors.status.error} style={{ marginRight: 8 }} />
+            <Text style={{
+              color: colors.status.error,
+              fontSize: 14,
               fontWeight: "600",
+              flex: 1,
             }}>
               {errorMessage}
             </Text>
           </View>
         ) : null}
 
-        {/* Edit actions row (Complete/Reopen, Delete) */}
+        {/* Edit Mode Actions */}
         {isEditing ? (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              onPress={handleToggleComplete}
-              disabled={isSubmitting || isDeleting || isTogglingComplete}
-              style={[
-                styles.actionButton,
-                { 
-                  backgroundColor: colors.background.primary, 
-                  opacity: isSubmitting || isDeleting || isTogglingComplete ? 0.6 : 1 
-                }
-              ]}
-            >
-              {isTogglingComplete ? (
-                <ActivityIndicator size="small" color={colors.primary[600]} />
-              ) : isCompleted ? (
-                <RotateCcw size={18} color={colors.primary[600]} />
-              ) : (
-                <CheckCircle2 size={18} color={colors.primary[600]} />
-              )}
-              <Text style={{ marginLeft: 8, fontWeight: '600', color: colors.primary[600] }}>
-                {isCompleted ? "Reopen" : "Mark as Complete"}
-              </Text>
-            </TouchableOpacity>
+          <AnimatedSlideIn index={2} trigger={focusTrigger}>
+            <View style={styles.editActionCard}>
+              <TouchableOpacity
+                onPress={handleToggleComplete}
+                disabled={isSubmitting || isDeleting || isTogglingComplete}
+                style={[styles.editActionButton, {
+                  backgroundColor: colors.primary[600] + "12",
+                  opacity: (isSubmitting || isDeleting || isTogglingComplete) ? 0.6 : 1,
+                }]}
+              >
+                {isTogglingComplete ? (
+                  <ActivityIndicator size="small" color={colors.primary[600]} />
+                ) : isCompleted ? (
+                  <RotateCcw size={18} color={colors.primary[600]} />
+                ) : (
+                  <CheckCircle2 size={18} color={colors.primary[600]} />
+                )}
+                <Text style={{ fontWeight: "700", color: colors.primary[600], fontSize: 14 }}>
+                  {isCompleted ? "Reopen" : "Complete"}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleDelete}
-              disabled={isSubmitting || isDeleting || isTogglingComplete}
-              style={[
-                styles.actionButton,
-                {
-                  backgroundColor: colors.status.errorLight, 
-                  opacity: isSubmitting || isDeleting || isTogglingComplete ? 0.6 : 1 
-                }
-              ]}
-            >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color={colors.status.error} />
-              ) : (
-                <Trash2 size={18} color={colors.status.error} />
-              )}
-              <Text style={{ marginLeft: 8, fontWeight: '600', color: colors.status.error }}>
-                Delete
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={isSubmitting || isDeleting || isTogglingComplete}
+                style={[styles.editActionButton, {
+                  backgroundColor: colors.status.error + "12",
+                  opacity: (isSubmitting || isDeleting || isTogglingComplete) ? 0.6 : 1,
+                }]}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color={colors.status.error} />
+                ) : (
+                  <Trash2 size={18} color={colors.status.error} />
+                )}
+                <Text style={{ fontWeight: "700", color: colors.status.error, fontSize: 14 }}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </AnimatedSlideIn>
         ) : null}
 
-        {/* Goal Title */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Goal Title</Text>
-          <TextInput
-            placeholder="e.g. Bench Press 225 lbs"
-            value={formState.title}
-            onChangeText={text => setFormState(prev => ({ ...prev, title: text }))}
-            style={{ 
-              borderWidth: 1, 
-              borderColor: colors.border.light, 
-              borderRadius: 12, 
-              paddingHorizontal: 16, 
-              paddingVertical: 12, 
-              color: colors.text.primary,
-              backgroundColor: colors.background.card || "white"
-            }}
-            placeholderTextColor={colors.text.tertiary}
-            editable={!isSubmitting}
-          />
-        </View>
-
-        {/* Description */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Description (Optional)</Text>
-          <TextInput
-            placeholder="Describe your goal in detail"
-            value={formState.description}
-            onChangeText={text => setFormState(prev => ({ ...prev, description: text }))}
-            style={{ 
-              borderWidth: 1, 
-              borderColor: colors.border.light, 
-              borderRadius: 12, 
-              paddingHorizontal: 16, 
-              paddingVertical: 12, 
-              color: colors.text.primary,
-              backgroundColor: colors.background.card || "white"
-            }}
-            placeholderTextColor={colors.text.tertiary}
-            multiline
-            numberOfLines={3}
-            editable={!isSubmitting}
-          />
-        </View>
-
-        {/* Current Value / Target Value / Unit */}
-        <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Current Value</Text>
-            <TextInput
-              keyboardType="numeric"
-              placeholder="e.g. 180"
-              value={formState.current_value}
-              onChangeText={text => setFormState(prev => ({ ...prev, current_value: text }))}
-              style={{ 
-                borderWidth: 1, 
-                borderColor: colors.border.light, 
-                borderRadius: 12, 
-                paddingHorizontal: 16, 
-                paddingVertical: 12, 
-                color: colors.text.primary,
-                backgroundColor: colors.background.card || "white"
-              }}
-              placeholderTextColor={colors.text.tertiary}
-              editable={!isSubmitting}
-            />
-          </View>
-          <View style={{ flex: 1, marginHorizontal: 4 }}>
-            <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Target Value</Text>
-            <TextInput
-              keyboardType="numeric"
-              placeholder="225"
-              value={formState.target_value}
-              onChangeText={text => setFormState(prev => ({ ...prev, target_value: text }))}
-              style={{ 
-                borderWidth: 1, 
-                borderColor: colors.border.light, 
-                borderRadius: 12, 
-                paddingHorizontal: 16, 
-                paddingVertical: 12, 
-                color: colors.text.primary,
-                backgroundColor: colors.background.card || "white"
-              }}
-              placeholderTextColor={colors.text.tertiary}
-              editable={!isSubmitting}
-            />
-          </View>
-          <View style={{ flex: 1, marginLeft: 8 }}>
-            <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Unit</Text>
-            <TouchableOpacity
-              onPress={() => !isSubmitting && setShowUnitDropdown(true)}
-              disabled={isSubmitting}
-              style={{ 
-                borderWidth: 1, 
-                borderColor: colors.border.light, 
-                borderRadius: 12, 
-                paddingHorizontal: 16, 
-                paddingVertical: 12, 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                backgroundColor: colors.background.card || "white",
-                opacity: isSubmitting ? 0.6 : 1 
-              }}
-            >
-              <Text style={{ color: formState.unit ? colors.text.primary : colors.text.tertiary }}>
-                {formState.unit || "Select unit"}
-              </Text>
-              <ChevronDown size={18} color={colors.text.tertiary} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Target Date */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.text.secondary, marginBottom: 8, fontWeight: '500' }}>Target Date (Optional)</Text>
-          <TouchableOpacity
-            onPress={() => {
-              if (!isSubmitting) {
-                setTempSelectedDate(targetDate);
-                setShowDatePicker(true);
-              }
-            }}
-            disabled={isSubmitting}
-            style={{ 
-              borderWidth: 1, 
-              borderColor: colors.border.light, 
-              borderRadius: 12, 
-              paddingHorizontal: 16, 
-              paddingVertical: 12, 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              backgroundColor: colors.background.card || "white",
-              opacity: isSubmitting ? 0.6 : 1 
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-              <Calendar size={18} color={targetDate ? colors.text.primary : colors.text.tertiary} style={{ marginRight: 8 }} />
-              <Text style={{ color: targetDate ? colors.text.primary : colors.text.tertiary, fontSize: 16 }}>
-                {targetDate ? formatDateDisplay(targetDate) : "Select target date"}
-              </Text>
+        {/* ===== CARD 1: Goal Details ===== */}
+        <AnimatedSlideIn index={3} trigger={focusTrigger}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBadge}>
+                <Type size={20} color={colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Goal Details</Text>
             </View>
-            {targetDate && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setTargetDate(null);
-                }}
-                style={{ padding: 4, marginLeft: 8 }}
-              >
-                <Text style={{ color: colors.status.error, fontSize: 14, fontWeight: '600' }}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-          {(() => {
-            const dateInfo = targetDate ? getTimeUntilDateInfo(targetDate) : null;
-            const IconComponent = dateInfo?.icon || Clock;
-            return dateInfo ? (
-              <View style={{ 
-                marginTop: 8, 
-                paddingHorizontal: 12, 
-                paddingVertical: 10, 
-                backgroundColor: dateInfo.backgroundColor, 
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: dateInfo.borderColor,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text.secondary, fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
-                    Goal must be completed in
+
+            <Text style={styles.inputLabel}>Title *</Text>
+            <View style={styles.inputWrapper}>
+              <Target size={18} color={colors.text.tertiary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputField}
+                placeholder="e.g. Bench Press 225 lbs"
+                value={formState.title}
+                onChangeText={text => setFormState(prev => ({ ...prev, title: text }))}
+                placeholderTextColor={colors.text.placeholder}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            <View style={{ height: 16 }} />
+
+            <Text style={styles.inputLabel}>Description</Text>
+            <View style={[styles.inputWrapper, { alignItems: "flex-start" }]}>
+              <AlignLeft size={18} color={colors.text.tertiary} style={[styles.inputIcon, { marginTop: 2 }]} />
+              <TextInput
+                style={[styles.inputField, { minHeight: 72, textAlignVertical: "top" }]}
+                placeholder="Describe your goal in detail"
+                value={formState.description}
+                onChangeText={text => setFormState(prev => ({ ...prev, description: text }))}
+                placeholderTextColor={colors.text.placeholder}
+                multiline
+                numberOfLines={3}
+                editable={!isSubmitting}
+              />
+            </View>
+          </View>
+        </AnimatedSlideIn>
+
+        {/* ===== CARD 2: Progress Tracking ===== */}
+        <AnimatedSlideIn index={4} trigger={focusTrigger}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBadge}>
+                <Crosshair size={20} color={colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Progress Tracking</Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {/* Current Value */}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Current *</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={[styles.inputField, { textAlign: "center" }]}
+                    keyboardType="numeric"
+                    placeholder="180"
+                    value={formState.current_value}
+                    onChangeText={text => setFormState(prev => ({ ...prev, current_value: text }))}
+                    placeholderTextColor={colors.text.placeholder}
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+
+              {/* Target Value */}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Target *</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={[styles.inputField, { textAlign: "center" }]}
+                    keyboardType="numeric"
+                    placeholder="225"
+                    value={formState.target_value}
+                    onChangeText={text => setFormState(prev => ({ ...prev, target_value: text }))}
+                    placeholderTextColor={colors.text.placeholder}
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+
+              {/* Unit Selector */}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Unit</Text>
+                <TouchableOpacity
+                  onPress={() => !isSubmitting && setShowUnitDropdown(true)}
+                  disabled={isSubmitting}
+                  style={[styles.inputWrapper, { justifyContent: "center", opacity: isSubmitting ? 0.6 : 1, paddingVertical: Platform.OS === "ios" ? 14 : 12 }]}
+                >
+                  <Text style={{
+                    fontSize: 16, flex: 1, textAlign: "center",
+                    color: formState.unit ? colors.text.primary : colors.text.placeholder,
+                  }}>
+                    {formState.unit || "lb"}
                   </Text>
-                  <Text style={{ color: dateInfo.textColor, fontSize: 14, fontWeight: '500' }}>
-                    {dateInfo.text}
+                  <ChevronDown size={16} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Live Progress Visualization */}
+            {showProgressRing && (
+              <View style={{ marginTop: 20 }}>
+                {/* Mini progress bar */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                  <Text style={{ fontSize: 12, color: colors.text.tertiary, fontWeight: "500" }}>
+                    {currentVal} {formState.unit}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.text.tertiary, fontWeight: "500" }}>
+                    {targetVal} {formState.unit}
                   </Text>
                 </View>
-                <IconComponent size={20} color={dateInfo.iconColor} style={{ marginLeft: 12 }} />
-              </View>
-            ) : null;
-          })()}
-          <Text style={{ color: colors.text.tertiary, fontSize: 14, marginTop: 4 }}>
-            Leave empty for no deadline
-          </Text>
-        </View>
+                <View style={styles.miniProgressBar}>
+                  <View style={[styles.miniProgressFill, { width: `${liveProgress}%` }]} />
+                </View>
 
-        {/* Action Buttons */}
-        <View style={{ flexDirection: 'row', marginTop: 8 }}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            disabled={isSubmitting}
-            style={{ 
-              flex: 1, 
-              backgroundColor: colors.action.cancel, 
-              borderRadius: 12, 
-              paddingVertical: 16, 
-              marginRight: 8, 
-              alignItems: 'center',
-              opacity: isSubmitting ? 0.5 : 1 
-            }}
-          >
-            <Text style={{ color: colors.action.cancelText, fontWeight: '600' }}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleSubmit} 
-            disabled={isSubmitting}
-            style={{ 
-              flex: 1, 
-              backgroundColor: isDarkMode ? colors.primary[200] : colors.primary[600], 
-              borderRadius: 12, 
-              paddingVertical: 16, 
-              marginLeft: 8, 
-              alignItems: 'center',
-              opacity: isSubmitting ? 0.7 : 1 
-            }}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={colors.text.white} />
-            ) : (
-              <Text style={{ color: colors.text.white, fontWeight: '600' }}>
-                {isEditing ? "Save Changes" : "Add Goal"}
+                {/* SVG Progress Ring */}
+                <View style={{ alignItems: "center", marginTop: 20 }}>
+                  <View style={{ alignItems: "center", justifyContent: "center" }}>
+                    <Svg width={PROGRESS_RING_SIZE} height={PROGRESS_RING_SIZE}>
+                      <Circle
+                        cx={PROGRESS_RING_SIZE / 2}
+                        cy={PROGRESS_RING_SIZE / 2}
+                        r={PROGRESS_RADIUS}
+                        stroke={colors.border.light}
+                        strokeWidth={PROGRESS_STROKE_WIDTH}
+                        fill="none"
+                      />
+                      <Circle
+                        cx={PROGRESS_RING_SIZE / 2}
+                        cy={PROGRESS_RING_SIZE / 2}
+                        r={PROGRESS_RADIUS}
+                        stroke={getProgressRingColor()}
+                        strokeWidth={PROGRESS_STROKE_WIDTH}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={PROGRESS_CIRCUMFERENCE}
+                        strokeDashoffset={progressStrokeDashoffset}
+                        rotation="-90"
+                        origin={`${PROGRESS_RING_SIZE / 2}, ${PROGRESS_RING_SIZE / 2}`}
+                      />
+                    </Svg>
+                    <View style={{ position: "absolute", alignItems: "center" }}>
+                      <Text style={{
+                        fontSize: 22, fontWeight: "800",
+                        color: colors.text.primary, letterSpacing: -0.5,
+                      }}>
+                        {Math.round(liveProgress)}%
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={{
+                    fontSize: 13, fontWeight: "600",
+                    color: getProgressRingColor(), marginTop: 8,
+                  }}>
+                    {Math.round(liveProgress)}% of goal
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </AnimatedSlideIn>
+
+        {/* ===== CARD 3: Timeline ===== */}
+        <AnimatedSlideIn index={5} trigger={focusTrigger}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBadge}>
+                <Calendar size={20} color={colors.primary[600]} />
+              </View>
+              <Text style={styles.sectionTitle}>Timeline</Text>
+            </View>
+
+            <Text style={styles.inputLabel}>Target Date</Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (!isSubmitting) {
+                  setTempSelectedDate(targetDate);
+                  setShowDatePicker(true);
+                }
+              }}
+              disabled={isSubmitting}
+              style={[styles.inputWrapper, { opacity: isSubmitting ? 0.6 : 1, paddingVertical: Platform.OS === "ios" ? 14 : 12 }]}
+            >
+              <Calendar size={18} color={targetDate ? colors.primary[600] : colors.text.tertiary} style={styles.inputIcon} />
+              <Text style={{
+                flex: 1, fontSize: 16,
+                color: targetDate ? colors.text.primary : colors.text.placeholder,
+              }}>
+                {targetDate ? formatDateDisplay(targetDate) : "Select target date"}
               </Text>
+              {targetDate && (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setTargetDate(null);
+                  }}
+                  style={{ padding: 4 }}
+                >
+                  <Text style={{ color: colors.status.error, fontSize: 13, fontWeight: "700" }}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            {(() => {
+              const dateInfo = targetDate ? getTimeUntilDateInfo(targetDate) : null;
+              const IconComponent = dateInfo?.icon || Clock;
+              return dateInfo ? (
+                <View style={{
+                  marginTop: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  backgroundColor: dateInfo.backgroundColor,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: dateInfo.borderColor,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text.secondary, fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
+                      Goal must be completed in
+                    </Text>
+                    <Text style={{ color: dateInfo.textColor, fontSize: 15, fontWeight: '600' }}>
+                      {dateInfo.text}
+                    </Text>
+                  </View>
+                  <IconComponent size={22} color={dateInfo.iconColor} />
+                </View>
+              ) : (
+                <Text style={{ color: colors.text.tertiary, fontSize: 13, marginTop: 8 }}>
+                  Leave empty for no deadline
+                </Text>
+              );
+            })()}
+          </View>
+        </AnimatedSlideIn>
+
+        {/* ===== Premium CTA Button ===== */}
+        <AnimatedSlideIn index={6} trigger={focusTrigger}>
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isSubmitting || isSaved}
+            activeOpacity={0.85}
+            style={{
+              opacity: isSubmitting ? 0.7 : 1, marginTop: 4,
+              shadowColor: isSaved ? colors.status.success : (colors.shadow?.colored || "rgba(5,150,105,0.3)"),
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.5,
+              shadowRadius: 12,
+              elevation: 4,
+            }}
+          >
+            {isSaved ? (
+              <View style={[styles.ctaButton, { backgroundColor: colors.status.success, flexDirection: "row", gap: 8 }]}>
+                <CheckCircle2 size={20} color="#FFFFFF" />
+                <Text style={styles.ctaButtonText}>
+                  {isEditing ? "Goal Saved" : "Goal Created"}
+                </Text>
+              </View>
+            ) : (
+              <LinearGradient
+                colors={isDarkMode
+                  ? [colors.primary[400], colors.primary[300]]
+                  : [colors.primary[500], colors.primary[600]]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.ctaButton}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.ctaButtonText}>
+                    {isEditing ? "Save Changes" : "Create Goal"}
+                  </Text>
+                )}
+              </LinearGradient>
             )}
           </TouchableOpacity>
-        </View>
+
+          <TouchableOpacity
+            onPress={() => router.back()}
+            disabled={isSubmitting}
+            style={[styles.cancelLink, { opacity: isSubmitting ? 0.5 : 1 }]}
+          >
+            <Text style={styles.cancelLinkText}>Cancel</Text>
+          </TouchableOpacity>
+        </AnimatedSlideIn>
       </ScrollView>
 
-      {/* Unit Dropdown Modal */}
+      {/* Unit Dropdown Modal - Bottom Sheet Style */}
       <Modal
         transparent
         visible={showUnitDropdown}
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowUnitDropdown(false)}
       >
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setShowUnitDropdown(false)}
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
         >
-          <View style={{ backgroundColor: colors.background.card, borderRadius: 16, width: '100%', maxWidth: 400 }}>
-            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border.light }}>
-              <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: 'bold' }}>Select Unit</Text>
+          <View style={{
+            backgroundColor: colors.background.card,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingBottom: 40,
+          }}>
+            {/* Drag Handle */}
+            <View style={{ alignItems: "center", paddingVertical: 12 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border.medium }} />
             </View>
-            <ScrollView style={{ maxHeight: 256 }}>
-              {weightUnits.map((unit) => (
-                <TouchableOpacity
-                  key={unit.value}
-                  onPress={() => {
-                    setFormState(prev => ({ ...prev, unit: unit.value }));
-                    setShowUnitDropdown(false);
-                  }}
-                  style={{
-                    paddingHorizontal: 16, 
-                    paddingVertical: 12, 
-                    borderBottomWidth: 1, 
-                    borderBottomColor: colors.border.light,
-                    backgroundColor: formState.unit === unit.value ? colors.primary[50] : colors.background.card,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      color: formState.unit === unit.value ? colors.primary[600] : colors.text.primary,
-                      fontWeight: formState.unit === unit.value ? "600" : "400",
-                    }}
-                  >
-                    {unit.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+
+            <View style={{ paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border.light }}>
+              <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: '700' }}>Select Unit</Text>
+            </View>
+
+            {weightUnits.map((unit) => (
+              <TouchableOpacity
+                key={unit.value}
+                onPress={() => {
+                  setFormState(prev => ({ ...prev, unit: unit.value }));
+                  setShowUnitDropdown(false);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingHorizontal: 20,
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border.light,
+                  backgroundColor: formState.unit === unit.value ? colors.primary[600] + "08" : "transparent",
+                }}
+              >
+                <Text style={{
+                  fontSize: 17,
+                  color: formState.unit === unit.value ? colors.primary[600] : colors.text.primary,
+                  fontWeight: formState.unit === unit.value ? "700" : "400",
+                }}>
+                  {unit.label}
+                </Text>
+                {formState.unit === unit.value && (
+                  <Check size={20} color={colors.primary[600]} />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* Date Picker */}
+      {/* Date Picker - iOS */}
       {showDatePicker && Platform.OS === 'ios' && (
         <Modal
           transparent
@@ -893,19 +1134,24 @@ export default function AddGoalScreen() {
           onRequestClose={handleDatePickerDone}
         >
           <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <TouchableOpacity 
-              activeOpacity={1} 
+            <TouchableOpacity
+              activeOpacity={1}
               onPress={handleDatePickerDone}
               style={{ flex: 1 }}
             />
-            <View style={{ 
-              backgroundColor: colors.background.card, 
-              borderTopLeftRadius: 24, 
+            <View style={{
+              backgroundColor: colors.background.card,
+              borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 20
             }}>
+              {/* Drag Handle */}
+              <View style={{ alignItems: "center", marginBottom: 12 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border.medium }} />
+              </View>
+
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '700' }}>Select Target Date</Text>
+                <Text style={{ color: colors.text.primary, fontSize: 20, fontWeight: '700' }}>Select Target Date</Text>
                 <TouchableOpacity onPress={handleDatePickerDone}>
                   <Text style={{ color: colors.primary[600], fontSize: 16, fontWeight: '600' }}>Done</Text>
                 </TouchableOpacity>
@@ -924,12 +1170,12 @@ export default function AddGoalScreen() {
                 const dateInfo = selectedDate ? getTimeUntilDateInfo(selectedDate) : null;
                 const IconComponent = dateInfo?.icon || Clock;
                 return dateInfo ? (
-                  <View style={{ 
-                    marginTop: 16, 
-                    paddingHorizontal: 12, 
-                    paddingVertical: 10, 
-                    backgroundColor: dateInfo.backgroundColor, 
-                    borderRadius: 8,
+                  <View style={{
+                    marginTop: 16,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    backgroundColor: dateInfo.backgroundColor,
+                    borderRadius: 12,
                     borderWidth: 1,
                     borderColor: dateInfo.borderColor,
                     flexDirection: 'row',
@@ -965,4 +1211,3 @@ export default function AddGoalScreen() {
     </KeyboardAvoidingView>
   );
 }
-

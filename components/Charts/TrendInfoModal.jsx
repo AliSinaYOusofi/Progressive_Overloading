@@ -11,6 +11,7 @@ import { TrendingUp, TrendingDown, Activity, Calendar } from "lucide-react-nativ
 import { Ionicons } from "@expo/vector-icons"
 import { useThemedColors } from '../../hooks/useThemedColors'
 import { useTheme } from '../../contexts/ThemeContext'
+import { MODAL_LAYOUT } from "../../constants/modal"
 
 const { height: screenHeight } = Dimensions.get('window')
 
@@ -24,7 +25,7 @@ export default function TrendInfoModal({ visible, onClose }) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
+      <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
         <TouchableOpacity 
           activeOpacity={1} 
           onPress={onClose}
@@ -33,8 +34,7 @@ export default function TrendInfoModal({ visible, onClose }) {
         <View 
           style={{ 
             backgroundColor: colors.background.card,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
+            borderRadius: MODAL_LAYOUT.borderRadius,
             height: screenHeight * 0.85,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -4 },

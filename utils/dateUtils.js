@@ -3,6 +3,19 @@
  */
 
 /**
+ * Formats a Date object as a local YYYY-MM-DD string (no UTC conversion).
+ * This avoids timezone bugs where toISOString() shifts the date by a day.
+ * @param {Date} date
+ * @returns {string} e.g. "2026-03-17"
+ */
+export const toLocalDateStr = (date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+/**
  * Formats a date for tooltip display
  * @param {Date} date - The date to format
  * @returns {string} Formatted date string
@@ -218,7 +231,7 @@ export const getMonthsInPeriod = (startDate, endDate) => {
  * @returns {boolean} True if date has activity
  */
 export const hasActivityOnDate = (date, activityMap) => {
-  const dateStr = date.toISOString().split('T')[0]
+  const dateStr = toLocalDateStr(date)
   return activityMap[dateStr] === true
 }
 
@@ -268,14 +281,10 @@ export const filterStreakDataByYear = (streakData, year) => {
     return dateStr >= yearStart && dateStr <= yearEnd
   })
 
-  // Filter activity map to only include dates from the selected year
+  // Filter activity map to only include dates from the selected year (simple string comparison)
   const filteredActivityMap = {}
-  const yearStartDate = new Date(`${year}-01-01T00:00:00Z`)
-  const yearEndDate = new Date(`${year}-12-31T23:59:59Z`)
-  
   Object.keys(streakData.activityMap).forEach(dateStr => {
-    const date = new Date(dateStr + 'T00:00:00Z')
-    if (date >= yearStartDate && date <= yearEndDate) {
+    if (dateStr >= yearStart && dateStr <= yearEnd) {
       filteredActivityMap[dateStr] = streakData.activityMap[dateStr]
     }
   })
@@ -285,26 +294,27 @@ export const filterStreakDataByYear = (streakData, year) => {
   if (filteredWorkoutDates.length > 0) {
     const sortedDates = [...filteredWorkoutDates].sort().reverse()
     const yearEndStr = yearEnd
-    
+
     // Find the most recent workout date on or before Dec 31
     let checkDateStr = sortedDates[0]
     if (checkDateStr > yearEndStr) {
       // If most recent workout is after year end (shouldn't happen after filtering, but safety check)
       checkDateStr = yearEndStr
     }
-    
+
     // Build a set for O(1) lookup
     const workoutDatesSet = new Set(filteredWorkoutDates)
-    
+
     // Start from the end date and work backwards
     let currentDateStr = checkDateStr
     while (currentDateStr >= yearStart) {
       if (workoutDatesSet.has(currentDateStr)) {
         currentStreak++
-        // Move to the previous day
-        const currentDate = new Date(currentDateStr + 'T00:00:00Z')
-        currentDate.setUTCDate(currentDate.getUTCDate() - 1)
-        currentDateStr = currentDate.toISOString().split('T')[0]
+        // Move to the previous day using local date parsing
+        const [cy, cm, cd] = currentDateStr.split('-').map(Number)
+        const prevDate = new Date(cy, cm - 1, cd)
+        prevDate.setDate(prevDate.getDate() - 1)
+        currentDateStr = toLocalDateStr(prevDate)
       } else {
         // Gap found, stop counting
         break
@@ -321,9 +331,9 @@ export const filterStreakDataByYear = (streakData, year) => {
     if (i === 0) {
       tempStreak = 1
     } else {
-      const prevDate = new Date(allDates[i - 1] + 'T00:00:00Z')
-      const currDate = new Date(allDates[i] + 'T00:00:00Z')
-      const dayDiff = Math.floor((currDate - prevDate) / (1000 * 60 * 60 * 24))
+      const prevDate = new Date(allDates[i - 1] + 'T12:00:00')
+      const currDate = new Date(allDates[i] + 'T12:00:00')
+      const dayDiff = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24))
       
       if (dayDiff === 1) {
         tempStreak++
@@ -346,11 +356,11 @@ export const filterStreakDataByYear = (streakData, year) => {
   if (year === currentYear) {
     const weekStart = new Date(today)
     weekStart.setDate(today.getDate() - today.getDay()) // Start of week (Sunday)
-    
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart)
       date.setDate(weekStart.getDate() + i)
-      const dateStr = date.toISOString().split('T')[0]
+      const dateStr = toLocalDateStr(date)
       if (filteredActivityMap[dateStr]) {
         thisWeekWorkouts++
       }

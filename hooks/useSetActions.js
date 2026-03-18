@@ -67,8 +67,8 @@ export const useSetActions = ({
   }, [user]);
 
   const handleOpenLogSet = async () => {
-    // Navigate to log-set screen
-    router.push('/log-set');
+    // Navigate to log-set screen (homescreen stack so it works with NativeTabs on iOS)
+    router.push('/homescreen/log-set');
   };
 
   const handleSubmitLogSet = async ({ exerciseName, weight, reps, sets, unit }) => {

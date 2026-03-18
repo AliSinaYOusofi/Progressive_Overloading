@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl, TouchableOpacity } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useAppStore } from "../../stores/useAppStore";
+import AnimatedItem from "../../components/AnimatedItem";
 
 // Import chart components
 import QuickStats from "../../components/Charts/QuickStats";
 import CollapsibleSection from "../../components/Charts/CollapsibleSection";
 import StrengthStandards from "../../components/Charts/StrengthStandards";
-import RPEAnalysis from "../../components/Charts/RPEAnalysis";
 import PremiumChartCard from "../../components/Charts/PremiumChartCard";
 
 // Import custom SVG icons
@@ -24,15 +26,44 @@ import StrengthStandardsIcon from "../../components/Charts/Icons/StrengthStandar
 import GoalAnalyticsIcon from "../../components/Charts/Icons/GoalAnalyticsIcon";
 
 
+// Accent palette for each card category
+const CARD_ACCENTS = {
+    exercise:   { light: '#047857', dark: '#34D399' },   // emerald
+    volume:     { light: '#2563EB', dark: '#60A5FA' },   // blue
+    strength:   { light: '#7C3AED', dark: '#A78BFA' },   // purple
+    records:    { light: '#D97706', dark: '#FBBF24' },   // amber
+    weekly:     { light: '#0891B2', dark: '#22D3EE' },   // cyan
+    monthly:    { light: '#6D28D9', dark: '#C4B5FD' },   // violet
+    overload:   { light: '#059669', dark: '#6EE7B7' },   // green
+    rpe:        { light: '#DC2626', dark: '#F87171' },   // red
+    muscle:     { light: '#EA580C', dark: '#FB923C' },   // orange
+    goals:      { light: '#0284C7', dark: '#38BDF8' },   // sky
+};
+
+function SectionLabel({ label, colors }) {
+    return (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, marginTop: 8, marginLeft: 4 }}>
+            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text.tertiary, opacity: 0.5 }} />
+            <Text style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.text.tertiary,
+                letterSpacing: 0.8,
+                textTransform: 'uppercase',
+            }}>
+                {label}
+            </Text>
+        </View>
+    );
+}
+
 export default function ChartsScreen() {
     const colors = useThemedColors();
+    const { isDarkMode } = useTheme();
     const router = useRouter();
-    
-    // Get data from Zustand store using selective subscriptions
-    // Charts index uses all-time data (36500), so read from nested structure
+
     const user = useAppStore(state => state.user);
-    
-    // Subscribe to entire nested objects to get stable references
+
     const exerciseProgressionData = useAppStore(state => state.chartsData.exerciseProgression);
     const volumeProgressionData = useAppStore(state => state.chartsData.volumeProgression);
     const monthlyStatsData = useAppStore(state => state.chartsData.monthlyStats);
@@ -41,12 +72,10 @@ export default function ChartsScreen() {
     const progressiveOverloadInsightsData = useAppStore(state => state.chartsData.progressiveOverloadInsights);
     const muscleGroupHeatmapData = useAppStore(state => state.chartsData.muscleGroupHeatmap);
     const goalAnalyticsData = useAppStore(state => state.chartsData.goalAnalytics);
-    
-    // Use stable empty objects/arrays to prevent new references on every render
+
     const EMPTY_OBJECT = {};
     const EMPTY_ARRAY = [];
-    
-    // Extract timeframe-specific data using useMemo with stable fallbacks
+
     const exerciseProgression = useMemo(() => exerciseProgressionData[36500] || EMPTY_OBJECT, [exerciseProgressionData]);
     const volumeProgression = useMemo(() => volumeProgressionData[36500] || EMPTY_ARRAY, [volumeProgressionData]);
     const monthlyStats = useMemo(() => monthlyStatsData[36500] || EMPTY_ARRAY, [monthlyStatsData]);
@@ -55,43 +84,56 @@ export default function ChartsScreen() {
     const progressiveOverloadInsights = useMemo(() => progressiveOverloadInsightsData[36500] || EMPTY_ARRAY, [progressiveOverloadInsightsData]);
     const muscleGroupHeatmap = useMemo(() => muscleGroupHeatmapData[36500] || EMPTY_ARRAY, [muscleGroupHeatmapData]);
     const goalAnalytics = useMemo(() => goalAnalyticsData[36500] || {
-      completionRateOverTime: [],
-      goalsCreatedOverTime: [],
-      statusBreakdown: { active: 0, completed: 0, expired: 0 },
-      averageProgressOverTime: [],
-      averageCompletionTime: 0,
-      totalGoals: 0,
-      completedGoals: 0,
-      activeGoals: 0,
-      expiredGoals: 0,
+        completionRateOverTime: [],
+        goalsCreatedOverTime: [],
+        statusBreakdown: { active: 0, completed: 0, expired: 0 },
+        averageProgressOverTime: [],
+        averageCompletionTime: 0,
+        totalGoals: 0,
+        completedGoals: 0,
+        activeGoals: 0,
+        expiredGoals: 0,
     }, [goalAnalyticsData]);
-    
-    // Direct selectors for non-nested data
+
     const userStats = useAppStore(state => state.chartsData.userStats);
     const strengthStandards = useAppStore(state => state.chartsData.strengthStandards);
     const rpeAnalysisData = useAppStore(state => state.chartsData.rpeAnalysis);
-    
-    // Extract timeframe-specific data for RPE analysis
+
     const rpeAnalysis = useMemo(() => {
-      const data = rpeAnalysisData[36500] || [];
-      return Array.isArray(data) ? data : Object.values(data);
+        const data = rpeAnalysisData[36500] || [];
+        return Array.isArray(data) ? data : Object.values(data);
     }, [rpeAnalysisData]);
-    
-    // Memoize chartsData object to prevent infinite loops
+
     const chartsData = useMemo(() => ({
-      userStats,
-      exerciseProgression,
-      volumeProgression,
-      strengthStandards,
-      monthlyStats,
-      personalRecords,
-      weeklyProgress,
-      rpeAnalysis: rpeAnalysis,
-      progressiveOverloadInsights,
-      muscleGroupHeatmap,
-      goalAnalytics,
+        userStats,
+        exerciseProgression,
+        volumeProgression,
+        strengthStandards,
+        monthlyStats,
+        personalRecords,
+        weeklyProgress,
+        rpeAnalysis,
+        progressiveOverloadInsights,
+        muscleGroupHeatmap,
+        goalAnalytics,
     }), [userStats, exerciseProgression, volumeProgression, strengthStandards, monthlyStats, personalRecords, weeklyProgress, rpeAnalysis, progressiveOverloadInsights, muscleGroupHeatmap, goalAnalytics]);
-    
+
+    const [focusTrigger, setFocusTrigger] = useState(0);
+    const skipNextAnimationRef = useRef(false);
+
+    const handleChartPress = useCallback((path) => {
+        skipNextAnimationRef.current = true;
+        router.push(path);
+    }, [router]);
+
+    useFocusEffect(useCallback(() => {
+        if (skipNextAnimationRef.current) {
+            skipNextAnimationRef.current = false;
+            return;
+        }
+        setFocusTrigger((t) => t + 1);
+    }, []));
+
     const chartsLoading = useAppStore(state => state.chartsLoading);
     const chartsRefreshing = useAppStore(state => state.chartsRefreshing);
     const chartsError = useAppStore(state => state.chartsError);
@@ -99,7 +141,6 @@ export default function ChartsScreen() {
     const refreshChartsData = useAppStore(state => state.refreshChartsData);
 
     useEffect(() => {
-        // Only load if user exists, data is missing, and not already loading
         if (user && !chartsLoading && (!userStats || !exerciseProgressionData[36500] || Object.keys(exerciseProgressionData[36500] || {}).length === 0)) {
             loadChartsData();
         }
@@ -109,41 +150,53 @@ export default function ChartsScreen() {
         refreshChartsData();
     };
 
-    // Show error state if there's an error and no data
+    const accent = (key) => isDarkMode ? CARD_ACCENTS[key].dark : CARD_ACCENTS[key].light;
+
+    // Error state
     if (chartsError && !chartsData.userStats && !chartsLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary, paddingHorizontal: 20 }}>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: colors.status.error, marginBottom: 12, textAlign: 'center' }}>Unable to Load Insights</Text>
-                <Text style={{ fontSize: 16, color: colors.text.secondary, marginBottom: 24, textAlign: 'center', lineHeight: 24 }}>{chartsError}</Text>
+                <View style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 20,
+                    backgroundColor: `${colors.status.error}12`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                }}>
+                    <Text style={{ fontSize: 28 }}>!</Text>
+                </View>
+                <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text.primary, marginBottom: 8, textAlign: 'center' }}>Unable to Load Insights</Text>
+                <Text style={{ fontSize: 15, color: colors.text.tertiary, marginBottom: 28, textAlign: 'center', lineHeight: 22 }}>{chartsError}</Text>
                 <TouchableOpacity
-                    onPress={() => {
-                        loadChartsData(true);
-                    }}
+                    onPress={() => loadChartsData(true)}
                     style={{
                         backgroundColor: colors.primary[600],
-                        paddingHorizontal: 24,
-                        paddingVertical: 12,
-                        borderRadius: 12,
+                        paddingHorizontal: 28,
+                        paddingVertical: 14,
+                        borderRadius: 14,
                     }}
                 >
-                    <Text style={{ color: colors.text.white, fontSize: 16, fontWeight: '600' }}>Try Again</Text>
+                    <Text style={{ color: colors.text.white, fontSize: 15, fontWeight: '600' }}>Try Again</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
+    // Loading state
     if (chartsLoading && !chartsData.userStats) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.primary }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
-                <Text style={{ marginTop: 16, fontSize: 16, color: colors.text.secondary }}>Loading your progress...</Text>
+                <Text style={{ marginTop: 16, fontSize: 15, color: colors.text.tertiary, fontWeight: '500' }}>Loading your insights...</Text>
             </View>
         );
     }
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
-            <ScrollView 
+            <ScrollView
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 60, paddingBottom: 150, flexGrow: 1 }}
@@ -152,147 +205,193 @@ export default function ChartsScreen() {
                 }
             >
                 {/* Header */}
-                <View style={{ alignItems: 'center', marginBottom: 40 }}>
-                    <Text style={{ fontSize: 32, fontWeight: '800', color: colors.text.primary, marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>Insights</Text>
-                    <Text style={{ fontSize: 16, color: colors.text.secondary, textAlign: 'center', fontWeight: '400' }}>Track your strength gains and performance</Text>
-                </View>
+                <AnimatedItem index={0} trigger={focusTrigger}>
+                    <View style={{ marginBottom: 32 }}>
+                        <Text style={{
+                            fontSize: 34,
+                            fontWeight: '800',
+                            color: colors.text.primary,
+                            letterSpacing: -0.8,
+                            marginBottom: 6,
+                        }}>
+                            Insights
+                        </Text>
+                        <Text style={{
+                            fontSize: 15,
+                            color: colors.text.tertiary,
+                            fontWeight: '400',
+                            letterSpacing: -0.2,
+                        }}>
+                            Your strength journey at a glance
+                        </Text>
+                    </View>
+                </AnimatedItem>
 
-                {/* Error Banner - Show if there's an error but we have some data */}
+                {/* Error Banner */}
                 {chartsError && chartsData.userStats && (
                     <View style={{
-                        backgroundColor: colors.status.error + '15',
-                        borderLeftWidth: 4,
-                        borderLeftColor: colors.status.error,
+                        backgroundColor: isDarkMode ? `${colors.status.error}15` : `${colors.status.error}08`,
+                        borderWidth: 1,
+                        borderColor: `${colors.status.error}25`,
                         padding: 16,
-                        borderRadius: 12,
-                        marginBottom: 24,
+                        borderRadius: 16,
+                        marginBottom: 20,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 12,
                     }}>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.status.error, marginBottom: 8 }}>
-                            Unable to Load Latest Data
-                        </Text>
-                        <Text style={{ fontSize: 14, color: colors.text.secondary, marginBottom: 12, lineHeight: 20 }}>
-                            {chartsError}
-                        </Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.status.error, marginBottom: 4 }}>
+                                Couldn't refresh data
+                            </Text>
+                            <Text style={{ fontSize: 13, color: colors.text.tertiary, lineHeight: 18 }}>
+                                {chartsError}
+                            </Text>
+                        </View>
                         <TouchableOpacity
-                            onPress={() => {
-                                loadChartsData(true);
-                            }}
+                            onPress={() => loadChartsData(true)}
                             style={{
-                                backgroundColor: colors.status.error,
-                                paddingHorizontal: 16,
+                                paddingHorizontal: 14,
                                 paddingVertical: 8,
-                                borderRadius: 8,
-                                alignSelf: 'flex-start',
+                                borderRadius: 10,
+                                backgroundColor: colors.status.error,
                             }}
                         >
-                            <Text style={{ color: colors.text.white, fontSize: 14, fontWeight: '600' }}>Retry</Text>
+                            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Retry</Text>
                         </TouchableOpacity>
                     </View>
                 )}
 
-                {/* Quick Stats - Always Visible */}
-                <QuickStats 
-                    userStats={chartsData.userStats}
-                    personalRecords={chartsData.personalRecords}
-                />
-
-                {/* Exercise Progression Charts */}
-                <PremiumChartCard
-                    icon={ExerciseProgressionIcon}
-                    title="Exercise Progression"
-                    subtitle="Track your one-rep max (1RM) progression over time for each exercise. See how your strength has improved and identify your strongest movements."
-                    onPress={() => router.push('/charts/exercise-progression')}
-                />
-
-                {/* Volume Progression */}
-                <PremiumChartCard
-                    icon={VolumeProgressionIcon}
-                    title="Volume Progression"
-                    subtitle="Monitor your total training volume - the cumulative weight lifted per day. Understand your workload patterns and training consistency over time."
-                    onPress={() => router.push('/charts/volume-progression')}
-                />
-
-                {/* Strength Standards */}
-                {chartsData.strengthStandards && chartsData.strengthStandards.length > 0 && (
-                    <CollapsibleSection
-                        title="Strength Standards"
-                        subtitle="Compare your strength levels relative to your bodyweight. See how you rank across different exercises and identify areas for improvement."
-                        icon={StrengthStandardsIcon}
-                        defaultExpanded={false}
-                    >
-                        <StrengthStandards strengthStandards={chartsData.strengthStandards} />
-                    </CollapsibleSection>
-                )}
-
-                {/* Personal Records */}
-                {chartsData.personalRecords && chartsData.personalRecords.length > 0 && (
-                    <PremiumChartCard
-                        icon={PersonalRecordsIcon}
-                        title="Personal Records"
-                        subtitle={`View all your personal best performances across exercises. Celebrate your achievements and track your strongest lifts for each movement.`}
-                        badge={chartsData.personalRecords.length > 0 ? `${chartsData.personalRecords.length}` : null}
-                        onPress={() => router.push('/charts/personal-records')}
+                {/* Quick Stats */}
+                <AnimatedItem index={1} trigger={focusTrigger}>
+                    <QuickStats
+                        userStats={chartsData.userStats}
+                        personalRecords={chartsData.personalRecords}
                     />
-                )}
+                </AnimatedItem>
 
-                {/* Weekly Progress */}
-                <PremiumChartCard
-                    icon={WeeklyProgressIcon}
-                    title="Weekly Progress"
-                    subtitle="Get a detailed breakdown of your training week. See sets, exercises, and volume logged each day to understand your weekly training patterns."
-                    onPress={() => router.push('/charts/weekly-progress')}
-                />
-
-                {/* Monthly Trends */}
-                {chartsData.monthlyStats && chartsData.monthlyStats.length > 0 && (
+                {/* ── PROGRESSION ── */}
+                <AnimatedItem index={2} trigger={focusTrigger}>
+                    <SectionLabel label="Progression" colors={colors} />
                     <PremiumChartCard
-                        icon={MonthlyTrendsIcon}
-                        title="Monthly Trends"
-                        subtitle="Analyze your training trends over months. Track sets, exercises, and overall activity to spot long-term patterns and consistency in your training."
-                        onPress={() => router.push('/charts/monthly-trends')}
+                        icon={ExerciseProgressionIcon}
+                        title="Exercise Progression"
+                        subtitle="Track your 1RM progression over time for each exercise"
+                        accent={accent('exercise')}
+                        onPress={() => handleChartPress('/charts/exercise-progression')}
                     />
-                )}
+                </AnimatedItem>
 
-                {/* Progressive Overload Insights */}
-                {chartsData.progressiveOverloadInsights && chartsData.progressiveOverloadInsights.length > 0 && (
+                <AnimatedItem index={3} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={VolumeProgressionIcon}
+                        title="Volume Progression"
+                        subtitle="Total weight lifted per day — workload patterns and consistency"
+                        accent={accent('volume')}
+                        onPress={() => handleChartPress('/charts/volume-progression')}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={4} trigger={focusTrigger}>
                     <PremiumChartCard
                         icon={ProgressiveOverloadIcon}
-                        title="Progressive Overload Analysis"
-                        subtitle="Discover insights about your strength progression. Identify when you're effectively overloading and when you might need to adjust your training approach."
-                        onPress={() => router.push('/charts/progressive-overload')}
+                        title="Progressive Overload"
+                        subtitle="See when you're effectively overloading and where to adjust"
+                        accent={accent('overload')}
+                        onPress={() => handleChartPress('/charts/progressive-overload')}
                     />
+                </AnimatedItem>
+
+                {/* ── BENCHMARKS ── */}
+                {chartsData.strengthStandards && chartsData.strengthStandards.length > 0 && (
+                    <AnimatedItem index={5} trigger={focusTrigger}>
+                        <SectionLabel label="Benchmarks" colors={colors} />
+                        <CollapsibleSection
+                            title="Strength Standards"
+                            subtitle="Compare your lifts relative to bodyweight"
+                            icon={StrengthStandardsIcon}
+                            accent={accent('strength')}
+                            defaultExpanded={false}
+                        >
+                            <StrengthStandards strengthStandards={chartsData.strengthStandards} />
+                        </CollapsibleSection>
+                    </AnimatedItem>
                 )}
 
-                {/* Training Intensity (RPE) */}
-                {rpeAnalysis && rpeAnalysis.length > 0 && (
+                {chartsData.personalRecords && chartsData.personalRecords.length > 0 && (
+                    <AnimatedItem index={6} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={PersonalRecordsIcon}
+                            title="Personal Records"
+                            subtitle="Your best performances across all exercises"
+                            accent={accent('records')}
+                            badge={chartsData.personalRecords.length > 0 ? `${chartsData.personalRecords.length}` : null}
+                            onPress={() => handleChartPress('/charts/personal-records')}
+                        />
+                    </AnimatedItem>
+                )}
+
+                {/* ── ACTIVITY ── */}
+                <AnimatedItem index={7} trigger={focusTrigger}>
+                    <SectionLabel label="Activity" colors={colors} />
                     <PremiumChartCard
-                        icon={RPEAnalysisIcon}
-                        title="Training Intensity (RPE)"
-                        subtitle="Analyze your Rate of Perceived Exertion to understand training intensity patterns. See how hard you're pushing yourself and balance intensity with recovery."
-                        badge="BETA"
-                        onPress={() => router.push('/charts/training-intensity')}
+                        icon={WeeklyProgressIcon}
+                        title="Weekly Progress"
+                        subtitle="Sets, exercises, and volume breakdown each day"
+                        accent={accent('weekly')}
+                        onPress={() => handleChartPress('/charts/weekly-progress')}
                     />
+                </AnimatedItem>
+
+                {chartsData.monthlyStats && chartsData.monthlyStats.length > 0 && (
+                    <AnimatedItem index={8} trigger={focusTrigger}>
+                        <PremiumChartCard
+                            icon={MonthlyTrendsIcon}
+                            title="Monthly Trends"
+                            subtitle="Long-term training patterns and consistency"
+                            accent={accent('monthly')}
+                            onPress={() => handleChartPress('/charts/monthly-trends')}
+                        />
+                    </AnimatedItem>
                 )}
 
-                {/* Muscle Group Heatmap */}
-                <PremiumChartCard
-                    icon={MuscleGroupIcon}
-                    title="Muscle Group Heatmap"
-                    subtitle="Visualize training volume distribution across muscle groups. Identify imbalances in your training and ensure balanced muscle development."
-                    badge="BETA"
-                    onPress={() => router.push('/charts/muscle-groups-heatmap')}
-                />
+                {/* ── DEEP DIVES ── */}
+                <AnimatedItem index={9} trigger={focusTrigger}>
+                    <SectionLabel label="Deep Dives" colors={colors} />
+                    {rpeAnalysis && rpeAnalysis.length > 0 && (
+                        <PremiumChartCard
+                            icon={RPEAnalysisIcon}
+                            title="Training Intensity (RPE)"
+                            subtitle="Understand intensity patterns and balance recovery"
+                            accent={accent('rpe')}
+                            badge="BETA"
+                            onPress={() => handleChartPress('/charts/training-intensity')}
+                        />
+                    )}
+                </AnimatedItem>
 
-                {/* Goal Analytics */}
-                <PremiumChartCard
-                    icon={GoalAnalyticsIcon}
-                    title="Goal Analytics"
-                    subtitle="Track your fitness goals progress, completion rates, and trends. Analyze your goal-setting patterns and achievement rates over time."
-                    onPress={() => router.push('/charts/goal-analytics')}
-                />
+                <AnimatedItem index={10} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={MuscleGroupIcon}
+                        title="Muscle Group Heatmap"
+                        subtitle="Volume distribution and balance across muscle groups"
+                        accent={accent('muscle')}
+                        badge="BETA"
+                        onPress={() => handleChartPress('/charts/muscle-groups-heatmap')}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={11} trigger={focusTrigger}>
+                    <PremiumChartCard
+                        icon={GoalAnalyticsIcon}
+                        title="Goal Analytics"
+                        subtitle="Completion rates, trends, and goal-setting patterns"
+                        accent={accent('goals')}
+                        onPress={() => handleChartPress('/charts/goal-analytics')}
+                    />
+                </AnimatedItem>
 
             </ScrollView>
         </View>
     );
 }
-

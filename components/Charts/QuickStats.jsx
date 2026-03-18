@@ -38,8 +38,8 @@ export default function QuickStats({ userStats, personalRecords }) {
             {stats.map((stat, index) => {
                 const IconComponent = stat.icon;
                 return (
-                    <View 
-                        key={index} 
+                    <View
+                        key={index}
                         style={{
                             width: '48%',
                             backgroundColor: colors.background.card,

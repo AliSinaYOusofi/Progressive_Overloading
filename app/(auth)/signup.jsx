@@ -1,21 +1,28 @@
-import React, { useState, useRef } from "react"
+import React, { useCallback, useEffect, useState, useRef } from "react"
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native"
 import { Modal } from "react-native"
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react-native"
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated"
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Check } from "lucide-react-native"
 import { signUp } from "../../lib/auth"
 import { supabase } from "../../lib/supabase"
-import { colors, semanticColors } from "../../constants/ui_colors"
+import { colors } from "../../constants/ui_colors"
 import { router } from "expo-router"
+import { useFocusEffect } from "@react-navigation/native"
+import AnimatedItem from "../../components/AnimatedItem"
 
 export const validateEmail = (value) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -32,64 +39,78 @@ export const validatePassword = (value) => {
     }
     return ""
   }
-const { width, height } = Dimensions.get("window")
 
 const SignUpScreen = () => {
-  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("Something went wrong while sending the confirmation email. Please try again.")
 
-  const [nameError, setNameError] = useState("")
   const [emailError, setEmailError] = useState("")
   const [passwordError, setPasswordError] = useState("")
-  const [confirmPasswordError, setConfirmPasswordError] = useState("")
 
   const scrollViewRef = useRef(null)
+  const [focusTrigger, setFocusTrigger] = useState(0)
 
-  const validateName = (value) => {
-    const trimmed = value.trim()
-    if (trimmed.length < 2 || trimmed.length > 30) {
-      return "Full name must be 2-30 characters."
+  useFocusEffect(useCallback(() => {
+    setFocusTrigger((t) => t + 1)
+  }, []))
+
+  const verificationOverlayOpacity = useSharedValue(0)
+  const verificationCardScale = useSharedValue(0.92)
+  const verificationCardOpacity = useSharedValue(0)
+
+  useEffect(() => {
+    if (showVerificationModal) {
+      verificationOverlayOpacity.value = 0
+      verificationCardScale.value = 0.92
+      verificationCardOpacity.value = 0
+      verificationOverlayOpacity.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) })
+      verificationCardScale.value = withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) })
+      verificationCardOpacity.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.quad) })
     }
-    return ""
-  }
+  }, [showVerificationModal])
+
+  const verificationOverlayStyle = useAnimatedStyle(() => ({
+    opacity: verificationOverlayOpacity.value,
+  }))
+  const verificationCardStyle = useAnimatedStyle(() => ({
+    opacity: verificationCardOpacity.value,
+    transform: [{ scale: verificationCardScale.value }],
+  }))
 
   const handleSignUp = async () => {
     setIsLoading(true)
-    const nameErr = validateName(name)
     const emailErr = validateEmail(email)
     const passwordErr = validatePassword(password)
-    const confirmErr = password === confirmPassword ? "" : "Passwords don't match"
 
-    setNameError(nameErr)
     setEmailError(emailErr)
     setPasswordError(passwordErr)
-    setConfirmPasswordError(confirmErr)
 
-    const hasErrors = Boolean(nameErr || emailErr || passwordErr || confirmErr)
+    const hasErrors = Boolean(emailErr || passwordErr)
     if (hasErrors || !acceptTerms) {
-      if (nameErr) scrollToInput(200)
-      else if (emailErr) scrollToInput(280)
-      else if (passwordErr) scrollToInput(360)
-      else if (confirmErr) scrollToInput(440)
+      if (emailErr) scrollToInput(200)
+      else if (passwordErr) scrollToInput(280)
       return
     }
     
     try {
-      const { data, error } = await signUp(email, password, name)
+      const { data, error } = await signUp(email, password)
       if (error) {
         console.log(error)
+        setErrorMessage(error.message || "Something went wrong while sending the confirmation email. Please try again.")
+        setShowErrorModal(true)
         return
       }
       setShowVerificationModal(true)
     } catch (error) {
-      console.log(error, ' *(***********')
+      console.log(error, " *(***********")
+      setErrorMessage(error.message || "Something went wrong while sending the confirmation email. Please try again.")
+      setShowErrorModal(true)
     } finally {
       setIsLoading(false)
     }
@@ -105,10 +126,8 @@ const SignUpScreen = () => {
   }
 
   const isFormValid =
-    !validateName(name) &&
     !validateEmail(email) &&
     !validatePassword(password) &&
-    password === confirmPassword &&
     acceptTerms
 
   const handleModalClose = () => {
@@ -133,8 +152,8 @@ const SignUpScreen = () => {
         animationType="fade"
         onRequestClose={handleModalClose}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <Animated.View style={[styles.modalOverlay, verificationOverlayStyle]}>
+          <Animated.View style={[styles.modalCard, verificationCardStyle]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconCircle}>
                 <Check size={24} color={colors.text.white} />
@@ -157,6 +176,35 @@ const SignUpScreen = () => {
                 <Text style={styles.modalPrimaryButtonText}>Got it</Text>
               </TouchableOpacity>
             </View>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconCircle, { backgroundColor: colors.status.error }]}>
+                <Text style={{ color: colors.text.white, fontWeight: "700", fontSize: 18 }}>!</Text>
+              </View>
+              <Text style={styles.modalTitle}>Unable to send email</Text>
+            </View>
+            <Text style={styles.modalBody}>
+              {errorMessage}
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <Text style={styles.modalPrimaryButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -168,155 +216,109 @@ const SignUpScreen = () => {
         bounces={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start your progressive overloading journey</Text>
-        </View>
+        <AnimatedItem index={0} trigger={focusTrigger}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Start your progressive overloading journey</Text>
+          </View>
+        </AnimatedItem>
 
         {/* Form */}
         <View style={styles.form}>
-          {/* Name Input */}
-          <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, !!nameError && styles.errorInput]}>
-              <User size={20} color={colors.neutral[500]} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Full name"
-                placeholderTextColor={colors.neutral[400]}
-                value={name}
-                onChangeText={(v) => { setName(v); setNameError(validateName(v)) }}
-                autoCapitalize="words"
-                autoCorrect={false}
-                onFocus={() => scrollToInput(200)}
-              />
-            </View>
-            {!!nameError && <Text style={styles.errorText}>{nameError}</Text>}
-          </View>
-
           {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
-              <Mail size={20} color={colors.neutral[500]} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor={colors.neutral[400]}
-                value={email}
-                onChangeText={(v) => { setEmail(v); setEmailError(validateEmail(v)) }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                onFocus={() => scrollToInput(280)}
-              />
+          <AnimatedItem index={1} trigger={focusTrigger}>
+            <View style={styles.inputContainer}>
+              <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
+                <Mail size={20} color={colors.neutral[500]} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email address"
+                  placeholderTextColor={colors.neutral[400]}
+                  value={email}
+                  onChangeText={(v) => { setEmail(v); setEmailError(validateEmail(v)) }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => scrollToInput(200)}
+                />
+              </View>
+              {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
             </View>
-            {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
-          </View>
+          </AnimatedItem>
 
           {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, !!passwordError && styles.errorInput]}>
-              <Lock size={20} color={colors.neutral[500]} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Password (min. 6 characters)"
-                placeholderTextColor={colors.neutral[400]}
-                value={password}
-                onChangeText={(v) => {
-                  setPassword(v)
-                  setPasswordError(validatePassword(v))
-                  if (confirmPassword.length > 0) {
-                    setConfirmPasswordError(v === confirmPassword ? "" : "Passwords don't match")
-                  }
-                }}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                onFocus={() => scrollToInput(360)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
-                {showPassword ? (
-                  <EyeOff size={20} color={colors.neutral[500]} />
-                ) : (
-                  <Eye size={20} color={colors.neutral[500]} />
-                )}
-              </TouchableOpacity>
+          <AnimatedItem index={2} trigger={focusTrigger}>
+            <View style={styles.inputContainer}>
+              <View style={[styles.inputWrapper, !!passwordError && styles.errorInput]}>
+                <Lock size={20} color={colors.neutral[500]} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, styles.passwordInput]}
+                  placeholder="Password (min. 6 characters)"
+                  placeholderTextColor={colors.neutral[400]}
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setPasswordError(validatePassword(v)) }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => scrollToInput(280)}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={colors.neutral[500]} />
+                  ) : (
+                    <Eye size={20} color={colors.neutral[500]} />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
             </View>
-            {!!passwordError && <Text style={styles.errorText}>{passwordError}</Text>}
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, !!confirmPasswordError && styles.errorInput]}>
-              <Lock size={20} color={colors.neutral[500]} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Confirm password"
-                placeholderTextColor={colors.neutral[400]}
-                value={confirmPassword}
-                onChangeText={(v) => {
-                  setConfirmPassword(v)
-                  setConfirmPasswordError(password === v ? "" : "Passwords don't match")
-                }}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                onFocus={() => scrollToInput(440)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={20} color={colors.neutral[500]} />
-                ) : (
-                  <Eye size={20} color={colors.neutral[500]} />
-                )}
-              </TouchableOpacity>
-            </View>
-            {!!confirmPasswordError && (
-              <Text style={styles.errorText}>{confirmPasswordError}</Text>
-            )}
-          </View>
+          </AnimatedItem>
 
           {/* Terms and Conditions */}
-          <TouchableOpacity 
-            style={styles.termsContainer}
-            onPress={() => setAcceptTerms(!acceptTerms)}
-          >
-            <View style={[styles.checkbox, acceptTerms && styles.checkedBox]}>
-              {acceptTerms && <Check size={16} color={colors.text.white} />}
-            </View>
-            <Text style={styles.termsText}>
-              I agree to the{" "}
-              <Text style={styles.termsLink}>Terms of Service</Text>
-              {" "}and{" "}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Text>
-          </TouchableOpacity>
+          <AnimatedItem index={3} trigger={focusTrigger}>
+            <TouchableOpacity 
+              style={styles.termsContainer}
+              onPress={() => setAcceptTerms(!acceptTerms)}
+            >
+              <View style={[styles.checkbox, acceptTerms && styles.checkedBox]}>
+                {acceptTerms && <Check size={16} color={colors.text.white} />}
+              </View>
+              <Text style={styles.termsText}>
+                I agree to the{" "}
+                <Text style={styles.termsLink}>Terms of Service</Text>
+                {" "}and{" "}
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Text>
+            </TouchableOpacity>
+          </AnimatedItem>
 
           {/* Sign Up Button */}
-          <TouchableOpacity
-            style={[styles.signUpButton, !isFormValid && styles.disabledButton]}
-            onPress={handleSignUp}
-            disabled={isLoading}
-          >
-            <Text style={[styles.signUpButtonText, !isFormValid && styles.disabledButtonText]}>
-              {isLoading ? "Creating Account..." : "Create Account"}
-            </Text>
-            {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
-          </TouchableOpacity>
+          <AnimatedItem index={4} trigger={focusTrigger}>
+            <TouchableOpacity
+              style={[styles.signUpButton, !isFormValid && styles.disabledButton]}
+              onPress={handleSignUp}
+              disabled={isLoading}
+            >
+              <Text style={[styles.signUpButtonText, !isFormValid && styles.disabledButtonText]}>
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Text>
+              {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
+            </TouchableOpacity>
+          </AnimatedItem>
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-                               <TouchableOpacity onPress={() => router.push("/(auth)/signin")}>
-                         <Text style={styles.signInLink}>Sign In</Text>
-                     </TouchableOpacity>
-        </View>
+        <AnimatedItem index={5} trigger={focusTrigger}>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/signin")}>
+              <Text style={styles.signInLink}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </AnimatedItem>
 
         {/* <CHANGE> Added extra padding at bottom to ensure content is scrollable above keyboard */}
         <View style={styles.bottomPadding} />
