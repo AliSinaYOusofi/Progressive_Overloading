@@ -26,14 +26,12 @@ export default function EditGoalScreen() {
   const { isDarkMode } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { 
-    user, 
-    fitnessGoals, 
-    isLoading,
-    updateFitnessGoal: updateGoalInStore,
-    removeFitnessGoal,
-    addFitnessGoal,
-  } = useAppStore();
+  const user = useAppStore(state => state.user);
+  const fitnessGoals = useAppStore(state => state.fitnessGoals);
+  const isLoading = useAppStore(state => state.isLoading);
+  const updateGoalInStore = useAppStore(state => state.updateFitnessGoal);
+  const removeFitnessGoal = useAppStore(state => state.removeFitnessGoal);
+  const addFitnessGoal = useAppStore(state => state.addFitnessGoal);
   
   // Get goal data from params (handle both string and array cases)
   // Keep as string since goal IDs are UUIDs, not integers

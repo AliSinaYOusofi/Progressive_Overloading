@@ -3,6 +3,7 @@ import { getColors } from '../constants/ui_colors'
 import { View, Text, ActivityIndicator } from "react-native"
 import React, { useEffect, useState } from "react"
 import { supabase, supabaseMisconfigured } from "../lib/supabase"
+import { useAppStore } from "../stores/useAppStore"
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import ThemedAlertComponent from "../components/ThemedAlert"
@@ -64,28 +65,41 @@ function RootLayoutContent() {
       return
     }
 
-    const getInitialSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        setIsAuthenticated(!!session)
-      } catch (error) {
-        console.log("Initial auth check error:", error)
-        setIsAuthenticated(false)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    getInitialSession()
+    // No need for getInitialSession() — the INITIAL_SESSION event from
+    // onAuthStateChange handles it and properly loads user data first.
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, !!session)
-      setIsAuthenticated(!!session)
-      setIsLoading(false)
+      if (event === 'SIGNED_OUT') {
+        // IMPORTANT ORDER: Unmount tab tree FIRST, then reset store.
+        // 1. setIsAuthenticated(false) swaps to auth <Slot/>, unmounting tabs
+        // 2. resetStore() clears data — safe because tab screens are already gone,
+        //    so no Zustand subscribers will re-render with null data → no Fabric SIGSEGV
+        // NOTE: resetStore must be synchronous (no setTimeout) to avoid racing with
+        //    a fast re-sign-in where SIGNED_IN fires before the delayed reset.
+        setIsAuthenticated(false)
+        setIsLoading(false)
+        useAppStore.getState().resetStore()
+      } else if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        // Clear signing-out flag before initializing
+        useAppStore.setState({ _signingOut: false })
+        // Only initialize if the store doesn't already have this user loaded
+        const currentStoreUser = useAppStore.getState().user
+        if (!currentStoreUser || currentStoreUser.id !== session.user.id) {
+          await useAppStore.getState().initializeUserData()
+        }
+        // Delay tree swap to next frame to avoid Fabric use-after-free crash
+        setTimeout(() => {
+          setIsAuthenticated(true)
+          setIsLoading(false)
+        }, 0)
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token refresh — session is still valid, just update auth state
+        setIsAuthenticated(true)
+        setIsLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -161,11 +175,11 @@ function RootLayoutContent() {
 
   // If authenticated, show main app with tabs
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <AppTabs colors={colors} isDarkMode={isDarkMode} />
       <NetworkStatusBanner />
       <ThemedAlertComponent />
-    </>
+    </View>
   )
 }
 

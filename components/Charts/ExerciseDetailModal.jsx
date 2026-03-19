@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"
-import { 
-  View, 
-  Text, 
-  Modal, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  Pressable,
+  ScrollView,
   Dimensions,
   ActivityIndicator
 } from "react-native"
@@ -326,11 +327,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={onClose}
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}
-        >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end", paddingHorizontal: MODAL_LAYOUT.horizontalMargin, paddingBottom: MODAL_LAYOUT.bottomPadding }}>
+          <Pressable style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
           <GestureDetector gesture={panGesture}>
             <Animated.View
               style={[
@@ -343,7 +341,8 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
                   shadowRadius: 24,
                   elevation: 24,
                   maxHeight: screenHeight * 0.9,
-                  minHeight: screenHeight * 0.75
+                  minHeight: screenHeight * 0.75,
+                  overflow: "hidden"
                 },
                 animatedStyle
               ]}
@@ -962,7 +961,7 @@ export default function ExerciseDetailModal({ visible, onClose, exerciseName, us
           )}
             </Animated.View>
           </GestureDetector>
-        </TouchableOpacity>
+        </View>
       </GestureHandlerRootView>
 
       {/* Trend Info Modal */}

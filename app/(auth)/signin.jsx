@@ -4,54 +4,54 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-    KeyboardAvoidingView,
     Platform,
     ScrollView,
+    KeyboardAvoidingView,
+    ActivityIndicator,
 } from "react-native";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, X } from "lucide-react-native";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, X, AlertCircle, LogIn } from "lucide-react-native";
 import { validateEmail, validatePassword } from "./signup";
-import { colors } from "../../constants/ui_colors";
 import { useLocalSearchParams, router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { signIn } from "../../lib/auth";
-import AnimatedItem from "../../components/AnimatedItem";
+import AnimatedSlideIn from "../../components/AnimatedSlideIn";
+import { useThemedColors } from "../../hooks/useThemedColors";
+import { useTheme } from "../../contexts/ThemeContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { LAYOUT } from "../../constants/layout";
+import AppleSignInButton from "../../components/AppleSignInButton";
 
 const SignInScreen = () => {
+    const colors = useThemedColors();
+    const { isDarkMode } = useTheme();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [authError, setAuthError] = useState("");
-    const { email : fromSignupEmail, password : fromSignupPassword } = useLocalSearchParams();
+    const { email: fromSignupEmail, password: fromSignupPassword } = useLocalSearchParams();
     const [focusTrigger, setFocusTrigger] = useState(0);
 
     useFocusEffect(useCallback(() => {
         setFocusTrigger((t) => t + 1);
     }, []));
 
-    // Validation error states
     const [emailError, setEmailError] = useState("");
     const [passwordError, setPasswordError] = useState("");
 
     useEffect(() => {
         if (fromSignupEmail && fromSignupPassword) {
-            setEmail(fromSignupEmail)
-            setPassword(fromSignupPassword)
+            setEmail(fromSignupEmail);
+            setPassword(fromSignupPassword);
         }
-    }, [fromSignupEmail, fromSignupPassword])
+    }, [fromSignupEmail, fromSignupPassword]);
 
-    const clearAuthError = () => {
-        setAuthError("");
-    };
+    const clearAuthError = () => setAuthError("");
 
     const handleSignIn = async () => {
         setIsLoading(true);
-        // Clear any previous auth errors
         clearAuthError();
-        
-        // Validate on press as well
+
         const eErr = validateEmail(email);
         const pErr = validatePassword(password);
         setEmailError(eErr);
@@ -61,12 +61,9 @@ const SignInScreen = () => {
             return;
         }
 
-        
         try {
-            const { data, error } = await signIn(email, password)
+            const { data, error } = await signIn(email, password);
             if (error) {
-                console.log(error)
-                // Set auth error message
                 if (error.message.includes("Invalid login credentials")) {
                     setAuthError("Invalid email or password. Please try again.");
                 } else if (error.message.includes("Email not confirmed")) {
@@ -74,67 +71,194 @@ const SignInScreen = () => {
                 } else {
                     setAuthError("Sign in failed. Please try again.");
                 }
-                return
+                return;
             }
-            // Successful sign in - the auth state listener will handle the redirect automatically
         } catch (error) {
-            console.log(error)
             setAuthError("An unexpected error occurred. Please try again.");
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
     };
 
     const isFormValid = !validateEmail(email) && !validatePassword(password);
 
-    return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Header */}
-                <AnimatedItem index={0} trigger={focusTrigger}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Welcome Back</Text>
-                        <Text style={styles.subtitle}>
-                            Sign in to continue your fitness journey
-                        </Text>
-                    </View>
-                </AnimatedItem>
+    // Form completion tracking
+    const filledFields = [
+        !validateEmail(email),
+        !validatePassword(password),
+    ];
 
-                {/* Auth Error View */}
-                {authError ? (
-                    <View style={styles.errorContainer}>
-                        <View style={styles.errorContent}>
-                            <Text style={styles.errorMessage}>{authError}</Text>
-                            <TouchableOpacity
-                                style={styles.errorCloseButton}
-                                onPress={clearAuthError}
-                            >
-                                <X size={16} color={colors.status.error} />
-                            </TouchableOpacity>
+    return (
+        <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+            {/* Hero Header with Gradient */}
+            <AnimatedSlideIn index={0} trigger={focusTrigger}>
+                <LinearGradient
+                    colors={isDarkMode
+                        ? [colors.primary[50], colors.background.primary]
+                        : [colors.primary[100], colors.primary[50], colors.background.primary]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0.3, y: 1 }}
+                    style={{
+                        paddingHorizontal: 24,
+                        paddingTop: Platform.OS === "ios" ? 64 : 44,
+                        paddingBottom: 28,
+                    }}
+                >
+                    <View style={{
+                        width: 40, height: 40, borderRadius: 12,
+                        backgroundColor: colors.primary[600] + "20",
+                        alignItems: "center", justifyContent: "center",
+                        marginBottom: 14,
+                    }}>
+                        <LogIn size={20} color={colors.primary[600]} />
+                    </View>
+
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{
+                                fontSize: 28, fontWeight: "800",
+                                color: colors.text.primary, letterSpacing: -0.5,
+                                marginBottom: 6,
+                            }}>
+                                Welcome Back
+                            </Text>
+                            <Text style={{
+                                fontSize: 15, color: colors.text.secondary,
+                                fontWeight: "500", lineHeight: 20,
+                            }}>
+                                Sign in to continue your fitness journey
+                            </Text>
+                        </View>
+
+                        {/* Form Completion Dots */}
+                        <View style={{ flexDirection: "row", gap: 6, marginLeft: 16 }}>
+                            {filledFields.map((filled, i) => (
+                                <View key={i} style={{
+                                    width: 8, height: 8, borderRadius: 4,
+                                    backgroundColor: filled
+                                        ? colors.primary[600]
+                                        : colors.primary[600] + "25",
+                                }} />
+                            ))}
                         </View>
                     </View>
-                ) : null}
+                </LinearGradient>
+            </AnimatedSlideIn>
 
-                {/* Form */}
-                <View style={styles.form}>
-                    {/* Email Input */}
-                    <AnimatedItem index={1} trigger={focusTrigger}>
-                        <View style={styles.inputContainer}>
-                            <View style={[styles.inputWrapper, !!emailError && styles.errorInput]}>
-                                <Mail
-                                    size={20}
-                                    color={colors.text.placeholder}
-                                    style={styles.inputIcon}
-                                />
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <ScrollView
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        paddingBottom: 120,
+                        paddingHorizontal: 20,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* Error Banner */}
+                    {authError ? (
+                        <AnimatedSlideIn index={1} trigger={focusTrigger}>
+                            <View style={{
+                                marginBottom: 16,
+                                backgroundColor: colors.status.error + "12",
+                                padding: 16,
+                                borderRadius: 14,
+                                borderWidth: 1,
+                                borderColor: colors.status.error + "25",
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}>
+                                <View style={{
+                                    width: 32, height: 32, borderRadius: 8,
+                                    backgroundColor: colors.status.error + "18",
+                                    alignItems: "center", justifyContent: "center",
+                                    marginRight: 12,
+                                }}>
+                                    <AlertCircle size={16} color={colors.status.error} />
+                                </View>
+                                <Text style={{
+                                    color: colors.status.error, fontSize: 14,
+                                    fontWeight: "600", flex: 1, lineHeight: 19,
+                                }}>
+                                    {authError}
+                                </Text>
+                                <TouchableOpacity onPress={clearAuthError} style={{
+                                    marginLeft: 8, padding: 4,
+                                }}>
+                                    <X size={16} color={colors.status.error} />
+                                </TouchableOpacity>
+                            </View>
+                        </AnimatedSlideIn>
+                    ) : null}
+
+                    {/* Credentials Card */}
+                    <AnimatedSlideIn index={2} trigger={focusTrigger}>
+                        <View style={{
+                            backgroundColor: colors.background.card,
+                            borderRadius: 16, padding: 20,
+                            borderWidth: 1, borderColor: colors.border.light,
+                            marginBottom: 20,
+                            shadowColor: colors.shadow?.light || "rgba(0,0,0,0.05)",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 1, shadowRadius: 8, elevation: 2,
+                            marginTop: 20
+                        }}>
+                            {/* Section Header */}
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 10,
+                                    backgroundColor: colors.primary[600] + "15",
+                                    alignItems: "center", justifyContent: "center",
+                                }}>
+                                    <Mail size={18} color={colors.primary[600]} />
+                                </View>
+                                <View>
+                                    <Text style={{
+                                        fontSize: 16, fontWeight: "700",
+                                        color: colors.text.primary,
+                                    }}>
+                                        Credentials
+                                    </Text>
+                                    <Text style={{
+                                        fontSize: 12, color: colors.text.tertiary,
+                                        fontWeight: "500",
+                                    }}>
+                                        Enter your account details
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Email Input */}
+                            <Text style={{
+                                fontSize: 13, fontWeight: "600",
+                                color: colors.text.secondary,
+                                marginBottom: 8, textTransform: "uppercase",
+                                letterSpacing: 0.5,
+                            }}>
+                                Email Address
+                            </Text>
+                            <View style={{
+                                flexDirection: "row", alignItems: "center",
+                                backgroundColor: colors.background.input,
+                                borderWidth: 1.5,
+                                borderColor: emailError ? colors.status.error : colors.border.light,
+                                borderRadius: 12, paddingHorizontal: 14,
+                                marginBottom: emailError ? 4 : 20,
+                            }}>
+                                <Mail size={18} color={colors.text.tertiary} style={{ marginRight: 10 }} />
                                 <TextInput
-                                    style={styles.input}
-                                    placeholder="Email address"
+                                    editable={!isLoading}
+                                    style={{
+                                        flex: 1, fontSize: 16,
+                                        color: colors.text.primary,
+                                        paddingVertical: Platform.OS === "ios" ? 14 : 12,
+                                    }}
+                                    placeholder="e.g., user@example.com"
                                     placeholderTextColor={colors.text.placeholder}
                                     value={email}
                                     onChangeText={(v) => { setEmail(v); setEmailError(validateEmail(v)); }}
@@ -143,22 +267,41 @@ const SignInScreen = () => {
                                     autoCorrect={false}
                                 />
                             </View>
-                            {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
-                        </View>
-                    </AnimatedItem>
+                            {!!emailError && (
+                                <Text style={{
+                                    fontSize: 12, color: colors.status.error,
+                                    marginBottom: 16, marginLeft: 4,
+                                }}>
+                                    {emailError}
+                                </Text>
+                            )}
 
-                    {/* Password Input */}
-                    <AnimatedItem index={2} trigger={focusTrigger}>
-                        <View style={styles.inputContainer}>
-                            <View style={[styles.inputWrapper, !!passwordError && styles.errorInput]}>
-                                <Lock
-                                    size={20}
-                                    color={colors.text.placeholder}
-                                    style={styles.inputIcon}
-                                />
+                            {/* Password Input */}
+                            <Text style={{
+                                fontSize: 13, fontWeight: "600",
+                                color: colors.text.secondary,
+                                marginBottom: 8, textTransform: "uppercase",
+                                letterSpacing: 0.5,
+                            }}>
+                                Password
+                            </Text>
+                            <View style={{
+                                flexDirection: "row", alignItems: "center",
+                                backgroundColor: colors.background.input,
+                                borderWidth: 1.5,
+                                borderColor: passwordError ? colors.status.error : colors.border.light,
+                                borderRadius: 12, paddingHorizontal: 14,
+                            }}>
+                                <Lock size={18} color={colors.text.tertiary} style={{ marginRight: 10 }} />
                                 <TextInput
-                                    style={[styles.input, styles.passwordInput]}
-                                    placeholder="Password"
+                                    editable={!isLoading}
+                                    style={{
+                                        flex: 1, fontSize: 16,
+                                        color: colors.text.primary,
+                                        paddingVertical: Platform.OS === "ios" ? 14 : 12,
+                                        paddingRight: 40,
+                                    }}
+                                    placeholder="Enter your password"
                                     placeholderTextColor={colors.text.placeholder}
                                     value={password}
                                     onChangeText={(v) => { setPassword(v); setPasswordError(validatePassword(v)); }}
@@ -168,224 +311,127 @@ const SignInScreen = () => {
                                 />
                                 <TouchableOpacity
                                     onPress={() => setShowPassword(!showPassword)}
-                                    style={styles.eyeIcon}
+                                    style={{ position: "absolute", right: 16, padding: 4 }}
                                 >
                                     {showPassword ? (
-                                        <EyeOff size={20} color={colors.text.placeholder} />
+                                        <EyeOff size={20} color={colors.text.tertiary} />
                                     ) : (
-                                        <Eye size={20} color={colors.text.placeholder} />
+                                        <Eye size={20} color={colors.text.tertiary} />
                                     )}
                                 </TouchableOpacity>
                             </View>
                             {!!passwordError && (
-                                <Text style={styles.errorText}>{passwordError}</Text>
+                                <Text style={{
+                                    fontSize: 12, color: colors.status.error,
+                                    marginTop: 4, marginLeft: 4,
+                                }}>
+                                    {passwordError}
+                                </Text>
                             )}
                         </View>
-                    </AnimatedItem>
+                    </AnimatedSlideIn>
 
                     {/* Forgot Password */}
-                    <AnimatedItem index={3} trigger={focusTrigger}>
+                    <AnimatedSlideIn index={3} trigger={focusTrigger}>
                         <TouchableOpacity
-                            style={styles.forgotPassword}
+                            style={{ alignSelf: "flex-end", marginBottom: 24 }}
                             onPress={() => router.push("/(auth)/forgot-password")}
+                            disabled={isLoading}
                         >
-                            <Text style={styles.forgotPasswordText}>
+                            <Text style={{
+                                fontSize: 14, color: colors.primary[600],
+                                fontWeight: "600",
+                            }}>
                                 Forgot Password?
                             </Text>
                         </TouchableOpacity>
-                    </AnimatedItem>
+                    </AnimatedSlideIn>
 
-                    {/* Sign In Button */}
-                    <AnimatedItem index={4} trigger={focusTrigger}>
+                    {/* Sign In CTA */}
+                    <AnimatedSlideIn index={4} trigger={focusTrigger}>
                         <TouchableOpacity
-                            style={[
-                                styles.signInButton,
-                                !isFormValid && styles.disabledButton,
-                            ]}
                             onPress={handleSignIn}
                             disabled={!isFormValid || isLoading}
+                            activeOpacity={0.85}
+                            style={{
+                                opacity: (!isFormValid && !isLoading) ? 0.5 : (isLoading ? 0.7 : 1),
+                                shadowColor: colors.shadow?.colored || "rgba(5,150,105,0.3)",
+                                ...LAYOUT.ctaShadow,
+                            }}
                         >
-                            <Text
-                                style={[
-                                    styles.signInButtonText,
-                                    !isFormValid && styles.disabledButtonText,
-                                ]}
+                            <LinearGradient
+                                colors={isDarkMode
+                                    ? [colors.primary[400], colors.primary[300]]
+                                    : [colors.primary[500], colors.primary[600]]
+                                }
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={LAYOUT.ctaButton}
                             >
-                                {isLoading ? "Signing In..." : "Sign In"}
-                            </Text>
-                            {!isLoading && <ArrowRight size={20} color={colors.text.white} />}
+                                {isLoading ? (
+                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <Text style={LAYOUT.ctaText}>
+                                            Signing In...
+                                        </Text>
+                                    </View>
+                                ) : (
+                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                        <Text style={LAYOUT.ctaText}>
+                                            Sign In
+                                        </Text>
+                                        <ArrowRight size={18} color="#FFFFFF" />
+                                    </View>
+                                )}
+                            </LinearGradient>
                         </TouchableOpacity>
-                    </AnimatedItem>
-                </View>
+                    </AnimatedSlideIn>
 
-                {/* Footer */}
-                <AnimatedItem index={5} trigger={focusTrigger}>
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>
-                            Don't have an account?{" "}
-                        </Text>
-                        <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-                            <Text style={styles.signUpLink}>Sign Up</Text>
-                        </TouchableOpacity>
-                    </View>
-                </AnimatedItem>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    {/* Divider */}
+                    <AnimatedSlideIn index={5} trigger={focusTrigger}>
+                        <View style={{
+                            flexDirection: "row", alignItems: "center",
+                            marginVertical: 20,
+                        }}>
+                            <View style={{ flex: 1, height: 1, backgroundColor: colors.border.light }} />
+                            <Text style={{
+                                marginHorizontal: 16, fontSize: 13,
+                                color: colors.text.tertiary, fontWeight: "500",
+                            }}>
+                                or
+                            </Text>
+                            <View style={{ flex: 1, height: 1, backgroundColor: colors.border.light }} />
+                        </View>
+                    </AnimatedSlideIn>
+
+                    {/* Apple Sign In */}
+                    <AnimatedSlideIn index={6} trigger={focusTrigger}>
+                        <AppleSignInButton disabled={isLoading} />
+                    </AnimatedSlideIn>
+
+                    {/* Footer */}
+                    <AnimatedSlideIn index={7} trigger={focusTrigger}>
+                        <View style={{
+                            flexDirection: "row", justifyContent: "center",
+                            alignItems: "center", marginTop: 24,
+                        }}>
+                            <Text style={{ fontSize: 14, color: colors.text.secondary }}>
+                                Don't have an account?{" "}
+                            </Text>
+                            <TouchableOpacity onPress={() => router.push("/(auth)/signup")} disabled={isLoading}>
+                                <Text style={{
+                                    fontSize: 14, color: colors.primary[600],
+                                    fontWeight: "600",
+                                }}>
+                                    Sign Up
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </AnimatedSlideIn>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background.primary,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: "center",
-        paddingHorizontal: 24,
-        paddingVertical: 40,
-    },
-    header: {
-        alignItems: "center",
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: "bold",
-        color: colors.text.primary,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: colors.text.secondary,
-        textAlign: "center",
-    },
-    form: {
-        width: "100%",
-        marginBottom: 40,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    inputWrapper: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.background.card,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: Platform.OS === "ios" ? 14 : 5,
-        minHeight: Platform.OS === "ios" ? 50 : undefined,
-        shadowColor: colors.shadow.light,
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-    },
-    errorInput: {
-        borderWidth: 1,
-        borderColor: colors.status.error,
-    },
-    inputIcon: {
-        marginRight: 12,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: colors.text.primary,
-    },
-    passwordInput: {
-        paddingRight: 40,
-    },
-    eyeIcon: {
-        position: "absolute",
-        right: 16,
-        padding: 4,
-    },
-    errorText: {
-        fontSize: 12,
-        color: colors.status.error,
-        marginTop: 4,
-        marginLeft: 4,
-    },
-    forgotPassword: {
-        alignSelf: "flex-end",
-        marginBottom: 30,
-    },
-    forgotPasswordText: {
-        fontSize: 14,
-        color: colors.primary[600],
-        fontWeight: "500",
-    },
-    signInButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.primary[600],
-        paddingVertical: 16,
-        borderRadius: 12,
-        shadowColor: colors.shadow.colored,
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    disabledButton: {
-        backgroundColor: colors.neutral[300],
-        shadowOpacity: 0,
-        elevation: 0,
-    },
-    signInButtonText: {
-        color: colors.text.white,
-        fontSize: 16,
-        fontWeight: "600",
-        marginRight: 8,
-    },
-    disabledButtonText: {
-        color: colors.text.placeholder,
-    },
-    footer: {
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    footerText: {
-        fontSize: 14,
-        color: colors.text.secondary,
-    },
-    signUpLink: {
-        fontSize: 14,
-        color: colors.primary[600],
-        fontWeight: "600",
-    },
-    errorContainer: {
-        backgroundColor: colors.status.errorLight,
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: colors.status.error,
-    },
-    errorContent: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flex: 1,
-    },
-    errorMessage: {
-        fontSize: 14,
-        color: colors.status.error,
-        flex: 1,
-        lineHeight: 20,
-    },
-    errorCloseButton: {
-        marginLeft: 8,
-    },
-});
 
 export default SignInScreen;

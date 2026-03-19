@@ -862,8 +862,10 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
       <View style={{ gap: 16 }}>
         {visibleRecords.map((record, index) => {
           return (
-            <View
+            <TouchableOpacity
               key={index}
+              onPress={() => handleExercisePress(record.exercise)}
+              activeOpacity={0.7}
               style={{
                 borderRadius: 16,
                 padding: 20,
@@ -879,10 +881,6 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
             >
               {/* Header with exercise */}
               <View style={{ marginBottom: 16 }}>
-                <TouchableOpacity 
-                  onPress={() => handleExercisePress(record.exercise)}
-                  activeOpacity={0.7}
-                >
                   <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text.primary, textDecorationLine: 'underline', marginBottom: 4 }}>
                     {record.exercise}
                   </Text>
@@ -893,7 +891,6 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
                       year: "numeric",
                     })}
                   </Text>
-                </TouchableOpacity>
               </View>
 
               {/* Stats row */}
@@ -940,7 +937,7 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
               </View>
 
               {/* Footer: Tap to view details */}
-              <View style={{ 
+              <View style={{
                 paddingTop: 12,
                 borderTopWidth: 1,
                 borderTopColor: colors.border.light,
@@ -948,15 +945,15 @@ export default function PersonalRecords({ personalRecords, onInfoPress }) {
                 alignItems: 'center',
                 justifyContent: 'flex-end',
               }}>
-                <Text style={{ 
-                  fontSize: 11, 
+                <Text style={{
+                  fontSize: 11,
                   color: colors.text.tertiary,
                   fontStyle: 'italic',
                 }}>
                   Tap to view details →
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )
         })}
       </View>

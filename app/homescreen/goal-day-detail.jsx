@@ -20,8 +20,9 @@ export default function GoalDayDetailScreen() {
   const router = useRouter();
   const { date: dateParam, isCompleted: isCompletedParam } = useLocalSearchParams();
   
-  // Get data from Zustand store
-  const { user, fitnessGoals } = useAppStore();
+  // Use individual selectors to avoid re-rendering on every store change
+  const user = useAppStore(state => state.user);
+  const fitnessGoals = useAppStore(state => state.fitnessGoals);
   
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

@@ -21,7 +21,8 @@
       "expo-router",
       "expo-splash-screen",
       "./plugins/withNoMacCatalyst.js",
-      "expo-font"
+      "expo-font",
+      "expo-apple-authentication"
     ],
     "ios": {
       "jsEngine": "jsc",

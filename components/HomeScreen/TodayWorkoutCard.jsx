@@ -12,6 +12,7 @@ export default function TodayWorkoutCard({ recentSets, onLogExercise, onExercise
         today.setHours(0, 0, 0, 0);
 
         const todaySets = (recentSets || []).filter(s => {
+            if (!s.performed_at) return false;
             const d = new Date(s.performed_at);
             d.setHours(0, 0, 0, 0);
             return d.getTime() === today.getTime();

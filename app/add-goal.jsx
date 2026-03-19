@@ -29,6 +29,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAppStore } from "../stores/useAppStore";
 import { createFitnessGoal, updateFitnessGoal, deleteFitnessGoal } from "../lib/database";
 import AnimatedSlideIn from "../components/AnimatedSlideIn";
+import { LAYOUT } from "../constants/layout";
 
 const PROGRESS_RING_SIZE = 100;
 const PROGRESS_STROKE_WIDTH = 10;
@@ -40,7 +41,11 @@ export default function AddGoalScreen() {
   const { isDarkMode } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user, fitnessGoals, setFitnessGoals, addFitnessGoal, updateFitnessGoal: updateGoalInStore } = useAppStore();
+  const user = useAppStore(state => state.user);
+  const fitnessGoals = useAppStore(state => state.fitnessGoals);
+  const setFitnessGoals = useAppStore(state => state.setFitnessGoals);
+  const addFitnessGoal = useAppStore(state => state.addFitnessGoal);
+  const updateGoalInStore = useAppStore(state => state.updateFitnessGoal);
 
   // Get goal data from params if editing
   const goalIdParam = Array.isArray(params.goalId) ? params.goalId[0] : params.goalId;
@@ -100,6 +105,7 @@ export default function AddGoalScreen() {
 
   // Fetch user defaults for new goals
   useEffect(() => {
+    if (!user) return; // Don't fetch during sign-out
     const fetchUserDefaults = async () => {
       if (isEditing) return; // Skip for editing mode
 
@@ -553,18 +559,8 @@ export default function AddGoalScreen() {
       borderRadius: 3,
     },
     // CTA
-    ctaButton: {
-      borderRadius: 14,
-      paddingVertical: 18,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    ctaButtonText: {
-      color: "#FFFFFF",
-      fontSize: 17,
-      fontWeight: "700",
-      letterSpacing: 0.3,
-    },
+    ctaButton: LAYOUT.ctaButton,
+    ctaButtonText: LAYOUT.ctaText,
     cancelLink: {
       alignItems: "center",
       paddingVertical: 14,

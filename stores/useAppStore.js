@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   getCurrentUser,
   getProfile,
+  upsertProfile,
   getCurrentStreak,
   getFitnessGoals,
   getExerciseProgressRows,
@@ -1026,37 +1027,49 @@ export const useAppStore = create((set, get) => ({
   },
   
   // Initialize user data
+  _initializing: false,
+  _signingOut: false,
   initializeUserData: async () => {
-    set({ isLoading: true });
+    // Prevent concurrent initialization or running during sign-out
+    if (get()._initializing || get()._signingOut) return;
+    set({ isLoading: true, _initializing: true });
     try {
       const currentUser = await getCurrentUser();
       if (!currentUser) {
-        set({ isLoading: false });
+        set({ isLoading: false, _initializing: false });
         return;
       }
-      
-      set({ user: currentUser });
-      
-      const [profileData, streakData, goalsData, progressRows] = await Promise.all([
+
+      let [profileData, streakData, goalsData, progressRows] = await Promise.all([
         getProfile(currentUser.id),
         getCurrentStreak(currentUser.id),
         getFitnessGoals(currentUser.id),
         getExerciseProgressRows(currentUser.id, 1000, DASHBOARD_TIMEFRAME),
       ]);
 
+      // Auto-create profile for new users (e.g. Apple Sign In)
+      if (!profileData) {
+        profileData = await upsertProfile(currentUser.id, {
+          email: currentUser.email || '',
+        }).catch(() => null);
+      }
+
       const sets = await getExerciseSetsByUser(currentUser.id, 500, DASHBOARD_TIMEFRAME);
-      
+
+      // Single batched set() — avoids multiple render commits that cause native crashes
       set({
+        user: currentUser,
         profile: profileData || null,
         currentStreak: streakData || 0,
         fitnessGoals: goalsData || [],
         progressByExercise: progressRows || [],
         recentSets: sets || [],
         isLoading: false,
+        _initializing: false,
       });
     } catch (error) {
       console.error('Error initializing user data:', error);
-      set({ isLoading: false });
+      set({ isLoading: false, _initializing: false });
     }
   },
   
@@ -1072,6 +1085,45 @@ export const useAppStore = create((set, get) => ({
   
   // Set profile
   setProfile: (profile) => set({ profile }),
+
+  // Reset store to initial state (call on sign-out)
+  resetStore: () => set({
+    _signingOut: true,
+    user: null,
+    profile: null,
+    currentStreak: 0,
+    fitnessGoals: [],
+    progressByExercise: [],
+    recentSets: [],
+    isLoading: true,
+    isRefreshing: false,
+    _initializing: false,
+    chartsData: {
+      userStats: null,
+      exerciseProgression: {},
+      volumeProgression: {},
+      strengthStandards: [],
+      monthlyStats: {},
+      personalRecords: {},
+      weeklyProgress: {},
+      rpeAnalysis: {},
+      progressiveOverloadInsights: {},
+      muscleGroupHeatmap: {},
+      goalAnalytics: {},
+    },
+    chartsLoading: false,
+    chartsRefreshing: false,
+    chartsError: null,
+    chartsCache: {},
+    dayDetailData: {},
+    dayDetailCache: {},
+    muscleGroupExerciseData: {},
+    muscleGroupExerciseCache: {},
+    streakAnalytics: null,
+    streakAnalyticsCache: null,
+    streakAnalyticsLoading: false,
+    streakAnalyticsError: null,
+  }),
   
   // Set current streak
   setCurrentStreak: (streak) => set({ currentStreak: streak }),

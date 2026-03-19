@@ -93,6 +93,7 @@ export default function ProgressiveOverloadInfoModal({ visible, onClose }) {
                 { 
                   backgroundColor: colors.background.card,
                   borderRadius: MODAL_LAYOUT.borderRadius,
+                  overflow: 'hidden',
                   height: screenHeight * 0.85,
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: -4 },

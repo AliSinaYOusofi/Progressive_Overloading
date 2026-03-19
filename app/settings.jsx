@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from "react-native";
 import { 
     Settings, 
     Bell, 
@@ -19,12 +19,12 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { getColors } from "../constants/ui_colors";
-import { signOut } from "../lib/auth";
 import { useTheme } from "../contexts/ThemeContext";
 import PrivacySettingsModal from "../components/Profile/PrivacySettingsModal";
 import PrivacyPolicyModal from "../components/Profile/PrivacyPolicyModal";
 import DataSharingModal from "../components/Profile/DataSharingModal";
 import AppVersionModal from "../components/Profile/AppVersionModal";
+import SignOutModal from "../components/Profile/SignOutModal";
 
 export default function SettingsScreen() {
     const { isDarkMode, toggleTheme } = useTheme();
@@ -34,35 +34,14 @@ export default function SettingsScreen() {
     const [notifications, setNotifications] = useState(true);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [biometricAuth, setBiometricAuth] = useState(false);
-    const [loggingOut, setLoggingOut] = useState(false);
+    const [showSignOutModal, setShowSignOutModal] = useState(false);
     const [showPrivacyModal, setShowPrivacyModal] = useState(false);
     const [showPrivacyPolicyModal, setShowPrivacyPolicyModal] = useState(false);
     const [showDataSharingModal, setShowDataSharingModal] = useState(false);
     const [showAppVersionModal, setShowAppVersionModal] = useState(false);
 
-    const handleLogout = async () => {
-        setLoggingOut(true);
-        Alert.alert(
-            "Sign Out",
-            "Are you sure you want to sign out?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Sign Out",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await signOut();
-                            // The auth state listener will handle the redirect automatically
-                        } catch (error) {
-                            console.log("Logout error:", error);
-                            Alert.alert("Error", "Failed to sign out. Please try again.");
-                        }
-                    },
-                },
-            ]
-        );
-        setLoggingOut(false);
+    const handleLogout = () => {
+        setShowSignOutModal(true);
     };
 
     const settingSections = [
@@ -264,9 +243,13 @@ export default function SettingsScreen() {
                 visible={showDataSharingModal} 
                 onClose={() => setShowDataSharingModal(false)} 
             />
-            <AppVersionModal 
-                visible={showAppVersionModal} 
-                onClose={() => setShowAppVersionModal(false)} 
+            <AppVersionModal
+                visible={showAppVersionModal}
+                onClose={() => setShowAppVersionModal(false)}
+            />
+            <SignOutModal
+                visible={showSignOutModal}
+                onClose={() => setShowSignOutModal(false)}
             />
         </View>
     );

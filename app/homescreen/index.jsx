@@ -29,27 +29,26 @@ import ExerciseDetailModal from "../../components/Charts/ExerciseDetailModal";
 export default function HomeScreen() {
     const colors = useThemedColors();
 
-    const {
-        user,
-        profile,
-        currentStreak,
-        fitnessGoals,
-        progressByExercise,
-        recentSets,
-        isLoading,
-        isRefreshing,
-        initializeUserData,
-        refreshAll,
-        loadProgressFromSets,
-        loadRecentSets,
-        addFitnessGoal,
-        updateFitnessGoal,
-        removeFitnessGoal,
-        setFitnessGoals,
-        addExerciseSet,
-        refreshRecentSets,
-        refreshProgress,
-    } = useAppStore();
+    // Use individual selectors to avoid re-rendering on every store change
+    const user = useAppStore(state => state.user);
+    const profile = useAppStore(state => state.profile);
+    const currentStreak = useAppStore(state => state.currentStreak);
+    const fitnessGoals = useAppStore(state => state.fitnessGoals);
+    const progressByExercise = useAppStore(state => state.progressByExercise);
+    const recentSets = useAppStore(state => state.recentSets);
+    const isLoading = useAppStore(state => state.isLoading);
+    const isRefreshing = useAppStore(state => state.isRefreshing);
+    const initializeUserData = useAppStore(state => state.initializeUserData);
+    const refreshAll = useAppStore(state => state.refreshAll);
+    const loadProgressFromSets = useAppStore(state => state.loadProgressFromSets);
+    const loadRecentSets = useAppStore(state => state.loadRecentSets);
+    const addFitnessGoal = useAppStore(state => state.addFitnessGoal);
+    const updateFitnessGoal = useAppStore(state => state.updateFitnessGoal);
+    const removeFitnessGoal = useAppStore(state => state.removeFitnessGoal);
+    const setFitnessGoals = useAppStore(state => state.setFitnessGoals);
+    const addExerciseSet = useAppStore(state => state.addExerciseSet);
+    const refreshRecentSets = useAppStore(state => state.refreshRecentSets);
+    const refreshProgress = useAppStore(state => state.refreshProgress);
 
     const volumeProgressionData = useAppStore(state => state.chartsData.volumeProgression);
     const loadVolumeProgression = useAppStore(state => state.loadVolumeProgression);
@@ -76,7 +75,7 @@ export default function HomeScreen() {
         if (!user) {
             initializeUserData();
         }
-    }, [user, initializeUserData]);
+    }, []);
 
     useEffect(() => {
         if (user) {
@@ -84,7 +83,7 @@ export default function HomeScreen() {
             loadMuscleGroupHeatmap(30);
             loadProgressiveOverloadInsights(30);
         }
-    }, [user, loadVolumeProgression, loadMuscleGroupHeatmap, loadProgressiveOverloadInsights]);
+    }, [user]);
 
     const setActions = useSetActions({
         user,
@@ -130,9 +129,9 @@ export default function HomeScreen() {
         loadVolumeProgression(30, true);
         loadMuscleGroupHeatmap(30, true);
         loadProgressiveOverloadInsights(30, true);
-    }, [refreshAll, loadVolumeProgression, loadMuscleGroupHeatmap, loadProgressiveOverloadInsights]);
+    }, []);
 
-    if (isLoading) {
+    if (isLoading || !user) {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: "center", alignItems: "center" }}>
                 <ActivityIndicator size="large" color={colors.primary[600]} />
