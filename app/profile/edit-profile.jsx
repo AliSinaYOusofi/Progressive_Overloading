@@ -16,7 +16,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useThemedColors } from "../../hooks/useThemedColors"
 import { useTheme } from "../../contexts/ThemeContext"
 import { useRouter } from "expo-router"
-import { updateProfile, getCurrentUser, getProfile } from "../../lib/database"
+import { upsertProfile, getCurrentUser, getProfile } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
 import { LAYOUT } from "../../constants/layout"
 import { useAppStore } from "../../stores/useAppStore"
@@ -314,7 +314,7 @@ export default function EditProfileScreen() {
         email: user.email
       }
 
-      const updatedProfile = await updateProfile(user.id, updates)
+      const updatedProfile = await upsertProfile(user.id, updates)
 
       // Update Zustand store with new profile data
       setProfile(updatedProfile)

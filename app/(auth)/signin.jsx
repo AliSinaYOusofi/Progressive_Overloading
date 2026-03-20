@@ -360,10 +360,7 @@ const SignInScreen = () => {
                             }}
                         >
                             <LinearGradient
-                                colors={isDarkMode
-                                    ? [colors.primary[400], colors.primary[300]]
-                                    : [colors.primary[500], colors.primary[600]]
-                                }
+                                colors={colors.ctaGradient}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={LAYOUT.ctaButton}

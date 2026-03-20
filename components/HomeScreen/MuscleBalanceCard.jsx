@@ -194,20 +194,20 @@ export default function MuscleBalanceCard({ heatmapData }) {
             <View style={{
                 backgroundColor: colors.background.card,
                 borderRadius: 20,
-                padding: 24,
+                padding: 20,
+                paddingVertical: 32,
                 borderWidth: 1,
                 borderColor: colors.border.light,
                 alignItems: "center",
-                paddingVertical: 36,
             }}>
                 <View style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
-                    backgroundColor: colors.primary[600] + "12",
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
+                    backgroundColor: colors.primary[600] + "15",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 14,
+                    marginBottom: 12,
                 }}>
                     <Activity size={24} color={colors.primary[600]} />
                 </View>
@@ -215,7 +215,7 @@ export default function MuscleBalanceCard({ heatmapData }) {
                     No muscle data yet
                 </Text>
                 <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center", lineHeight: 18 }}>
-                    Log workouts to see your{"\n"}muscle group balance
+                    Log workouts to see your muscle group balance
                 </Text>
             </View>
         );

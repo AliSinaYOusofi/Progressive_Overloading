@@ -114,7 +114,7 @@ export default function StreakInfoScreen() {
   // Load streak analytics when screen mounts
   useEffect(() => {
     if (userId) {
-      loadStreakAnalytics(true); // Always fetch fresh data for accurate streak stats
+      loadStreakAnalytics(); // Use cache if valid, fetch fresh if stale
     }
   }, [userId, loadStreakAnalytics]);
 

@@ -1,12 +1,25 @@
 import { Tabs } from "expo-router";
 import { LogInIcon, UserPlus } from "lucide-react-native";
-import { getColors } from "../../constants/ui_colors";
-import { useTheme } from "../../contexts/ThemeContext";
-import { Platform } from "react-native";
+import { useThemedColors } from "../../hooks/useThemedColors";
+import { Platform, View } from "react-native";
+
+function TabIcon({ Icon, color, size, focused, activeColor }) {
+    return (
+        <View style={{
+            alignItems: "center",
+            justifyContent: "center",
+            width: 56,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: focused ? activeColor + "18" : "transparent",
+        }}>
+            <Icon size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+        </View>
+    );
+}
 
 export default function AuthLayout() {
-    const { isDarkMode } = useTheme();
-    const colors = getColors(isDarkMode);
+    const colors = useThemedColors();
 
     return (
         <Tabs
@@ -53,7 +66,7 @@ export default function AuthLayout() {
                 options={{
                     title: "Sign In",
                     tabBarIcon: ({ color, size, focused }) => (
-                        <LogInIcon size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+                        <TabIcon Icon={LogInIcon} color={color} size={size} focused={focused} activeColor={colors.primary[600]} />
                     ),
                 }}
             />
@@ -62,7 +75,7 @@ export default function AuthLayout() {
                 options={{
                     title: "Sign Up",
                     tabBarIcon: ({ color, size, focused }) => (
-                        <UserPlus size={focused ? size + 2 : size} color={color} strokeWidth={focused ? 2.5 : 2} />
+                        <TabIcon Icon={UserPlus} color={color} size={size} focused={focused} activeColor={colors.primary[600]} />
                     ),
                 }}
             />

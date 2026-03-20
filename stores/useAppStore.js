@@ -904,16 +904,16 @@ export const useAppStore = create((set, get) => ({
       if (shouldFetch('progressiveOverloadInsights_all')) {
         promises.push(
           getProgressiveOverloadInsights(state.user.id, allTimeValue).then(data => {
-            updates.progressiveOverloadInsights = data;
+            updates.progressiveOverloadInsights = { [allTimeValue]: data };
             cacheUpdates['progressiveOverloadInsights_all'] = now;
           })
         );
       }
-      
+
       if (shouldFetch('muscleGroupHeatmap_all')) {
         promises.push(
           getMuscleGroupHeatmapData(state.user.id, allTimeValue).then(data => {
-            updates.muscleGroupHeatmap = data;
+            updates.muscleGroupHeatmap = { [allTimeValue]: data };
             cacheUpdates['muscleGroupHeatmap_all'] = now;
           })
         );

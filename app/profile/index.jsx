@@ -33,11 +33,12 @@ import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../../lib/database";
+import { getProfile, getUserStats, getUserAchievements } from "../../lib/database";
 import BMIInfoModal from "../../components/Profile/BMIInfoModal";
 import FitnessLevelInfoModal from "../../components/Profile/FitnessLevelInfoModal";
 import SetDefaultsModal from "../../components/HomeScreen/SetDefaultsModal";
 import SignOutModal from "../../components/Profile/SignOutModal";
+import DeleteAccountModal from "../../components/Profile/DeleteAccountModal";
 import { useAppStore } from "../../stores/useAppStore";
 import AnimatedSlideIn from "../../components/AnimatedSlideIn";
 
@@ -51,7 +52,7 @@ export default function ProfileScreen() {
     const setProfile = useAppStore(state => state.setProfile);
     const storeUser = useAppStore(state => state.user);
 
-    const [userProfile, setUserProfile] = useState(null);
+    const [userProfile, setUserProfile] = useState(storeProfile || null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
         currentStreak: 0,
@@ -59,11 +60,12 @@ export default function ProfileScreen() {
         goalProgress: 0,
     });
     const [achievements, setAchievements] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!storeProfile);
     const [showBMIModal, setShowBMIModal] = useState(false);
     const [showFitnessLevelModal, setShowFitnessLevelModal] = useState(false);
     const [showDefaultsModal, setShowDefaultsModal] = useState(false);
     const [showSignOutModal, setShowSignOutModal] = useState(false);
+    const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [focusTrigger, setFocusTrigger] = useState(0);
 
@@ -119,31 +121,8 @@ export default function ProfileScreen() {
         setShowSignOutModal(true);
     };
 
-    const handleDeleteAccount = async () => {
-        Alert.alert(
-            "Delete Account",
-            "This will permanently delete your account and all data. This action cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete Account",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const user = await getUser();
-                            if (!user) {
-                                Alert.alert("Error", "User not found");
-                                return;
-                            }
-                            await signOut();
-                            await deleteUserAccount(user.id);
-                        } catch (error) {
-                            Alert.alert("Error", "Failed to delete account. Please try again.");
-                        }
-                    },
-                },
-            ]
-        );
+    const handleDeleteAccount = () => {
+        setShowDeleteAccountModal(true);
     };
 
     const getFitnessLevel = (workoutCount) => {
@@ -793,6 +772,11 @@ export default function ProfileScreen() {
             <SignOutModal
                 visible={showSignOutModal}
                 onClose={() => setShowSignOutModal(false)}
+            />
+
+            <DeleteAccountModal
+                visible={showDeleteAccountModal}
+                onClose={() => setShowDeleteAccountModal(false)}
             />
         </View>
     );

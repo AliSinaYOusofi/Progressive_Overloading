@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Dumbbell, Plus, CheckCircle2 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { formatShortNumber } from "../../utils/numberUtils";
 
@@ -43,55 +44,62 @@ export default function TodayWorkoutCard({ recentSets, onLogExercise, onExercise
                 backgroundColor: colors.background.card,
                 borderRadius: 16,
                 padding: 20,
+                paddingVertical: 32,
                 borderWidth: 1,
                 borderColor: colors.border.light,
                 alignItems: "center",
             }}>
                 <View style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 14,
                     backgroundColor: colors.primary[600] + "15",
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: 16,
+                    marginBottom: 12,
                 }}>
-                    <Dumbbell size={28} color={colors.primary[600]} />
+                    <Dumbbell size={24} color={colors.primary[600]} />
                 </View>
                 <Text style={{
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: "700",
-                    color: colors.text.primary,
-                    marginBottom: 6,
+                    color: colors.text.secondary,
+                    marginBottom: 4,
                 }}>
                     No workout yet today
                 </Text>
                 <Text style={{
-                    fontSize: 14,
+                    fontSize: 13,
                     color: colors.text.tertiary,
                     textAlign: "center",
                     marginBottom: 20,
-                    lineHeight: 20,
+                    lineHeight: 18,
                 }}>
                     Start logging exercises to track your progress
                 </Text>
                 <TouchableOpacity
                     onPress={onLogExercise}
                     activeOpacity={0.8}
-                    style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: colors.primary[600],
-                        paddingHorizontal: 24,
-                        paddingVertical: 14,
-                        borderRadius: 14,
-                        gap: 8,
-                    }}
+                    style={{ borderRadius: 14, overflow: "hidden" }}
                 >
-                    <Plus size={20} color="#fff" />
-                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
-                        Log Exercise
-                    </Text>
+                    <LinearGradient
+                        colors={colors.ctaGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingHorizontal: 24,
+                            paddingVertical: 14,
+                            borderRadius: 14,
+                            gap: 8,
+                        }}
+                    >
+                        <Plus size={20} color="#fff" />
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
+                            Log Exercise
+                        </Text>
+                    </LinearGradient>
                 </TouchableOpacity>
             </View>
         );

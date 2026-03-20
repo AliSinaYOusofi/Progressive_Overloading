@@ -18,6 +18,9 @@ import MuscleBalanceCard from "../../components/HomeScreen/MuscleBalanceCard";
 import OverloadSpotlightCard from "../../components/HomeScreen/OverloadSpotlightCard";
 import ActiveGoalsCard from "../../components/HomeScreen/ActiveGoalsCard";
 import RecentPRsCard from "../../components/HomeScreen/RecentPRsCard";
+import WeeklySummaryCard from "../../components/HomeScreen/WeeklySummaryCard";
+import WorkoutFrequencyCard from "../../components/HomeScreen/WorkoutFrequencyCard";
+import VolumeComparisonCard from "../../components/HomeScreen/VolumeComparisonCard";
 
 import EditSetModal from "../../components/HomeScreen/EditSetModal";
 import RMInfoModal from "../../components/HomeScreen/RMInfoModal";
@@ -177,20 +180,21 @@ export default function HomeScreen() {
                 </AnimatedItem>
 
                 <AnimatedItem index={3} trigger={focusTrigger}>
-                    <MonthlyActivityCard
-                        recentSets={recentSets}
-                        onDayPress={handleDayPress}
-                    />
-                </AnimatedItem>
-
-                <AnimatedItem index={4} trigger={focusTrigger}>
                     <ConsistencyRingCard
                         recentSets={recentSets}
                         currentStreak={currentStreak}
                     />
                 </AnimatedItem>
 
+                <AnimatedItem index={4} trigger={focusTrigger}>
+                    <WeeklySummaryCard recentSets={recentSets} />
+                </AnimatedItem>
+
                 <AnimatedItem index={5} trigger={focusTrigger}>
+                    <WorkoutFrequencyCard recentSets={recentSets} />
+                </AnimatedItem>
+
+                <AnimatedItem index={6} trigger={focusTrigger}>
                     <TodayWorkoutCard
                         recentSets={recentSets}
                         onLogExercise={setActions.handleOpenLogSet}
@@ -198,19 +202,30 @@ export default function HomeScreen() {
                     />
                 </AnimatedItem>
 
-                <AnimatedItem index={6} trigger={focusTrigger}>
+                <AnimatedItem index={7} trigger={focusTrigger}>
                     <VolumeTrendCard volumeProgression={volumeProgression} />
                 </AnimatedItem>
 
-                <AnimatedItem index={7} trigger={focusTrigger}>
-                    <MuscleBalanceCard heatmapData={muscleHeatmap} />
-                </AnimatedItem>
-
                 <AnimatedItem index={8} trigger={focusTrigger}>
-                    <OverloadSpotlightCard overloadInsights={overloadInsights} />
+                    <VolumeComparisonCard recentSets={recentSets} />
                 </AnimatedItem>
 
                 <AnimatedItem index={9} trigger={focusTrigger}>
+                    <MuscleBalanceCard heatmapData={muscleHeatmap} />
+                </AnimatedItem>
+
+                <AnimatedItem index={10} trigger={focusTrigger}>
+                    <MonthlyActivityCard
+                        recentSets={recentSets}
+                        onDayPress={handleDayPress}
+                    />
+                </AnimatedItem>
+
+                <AnimatedItem index={11} trigger={focusTrigger}>
+                    <OverloadSpotlightCard overloadInsights={overloadInsights} />
+                </AnimatedItem>
+
+                <AnimatedItem index={12} trigger={focusTrigger}>
                     <ActiveGoalsCard
                         fitnessGoals={fitnessGoals}
                         onGoalPress={goalActions.openGoalDetails}
@@ -218,7 +233,7 @@ export default function HomeScreen() {
                     />
                 </AnimatedItem>
 
-                <AnimatedItem index={10} trigger={focusTrigger}>
+                <AnimatedItem index={13} trigger={focusTrigger}>
                     <RecentPRsCard progressByExercise={progressByExercise} />
                 </AnimatedItem>
             </View>

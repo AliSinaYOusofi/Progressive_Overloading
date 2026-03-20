@@ -99,6 +99,10 @@ function RootLayoutContent() {
         // Token refresh — session is still valid, just update auth state
         setIsAuthenticated(true)
         setIsLoading(false)
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        // No session — user is not logged in
+        setIsAuthenticated(false)
+        setIsLoading(false)
       }
     })
 
