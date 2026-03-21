@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { LogInIcon, UserPlus } from "lucide-react-native";
+import { LogInIcon, UserPlus, KeyRound } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import { Platform, View } from "react-native";
 
@@ -82,7 +82,10 @@ export default function AuthLayout() {
             <Tabs.Screen
                 name="forgot-password"
                 options={{
-                    href: null,
+                    title: "Forgot Password",
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <TabIcon Icon={KeyRound} color={color} size={size} focused={focused} activeColor={colors.primary[600]} />
+                    ),
                 }}
             />
         </Tabs>
