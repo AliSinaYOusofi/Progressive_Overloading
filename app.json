@@ -11,10 +11,11 @@
     "splash": {
       "backgroundColor": "#10B981",
       "image": "./assets/images/app_splash_screen_light.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "dark": {
         "backgroundColor": "#059669",
-        "image": "./assets/images/app_splash_screen_light.png"
+        "image": "./assets/images/app_splash_screen_dark.png",
+        "resizeMode": "cover"
       }
     },
     "plugins": [
@@ -39,11 +40,11 @@
       "splash": {
         "backgroundColor": "#10B981",
         "image": "./assets/images/app_splash_screen_light.png",
-        "resizeMode": "cover",
+        "resizeMode": "contain",
         "dark": {
           "backgroundColor": "#059669",
-          "image": "./assets/images/app_splash_screen_light.png",
-          "resizeMode": "cover"
+          "image": "./assets/images/app_splash_screen_dark.png",
+          "resizeMode": "contain"
         }
       }
     },
@@ -57,11 +58,11 @@
       "splash": {
         "backgroundColor": "#10B981",
         "image": "./assets/images/app_splash_screen_light.png",
-        "resizeMode": "cover",
+        "resizeMode": "contain",
         "dark": {
           "backgroundColor": "#059669",
-          "image": "./assets/images/app_splash_screen_light.png",
-          "resizeMode": "cover"
+          "image": "./assets/images/app_splash_screen_dark.png",
+          "resizeMode": "contain"
         }
       },
       "permissions": []
