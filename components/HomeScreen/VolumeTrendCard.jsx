@@ -62,10 +62,10 @@ export default function VolumeTrendCard({ volumeProgression }) {
                 }}>
                     <BarChart2 size={24} color={colors.primary[600]} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.secondary, marginBottom: 4 }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text.secondary, marginBottom: 4 }}>
                     No volume data yet
                 </Text>
-                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center" }}>
+                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center", lineHeight: 18 }}>
                     Log workouts to see your volume trend
                 </Text>
             </View>

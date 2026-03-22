@@ -1,5 +1,5 @@
-import { useEffect, useCallback, useRef } from "react";
-import { View, Text, Modal, TouchableOpacity, ActivityIndicator, ScrollView, Dimensions, Platform } from "react-native";
+import { useEffect, useCallback } from "react";
+import { View, Text, Modal, TouchableOpacity, ActivityIndicator, ScrollView, Dimensions } from "react-native";
 import { MODAL_LAYOUT } from "../../constants/modal";
 import { Target, CheckCircle2, RotateCcw, Pencil, Trash2, Calendar, Clock, AlertCircle, Flame, TrendingUp } from "lucide-react-native";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
@@ -25,33 +25,16 @@ export default function GoalDetailsModal({
     const { height: screenHeight } = Dimensions.get("window");
     const translateY = useSharedValue(0);
     const SWIPE_THRESHOLD = screenHeight * 0.2;
-    const pendingEditGoalRef = useRef(null);
 
     const handleClose = useCallback(() => {
         onClose();
     }, [onClose]);
 
-    const handleModalDismiss = useCallback(() => {
-        if (pendingEditGoalRef.current) {
-            const goal = pendingEditGoalRef.current;
-            pendingEditGoalRef.current = null;
-            onEdit(goal);
-        }
-    }, [onEdit]);
-
     const handleEditPress = useCallback((goal) => {
-        pendingEditGoalRef.current = goal;
         onClose();
-        // onDismiss is iOS-only, so on Android use a timeout fallback
-        if (Platform.OS !== 'ios') {
-            setTimeout(() => {
-                if (pendingEditGoalRef.current) {
-                    const g = pendingEditGoalRef.current;
-                    pendingEditGoalRef.current = null;
-                    onEdit(g);
-                }
-            }, 350);
-        }
+        setTimeout(() => {
+            onEdit(goal);
+        }, 400);
     }, [onClose, onEdit]);
 
     const panGesture = Gesture.Pan()
@@ -199,7 +182,6 @@ export default function GoalDetailsModal({
             visible={visible}
             animationType="slide"
             onRequestClose={onClose}
-            onDismiss={handleModalDismiss}
         >
             <GestureHandlerRootView style={{ flex: 1 }}>
                 <TouchableOpacity

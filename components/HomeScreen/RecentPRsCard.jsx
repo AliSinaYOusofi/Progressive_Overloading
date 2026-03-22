@@ -42,10 +42,10 @@ export default function RecentPRsCard({ progressByExercise }) {
                 }}>
                     <Trophy size={24} color={colors.status.warning} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.secondary, marginBottom: 4 }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text.secondary, marginBottom: 4 }}>
                     No PRs yet
                 </Text>
-                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center" }}>
+                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center", lineHeight: 18 }}>
                     Log exercises to start tracking your personal records
                 </Text>
             </View>

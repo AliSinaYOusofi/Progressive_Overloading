@@ -76,6 +76,9 @@ const lightColors = {
         error: "#EF4444", // red-500 - error input borders
     },
 
+    // Primary CTA gradient colors (for LinearGradient buttons)
+    ctaGradient: ["#047857", "#065F46"], // emerald-700 → emerald-800
+
     // Shadow Colors (for elevation)
     shadow: {
         light: "rgba(0, 0, 0, 0.05)", // light card shadows
@@ -169,6 +172,9 @@ const darkColors = {
         focus: "#10B981", // emerald-500 - focused input borders
         error: "#EF4444", // red-500 - error input borders
     },
+
+    // Primary CTA gradient colors (for LinearGradient buttons)
+    ctaGradient: ["#059669", "#047857"], // emerald-600 → emerald-700 (muted, not neon)
 
     // Shadow Colors (for elevation)
     shadow: {

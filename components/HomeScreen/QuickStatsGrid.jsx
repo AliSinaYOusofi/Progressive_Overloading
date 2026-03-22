@@ -8,7 +8,7 @@ export default function QuickStatsGrid({ recentSets, progressByExercise, fitness
 
     const stats = useMemo(() => {
         const uniqueDates = new Set(
-            (recentSets || []).map(s => {
+            (recentSets || []).filter(s => s.performed_at).map(s => {
                 const d = new Date(s.performed_at);
                 return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             })
@@ -16,7 +16,7 @@ export default function QuickStatsGrid({ recentSets, progressByExercise, fitness
 
         const prCount = (progressByExercise || []).length;
 
-        const activeGoals = (fitnessGoals || []).filter(g => !g.is_completed && new Date(g.target_date) >= new Date());
+        const activeGoals = (fitnessGoals || []).filter(g => g && !g.is_completed && g.target_date && new Date(g.target_date) >= new Date());
         const goalProgress = activeGoals.length > 0
             ? Math.round(activeGoals.reduce((sum, g) => {
                 const pct = g.target_value > 0 ? Math.min((g.current_value / g.target_value) * 100, 100) : 0;

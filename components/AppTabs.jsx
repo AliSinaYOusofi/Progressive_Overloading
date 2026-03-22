@@ -7,6 +7,7 @@ export default function AppTabs({ colors }) {
     <Tabs
       screenOptions={{
         headerShown: false,
+        lazy: true,
         tabBarStyle: {
           backgroundColor: colors.background.card,
           borderTopWidth: 0,

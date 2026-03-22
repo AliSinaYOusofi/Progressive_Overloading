@@ -14,7 +14,7 @@ export default function ConsistencyRingCard({ recentSets, currentStreak }) {
 
     const { workoutDays30, percentage, weeklyAvg } = useMemo(() => {
         const uniqueDates = new Set(
-            (recentSets || []).map(s => {
+            (recentSets || []).filter(s => s.performed_at).map(s => {
                 const d = new Date(s.performed_at);
                 return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             })

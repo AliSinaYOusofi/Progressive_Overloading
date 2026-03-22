@@ -140,11 +140,22 @@ export default function ChartsScreen() {
     const loadChartsData = useAppStore(state => state.loadChartsData);
     const refreshChartsData = useAppStore(state => state.refreshChartsData);
 
+    // Prevent infinite loop: for new users with no data, the condition
+    // `Object.keys({}).length === 0` stays true after load → re-triggers forever.
+    const chartsInitializedRef = useRef(false);
+
+    // Reset when user changes (account switching)
     useEffect(() => {
-        if (user && !chartsLoading && (!userStats || !exerciseProgressionData[36500] || Object.keys(exerciseProgressionData[36500] || {}).length === 0)) {
+        chartsInitializedRef.current = false;
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (user && !chartsLoading && !chartsInitializedRef.current &&
+            (!userStats || !exerciseProgressionData[36500] || Object.keys(exerciseProgressionData[36500] || {}).length === 0)) {
+            chartsInitializedRef.current = true;
             loadChartsData();
         }
-    }, [user, userStats, exerciseProgressionData, loadChartsData, chartsLoading]);
+    }, [user, userStats, exerciseProgressionData, chartsLoading]);
 
     const onRefresh = () => {
         refreshChartsData();

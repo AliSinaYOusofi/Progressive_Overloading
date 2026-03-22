@@ -40,7 +40,7 @@ function getWeekInfo(today, weekOffset) {
 
 function buildWorkoutDayKeys(sets) {
     return new Set(
-        (sets || []).map(s => {
+        (sets || []).filter(s => s.performed_at).map(s => {
             const d = new Date(s.performed_at);
             return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
         })

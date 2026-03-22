@@ -18,6 +18,7 @@ import { useTheme } from "../../contexts/ThemeContext"
 import { useRouter } from "expo-router"
 import { upsertProfile, getCurrentUser, getProfile } from "../../lib/database"
 import DateTimePicker from "@react-native-community/datetimepicker"
+import { LAYOUT } from "../../constants/layout"
 import { useAppStore } from "../../stores/useAppStore"
 import AnimatedSlideIn from "../../components/AnimatedSlideIn"
 
@@ -27,8 +28,10 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const scrollRef = useRef(null);
 
-  // Use Zustand store for profile data
-  const { profile: storeProfile, setProfile, user: storeUser } = useAppStore();
+  // Use individual selectors to avoid re-rendering on every store change
+  const storeProfile = useAppStore(state => state.profile);
+  const setProfile = useAppStore(state => state.setProfile);
+  const storeUser = useAppStore(state => state.user);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -844,16 +847,12 @@ export default function EditProfileScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
-                  borderRadius: 14,
-                  paddingVertical: 18,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  ...LAYOUT.ctaButton,
                   flexDirection: "row",
                   gap: 10,
                   shadowColor: isSaved ? colors.status.success : colors.primary[600],
-                  shadowOffset: { width: 0, height: 4 },
+                  ...LAYOUT.ctaShadow,
                   shadowOpacity: 0.3,
-                  shadowRadius: 12,
                   elevation: 6,
                 }}
               >
@@ -864,10 +863,7 @@ export default function EditProfileScreen() {
                 ) : (
                   <Save size={22} color="#FFFFFF" />
                 )}
-                <Text style={{
-                  fontSize: 17, fontWeight: "700",
-                  color: "#FFFFFF", letterSpacing: 0.3,
-                }}>
+                <Text style={LAYOUT.ctaText}>
                   {isLoading ? "Saving..." : isSaved ? "Profile Saved" : "Save Changes"}
                 </Text>
               </LinearGradient>

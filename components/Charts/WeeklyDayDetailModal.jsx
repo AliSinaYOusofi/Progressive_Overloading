@@ -147,6 +147,7 @@ export default function WeeklyDayDetailModal({ visible, onClose, dayDate, userId
                                 shadowColor: "#000",
                                 shadowOffset: { width: 0, height: -2 },
                                 shadowOpacity: 0.1,
+                                overflow: 'hidden',
                                 shadowRadius: 8,
                                 elevation: 10,
                                 maxHeight: "90%",

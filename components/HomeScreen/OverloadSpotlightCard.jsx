@@ -50,10 +50,10 @@ export default function OverloadSpotlightCard({ overloadInsights }) {
                 }}>
                     <Zap size={24} color={colors.primary[600]} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text.secondary, marginBottom: 4 }}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text.secondary, marginBottom: 4 }}>
                     No overload data yet
                 </Text>
-                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center" }}>
+                <Text style={{ fontSize: 13, color: colors.text.tertiary, textAlign: "center", lineHeight: 18 }}>
                     Log exercises consistently to track progressive overload
                 </Text>
             </View>

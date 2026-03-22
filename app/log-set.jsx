@@ -16,12 +16,17 @@ import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-g
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { formatDistanceToNow, format } from "date-fns";
+import { LAYOUT } from "../constants/layout";
 
 export default function LogSetScreen() {
     const colors = useThemedColors();
     const { isDarkMode } = useTheme();
     const router = useRouter();
-    const { user, recentSets, addExerciseSet, refreshRecentSets, refreshProgress } = useAppStore();
+    const user = useAppStore(state => state.user);
+    const recentSets = useAppStore(state => state.recentSets);
+    const addExerciseSet = useAppStore(state => state.addExerciseSet);
+    const refreshRecentSets = useAppStore(state => state.refreshRecentSets);
+    const refreshProgress = useAppStore(state => state.refreshProgress);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [focusTrigger, setFocusTrigger] = useState(0);
     const [isSaved, setIsSaved] = useState(false);
@@ -90,13 +95,19 @@ export default function LogSetScreen() {
         }
     }, [selectedChipName, translateY]);
 
-    // Derive recent exercises (unique, most recent first, max 8) and last set per exercise
+    // Derive recent exercises (unique, today only, max 8) and last set per exercise
     const { recentExercises, lastSetByExercise } = useMemo(() => {
         const sets = recentSets || [];
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todaySets = sets.filter(s => {
+            const performed = s.performed_at ? new Date(s.performed_at).getTime() : 0;
+            return performed >= todayStart;
+        });
         const seen = new Set();
         const exercises = [];
         const lastByExercise = {};
-        for (const s of sets) {
+        for (const s of todaySets) {
             const name = s.exercises?.name;
             if (!name) continue;
             if (!seen.has(name)) {
@@ -122,6 +133,7 @@ export default function LogSetScreen() {
 
     // Fetch defaults on mount
     useEffect(() => {
+        if (!user) return; // Don't fetch during sign-out
         const fetchDefaults = async () => {
             try {
                 const currentUser = user || (await getCurrentUser());
@@ -519,18 +531,8 @@ export default function LogSetScreen() {
             justifyContent: "center",
         },
         // CTA
-        ctaButton: {
-            borderRadius: 14,
-            paddingVertical: 18,
-            alignItems: "center",
-            justifyContent: "center",
-        },
-        ctaButtonText: {
-            color: "#FFFFFF",
-            fontSize: 17,
-            fontWeight: "700",
-            letterSpacing: 0.3,
-        },
+        ctaButton: LAYOUT.ctaButton,
+        ctaButtonText: LAYOUT.ctaText,
         cancelLink: {
             alignItems: "center",
             paddingVertical: 14,
@@ -984,10 +986,7 @@ export default function LogSetScreen() {
                                 </View>
                             ) : (
                                 <LinearGradient
-                                    colors={isDarkMode
-                                        ? [colors.primary[400], colors.primary[300]]
-                                        : [colors.primary[500], colors.primary[600]]
-                                    }
+                                    colors={colors.ctaGradient}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                     style={styles.ctaButton}
@@ -1116,10 +1115,7 @@ export default function LogSetScreen() {
                                                 activeOpacity={0.85}
                                             >
                                                 <LinearGradient
-                                                    colors={isDarkMode
-                                                        ? [colors.primary[400], colors.primary[300]]
-                                                        : [colors.primary[500], colors.primary[600]]
-                                                    }
+                                                    colors={colors.ctaGradient}
                                                     start={{ x: 0, y: 0 }}
                                                     end={{ x: 1, y: 1 }}
                                                     style={{

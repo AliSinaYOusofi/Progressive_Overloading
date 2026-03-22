@@ -5,7 +5,6 @@ import {
     Text,
     ScrollView,
     TouchableOpacity,
-    Alert,
     ActivityIndicator,
     RefreshControl,
     Platform,
@@ -34,10 +33,12 @@ import { useThemedColors } from "../../hooks/useThemedColors";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import { signOut, getUser } from "../../lib/auth";
-import { getProfile, getUserStats, getUserAchievements, deleteUserAccount } from "../../lib/database";
+import { getProfile, getUserStats, getUserAchievements } from "../../lib/database";
 import BMIInfoModal from "../../components/Profile/BMIInfoModal";
+import FitnessLevelInfoModal from "../../components/Profile/FitnessLevelInfoModal";
 import SetDefaultsModal from "../../components/HomeScreen/SetDefaultsModal";
+import SignOutModal from "../../components/Profile/SignOutModal";
+import DeleteAccountModal from "../../components/Profile/DeleteAccountModal";
 import { useAppStore } from "../../stores/useAppStore";
 import AnimatedSlideIn from "../../components/AnimatedSlideIn";
 
@@ -46,10 +47,12 @@ export default function ProfileScreen() {
     const { isDarkMode } = useTheme();
     const router = useRouter();
 
-    // Use Zustand store for profile data
-    const { profile: storeProfile, setProfile, user: storeUser } = useAppStore();
+    // Use individual selectors to avoid re-rendering on every store change
+    const storeProfile = useAppStore(state => state.profile);
+    const setProfile = useAppStore(state => state.setProfile);
+    const storeUser = useAppStore(state => state.user);
 
-    const [userProfile, setUserProfile] = useState(null);
+    const [userProfile, setUserProfile] = useState(storeProfile || null);
     const [userStats, setUserStats] = useState({
         workoutCount: 0,
         currentStreak: 0,
@@ -57,53 +60,52 @@ export default function ProfileScreen() {
         goalProgress: 0,
     });
     const [achievements, setAchievements] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!storeProfile);
     const [showBMIModal, setShowBMIModal] = useState(false);
+    const [showFitnessLevelModal, setShowFitnessLevelModal] = useState(false);
     const [showDefaultsModal, setShowDefaultsModal] = useState(false);
+    const [showSignOutModal, setShowSignOutModal] = useState(false);
+    const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [focusTrigger, setFocusTrigger] = useState(0);
 
+    // Reset local state and reload when user changes
     useEffect(() => {
+        if (!storeUser?.id) return; // Don't fire during sign-out
+        setUserProfile(null);
+        setIsLoading(true);
         loadUserData();
-    }, []);
+    }, [storeUser?.id]);
 
     // Refresh data when screen comes into focus
     useFocusEffect(
         React.useCallback(() => {
+            if (!storeUser?.id) return; // Don't fire during sign-out
             loadUserData(true);
             setFocusTrigger(t => t + 1);
-        }, [])
+        }, [storeUser?.id])
     );
 
     const loadUserData = async (isRefresh = false) => {
         try {
-            if (!isRefresh && storeProfile) {
-                setUserProfile(storeProfile);
-                setIsLoading(false);
-            } else {
-                if (!isRefresh) {
-                    setIsLoading(true);
-                }
+            if (!isRefresh) {
+                setIsLoading(true);
             }
 
-            const user = storeUser || await getUser();
-            if (!user) {
-                setIsLoading(false);
-                return;
-            }
+            // Use the store user instead of making a network call to getUser()
+            // — the store is already populated by initializeUserData in _layout.jsx
+            const userId = useAppStore.getState().user?.id;
+            if (!userId) return;
 
-            if (isRefresh || !storeProfile) {
-                const profile = await getProfile(user.id);
-                setUserProfile(profile);
-                setProfile(profile);
-            } else {
-                setUserProfile(storeProfile);
-            }
+            const [profile, stats, userAchievements] = await Promise.all([
+                getProfile(userId),
+                getUserStats(userId),
+                getUserAchievements(userId),
+            ]);
 
-            const stats = await getUserStats(user.id);
+            setUserProfile(profile);
+            setProfile(profile);
             setUserStats(stats);
-
-            const userAchievements = await getUserAchievements(user.id);
             setAchievements(userAchievements);
 
             setHasError(false);
@@ -115,55 +117,19 @@ export default function ProfileScreen() {
         }
     };
 
-    const handleLogout = async () => {
-        Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-            { text: "Cancel", style: "cancel" },
-            {
-                text: "Sign Out",
-                style: "destructive",
-                onPress: async () => {
-                    try {
-                        await signOut();
-                    } catch (error) {
-                        Alert.alert("Error", "Failed to sign out. Please try again.");
-                    }
-                },
-            },
-        ]);
+    const handleLogout = () => {
+        setShowSignOutModal(true);
     };
 
-    const handleDeleteAccount = async () => {
-        Alert.alert(
-            "Delete Account",
-            "This will permanently delete your account and all data. This action cannot be undone.",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete Account",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const user = await getUser();
-                            if (!user) {
-                                Alert.alert("Error", "User not found");
-                                return;
-                            }
-                            await signOut();
-                            await deleteUserAccount(user.id);
-                        } catch (error) {
-                            Alert.alert("Error", "Failed to delete account. Please try again.");
-                        }
-                    },
-                },
-            ]
-        );
+    const handleDeleteAccount = () => {
+        setShowDeleteAccountModal(true);
     };
 
     const getFitnessLevel = (workoutCount) => {
         if (workoutCount === 0) return { label: "Beginner", color: colors.text.tertiary };
-        if (workoutCount < 10) return { label: "Novice", color: colors.status.info };
-        if (workoutCount < 30) return { label: "Intermediate", color: colors.primary[600] };
-        if (workoutCount < 100) return { label: "Advanced", color: colors.status.warning };
+        if (workoutCount < 25) return { label: "Novice", color: colors.status.info };
+        if (workoutCount < 75) return { label: "Intermediate", color: colors.primary[600] };
+        if (workoutCount < 200) return { label: "Advanced", color: colors.status.warning };
         return { label: "Expert", color: colors.status.success };
     };
 
@@ -324,18 +290,32 @@ export default function ProfileScreen() {
                         </Text>
 
                         {/* Fitness Level Badge */}
-                        <View style={{
-                            backgroundColor: fitnessLevel.color + "15",
-                            paddingHorizontal: 16, paddingVertical: 6,
-                            borderRadius: 20, borderWidth: 1,
-                            borderColor: fitnessLevel.color + "30",
-                        }}>
-                            <Text style={{
-                                fontSize: 13, fontWeight: "700",
-                                color: fitnessLevel.color, letterSpacing: 0.3,
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <View style={{
+                                backgroundColor: fitnessLevel.color + "15",
+                                paddingHorizontal: 16, paddingVertical: 6,
+                                borderRadius: 20, borderWidth: 1,
+                                borderColor: fitnessLevel.color + "30",
                             }}>
-                                {fitnessLevel.label}
-                            </Text>
+                                <Text style={{
+                                    fontSize: 13, fontWeight: "700",
+                                    color: fitnessLevel.color, letterSpacing: 0.3,
+                                }}>
+                                    {fitnessLevel.label}
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowFitnessLevelModal(true)}
+                                activeOpacity={0.7}
+                                style={{
+                                    width: 28, height: 28, borderRadius: 14,
+                                    backgroundColor: fitnessLevel.color + "15",
+                                    alignItems: "center", justifyContent: "center",
+                                    borderWidth: 1, borderColor: fitnessLevel.color + "30",
+                                }}
+                            >
+                                <Info size={14} color={fitnessLevel.color} />
+                            </TouchableOpacity>
                         </View>
 
                         {/* Profile Completion Bar */}
@@ -769,6 +749,13 @@ export default function ProfileScreen() {
 
             <BMIInfoModal visible={showBMIModal} onClose={() => setShowBMIModal(false)} />
 
+            <FitnessLevelInfoModal
+                visible={showFitnessLevelModal}
+                onClose={() => setShowFitnessLevelModal(false)}
+                currentLevel={fitnessLevel.label}
+                workoutCount={userStats.workoutCount}
+            />
+
             <SetDefaultsModal
                 visible={showDefaultsModal}
                 onClose={() => {
@@ -780,6 +767,16 @@ export default function ProfileScreen() {
                     default_reps: userProfile.default_reps,
                     default_weight_unit: userProfile.default_weight_unit,
                 } : null}
+            />
+
+            <SignOutModal
+                visible={showSignOutModal}
+                onClose={() => setShowSignOutModal(false)}
+            />
+
+            <DeleteAccountModal
+                visible={showDeleteAccountModal}
+                onClose={() => setShowDeleteAccountModal(false)}
             />
         </View>
     );
