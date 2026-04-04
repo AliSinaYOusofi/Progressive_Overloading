@@ -128,8 +128,12 @@ export const useAppStore = create((set, get) => ({
     get().invalidateChartsCache();
   },
   
-  setFitnessGoals: (goals) => {
-    set({ fitnessGoals: goals || [] });
+  setFitnessGoals: (goalsOrUpdater) => {
+    if (typeof goalsOrUpdater === 'function') {
+      set((state) => ({ fitnessGoals: goalsOrUpdater(state.fitnessGoals) }));
+    } else {
+      set({ fitnessGoals: goalsOrUpdater || [] });
+    }
   },
   
   // Actions for sets

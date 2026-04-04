@@ -503,13 +503,16 @@ export default function ActiveGoalsCard({ fitnessGoals, onGoalPress, onAddGoal }
         expired: expiredGoals.length,
     }), [activeGoals.length, completedGoals.length, expiredGoals.length]);
 
-    const hasMultipleCategories = [activeGoals.length, completedGoals.length, expiredGoals.length].filter(n => n > 0).length > 1;
+    const totalGoals = activeGoals.length + completedGoals.length + expiredGoals.length;
 
     const currentGoals = filter === "active"
         ? activeGoals
         : filter === "completed"
             ? completedGoals
             : expiredGoals;
+
+    const showFilterSelector = [activeGoals.length, completedGoals.length, expiredGoals.length].filter(n => n > 0).length > 1
+        || (currentGoals.length === 0 && totalGoals > 0);
 
     const subtitle = useMemo(() => {
         const parts = [];
@@ -537,7 +540,7 @@ export default function ActiveGoalsCard({ fitnessGoals, onGoalPress, onAddGoal }
             borderColor: colors.border.light,
         }}>
             {/* Filter selector at top */}
-            {hasMultipleCategories && (
+            {showFilterSelector && (
                 <Pressable
                     onPress={() => setShowFilterModal(true)}
                     style={({ pressed }) => ({
@@ -583,7 +586,7 @@ export default function ActiveGoalsCard({ fitnessGoals, onGoalPress, onAddGoal }
             )}
 
             {/* Header */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: hasMultipleCategories ? 2 : 0, borderTopWidth: hasMultipleCategories ? 1 : 0, borderTopColor: colors.border.light, marginBottom: 18 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: showFilterSelector ? 2 : 0, borderTopWidth: showFilterSelector ? 1 : 0, borderTopColor: colors.border.light, marginBottom: 18 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, marginTop: 10 }}>
                     <View style={{
                         width: 36,
