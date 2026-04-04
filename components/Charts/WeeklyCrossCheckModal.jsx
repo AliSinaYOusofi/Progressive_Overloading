@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from "react-native";
 import { GitCompare, Calendar, ChevronDown, Dumbbell, TrendingUp, TrendingDown, Minus } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
@@ -26,6 +26,7 @@ export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats })
     const [week1Display, setWeek1Display] = useState(null);
     const [week2Display, setWeek2Display] = useState(null);
     const [hasCompared, setHasCompared] = useState(false);
+    const [isComparing, setIsComparing] = useState(false);
 
     // Define close function in RN Runtime scope (required for scheduleOnRN)
     const handleClose = useCallback(() => {
@@ -116,6 +117,7 @@ export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats })
             setWeek1Display(null);
             setWeek2Display(null);
             setHasCompared(false);
+            setIsComparing(false);
         }
     }, [visible, translateY]);
 
@@ -143,9 +145,14 @@ export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats })
             return;
         }
 
-        const comparison = prepareWeeklyComparisonData(weeklyStats, selectedWeek1, selectedWeek2);
-        setComparisonData(comparison);
-        setHasCompared(true);
+        setIsComparing(true);
+        setHasCompared(false);
+        setTimeout(() => {
+            const comparison = prepareWeeklyComparisonData(weeklyStats, selectedWeek1, selectedWeek2);
+            setComparisonData(comparison);
+            setHasCompared(true);
+            setIsComparing(false);
+        }, 300);
     };
 
     // Calculate max value for chart scaling
@@ -170,9 +177,8 @@ export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats })
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[
                             { 
-                                backgroundColor: colors.background.card, 
-                                borderTopLeftRadius: 24, 
-                                borderTopRightRadius: 24,
+                                backgroundColor: colors.background.card,
+                                borderRadius: MODAL_LAYOUT.borderRadius,
                                 shadowColor: "#000",
                                 shadowOffset: { width: 0, height: -2 },
                                 shadowOpacity: 0.1,
@@ -469,28 +475,34 @@ export default function WeeklyCrossCheckModal({ visible, onClose, weeklyStats })
                                     {/* Compare Button */}
                                     <TouchableOpacity
                                         onPress={handleCompare}
-                                        disabled={!selectedWeek1 || !selectedWeek2}
+                                        disabled={!selectedWeek1 || !selectedWeek2 || isComparing}
                                         style={{
                                             paddingVertical: 14,
                                             paddingHorizontal: 20,
                                             borderRadius: 12,
-                                            backgroundColor: (selectedWeek1 && selectedWeek2) 
-                                                ? colors.primary[600] 
+                                            backgroundColor: (selectedWeek1 && selectedWeek2)
+                                                ? colors.primary[600]
                                                 : colors.background.primary,
                                             borderWidth: 1,
-                                            borderColor: (selectedWeek1 && selectedWeek2) 
-                                                ? colors.primary[600] 
+                                            borderColor: (selectedWeek1 && selectedWeek2)
+                                                ? colors.primary[600]
                                                 : colors.border.light,
                                             alignItems: "center",
-                                            opacity: (selectedWeek1 && selectedWeek2) ? 1 : 0.5,
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            gap: 8,
+                                            opacity: (selectedWeek1 && selectedWeek2 && !isComparing) ? 1 : 0.5,
                                         }}
                                     >
+                                        {isComparing && (
+                                            <ActivityIndicator size="small" color="white" />
+                                        )}
                                         <Text style={{
                                             fontSize: 16,
                                             fontWeight: "600",
                                             color: (selectedWeek1 && selectedWeek2) ? "white" : colors.text.tertiary,
                                         }}>
-                                            Compare
+                                            {isComparing ? "Comparing..." : "Compare"}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>

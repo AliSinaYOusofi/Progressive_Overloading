@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import { View, Text, Modal, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from "react-native";
 import { GitCompare, Calendar, ChevronDown, Dumbbell, TrendingUp, TrendingDown, Minus } from "lucide-react-native";
 import { useThemedColors } from "../../hooks/useThemedColors";
 import ModalCloseButton from "../ModalCloseButton";
@@ -26,6 +26,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
     const [month1Display, setMonth1Display] = useState(null);
     const [month2Display, setMonth2Display] = useState(null);
     const [hasCompared, setHasCompared] = useState(false);
+    const [isComparing, setIsComparing] = useState(false);
 
     // Define close function in RN Runtime scope (required for scheduleOnRN)
     const handleClose = useCallback(() => {
@@ -106,6 +107,7 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
             setMonth1Display(null);
             setMonth2Display(null);
             setHasCompared(false);
+            setIsComparing(false);
         }
     }, [visible, translateY]);
 
@@ -133,9 +135,14 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
             return;
         }
 
-        const comparison = prepareMonthlyComparisonData(monthlyStats, selectedMonth1, selectedMonth2);
-        setComparisonData(comparison);
-        setHasCompared(true);
+        setIsComparing(true);
+        setHasCompared(false);
+        setTimeout(() => {
+            const comparison = prepareMonthlyComparisonData(monthlyStats, selectedMonth1, selectedMonth2);
+            setComparisonData(comparison);
+            setHasCompared(true);
+            setIsComparing(false);
+        }, 300);
     };
 
     // Calculate max value for chart scaling
@@ -160,9 +167,8 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[
                             { 
-                                backgroundColor: colors.background.card, 
-                                borderTopLeftRadius: 24, 
-                                borderTopRightRadius: 24,
+                                backgroundColor: colors.background.card,
+                                borderRadius: MODAL_LAYOUT.borderRadius,
                                 shadowColor: "#000",
                                 shadowOffset: { width: 0, height: -2 },
                                 shadowOpacity: 0.1,
@@ -459,28 +465,34 @@ export default function MonthlyCrossCheckModal({ visible, onClose, monthlyStats 
                                     {/* Compare Button */}
                                     <TouchableOpacity
                                         onPress={handleCompare}
-                                        disabled={!selectedMonth1 || !selectedMonth2}
+                                        disabled={!selectedMonth1 || !selectedMonth2 || isComparing}
                                         style={{
                                             paddingVertical: 14,
                                             paddingHorizontal: 20,
                                             borderRadius: 12,
-                                            backgroundColor: (selectedMonth1 && selectedMonth2) 
-                                                ? colors.primary[600] 
+                                            backgroundColor: (selectedMonth1 && selectedMonth2)
+                                                ? colors.primary[600]
                                                 : colors.background.primary,
                                             borderWidth: 1,
-                                            borderColor: (selectedMonth1 && selectedMonth2) 
-                                                ? colors.primary[600] 
+                                            borderColor: (selectedMonth1 && selectedMonth2)
+                                                ? colors.primary[600]
                                                 : colors.border.light,
                                             alignItems: "center",
-                                            opacity: (selectedMonth1 && selectedMonth2) ? 1 : 0.5,
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            gap: 8,
+                                            opacity: (selectedMonth1 && selectedMonth2 && !isComparing) ? 1 : 0.5,
                                         }}
                                     >
+                                        {isComparing && (
+                                            <ActivityIndicator size="small" color="white" />
+                                        )}
                                         <Text style={{
                                             fontSize: 16,
                                             fontWeight: "600",
                                             color: (selectedMonth1 && selectedMonth2) ? "white" : colors.text.tertiary,
                                         }}>
-                                            Compare
+                                            {isComparing ? "Comparing..." : "Compare"}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
