@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		022E0B87B20298E704C8F835 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ACE2830AD670EF8C3FCBF54 /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		ADBB876E3F6186C18BA690BC /* libPods-ProgressiveOverloading.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 270ABDC35FDD4315A52220F1 /* libPods-ProgressiveOverloading.a */; };
+		462880DB7980C9B2E82ABD1B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93D5BBBF62EA74B2D3A61BE5 /* PrivacyInfo.xcprivacy */; };
+		532ADB778212BBD493BD1EB4 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74ADA33E33C882FB1D23D3B /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		DF6F2ED3C9A7D2975E9712BA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AE1B30304D7C4F1514CD72A2 /* PrivacyInfo.xcprivacy */; };
+		E795E8302351587D853EA880 /* libPods-ProgressiveOverloading.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6A25ACB8373C1BE926BB5249 /* libPods-ProgressiveOverloading.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,13 +20,13 @@
 		13B07F961A680F5B00A75B9A /* ProgressiveOverloading.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProgressiveOverloading.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ProgressiveOverloading/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ProgressiveOverloading/Info.plist; sourceTree = "<group>"; };
-		270ABDC35FDD4315A52220F1 /* libPods-ProgressiveOverloading.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ProgressiveOverloading.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5A1800C8BFDFA4D5B5CE79AD /* Pods-ProgressiveOverloading.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProgressiveOverloading.release.xcconfig"; path = "Target Support Files/Pods-ProgressiveOverloading/Pods-ProgressiveOverloading.release.xcconfig"; sourceTree = "<group>"; };
-		618EB498E3DE77A80B17FF70 /* Pods-ProgressiveOverloading.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProgressiveOverloading.debug.xcconfig"; path = "Target Support Files/Pods-ProgressiveOverloading/Pods-ProgressiveOverloading.debug.xcconfig"; sourceTree = "<group>"; };
-		9ACE2830AD670EF8C3FCBF54 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ProgressiveOverloading/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		6A25ACB8373C1BE926BB5249 /* libPods-ProgressiveOverloading.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ProgressiveOverloading.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		93D5BBBF62EA74B2D3A61BE5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = ProgressiveOverloading/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A74ADA33E33C882FB1D23D3B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ProgressiveOverloading/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		A8D0B444C1C3088AF46AC539 /* Pods-ProgressiveOverloading.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProgressiveOverloading.release.xcconfig"; path = "Target Support Files/Pods-ProgressiveOverloading/Pods-ProgressiveOverloading.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = ProgressiveOverloading/SplashScreen.storyboard; sourceTree = "<group>"; };
-		AE1B30304D7C4F1514CD72A2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = ProgressiveOverloading/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		E974DB8AF07019BEEF41DE3C /* Pods-ProgressiveOverloading.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProgressiveOverloading.debug.xcconfig"; path = "Target Support Files/Pods-ProgressiveOverloading/Pods-ProgressiveOverloading.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ProgressiveOverloading/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* ProgressiveOverloading-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "ProgressiveOverloading-Bridging-Header.h"; path = "ProgressiveOverloading/ProgressiveOverloading-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ADBB876E3F6186C18BA690BC /* libPods-ProgressiveOverloading.a in Frameworks */,
+				E795E8302351587D853EA880 /* libPods-ProgressiveOverloading.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,15 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				AE1B30304D7C4F1514CD72A2 /* PrivacyInfo.xcprivacy */,
-			);
-			name = ProgressiveOverloading;
-			sourceTree = "<group>";
-		};
-		21A9345309E4F71B382981CD /* ProgressiveOverloading */ = {
-			isa = PBXGroup;
-			children = (
-				9ACE2830AD670EF8C3FCBF54 /* ExpoModulesProvider.swift */,
+				93D5BBBF62EA74B2D3A61BE5 /* PrivacyInfo.xcprivacy */,
 			);
 			name = ProgressiveOverloading;
 			sourceTree = "<group>";
@@ -70,9 +62,25 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				270ABDC35FDD4315A52220F1 /* libPods-ProgressiveOverloading.a */,
+				6A25ACB8373C1BE926BB5249 /* libPods-ProgressiveOverloading.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		321F8AC18639CACAAAB665CA /* ProgressiveOverloading */ = {
+			isa = PBXGroup;
+			children = (
+				A74ADA33E33C882FB1D23D3B /* ExpoModulesProvider.swift */,
+			);
+			name = ProgressiveOverloading;
+			sourceTree = "<group>";
+		};
+		7932F71EB194AB6DD0F586D1 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				321F8AC18639CACAAAB665CA /* ProgressiveOverloading */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +97,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				9D9EB8EC2917580A3D6D9EFD /* Pods */,
-				96AC075A2334FBDB04032D95 /* ExpoModulesProviders */,
+				D73B5AF3A6D109463CA41C50 /* Pods */,
+				7932F71EB194AB6DD0F586D1 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -105,24 +113,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		96AC075A2334FBDB04032D95 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				21A9345309E4F71B382981CD /* ProgressiveOverloading */,
-			);
-			name = ExpoModulesProviders;
-			sourceTree = "<group>";
-		};
-		9D9EB8EC2917580A3D6D9EFD /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				618EB498E3DE77A80B17FF70 /* Pods-ProgressiveOverloading.debug.xcconfig */,
-				5A1800C8BFDFA4D5B5CE79AD /* Pods-ProgressiveOverloading.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,6 +120,16 @@
 			);
 			name = Supporting;
 			path = ProgressiveOverloading/Supporting;
+			sourceTree = "<group>";
+		};
+		D73B5AF3A6D109463CA41C50 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				E974DB8AF07019BEEF41DE3C /* Pods-ProgressiveOverloading.debug.xcconfig */,
+				A8D0B444C1C3088AF46AC539 /* Pods-ProgressiveOverloading.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "ProgressiveOverloading" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				34A8D8704AB969E90630BA44 /* [Expo] Configure project */,
+				8723263DA73109AD25DE9C83 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				44C121495914D41FE046A510 /* [CP] Embed Pods Frameworks */,
+				0DCC4D2B4C507E9DDDA3C424 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				DF6F2ED3C9A7D2975E9712BA /* PrivacyInfo.xcprivacy in Resources */,
+				462880DB7980C9B2E82ABD1B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,31 +242,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		34A8D8704AB969E90630BA44 /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/ProgressiveOverloading/ProgressiveOverloading.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-ProgressiveOverloading/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-ProgressiveOverloading/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-ProgressiveOverloading/expo-configure-project.sh\"\n";
-		};
-		44C121495914D41FE046A510 /* [CP] Embed Pods Frameworks */ = {
+		0DCC4D2B4C507E9DDDA3C424 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -320,6 +296,30 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ProgressiveOverloading/Pods-ProgressiveOverloading-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		8723263DA73109AD25DE9C83 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/ProgressiveOverloading/ProgressiveOverloading.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-ProgressiveOverloading/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-ProgressiveOverloading/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-ProgressiveOverloading/expo-configure-project.sh\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -328,7 +328,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				022E0B87B20298E704C8F835 /* ExpoModulesProvider.swift in Sources */,
+				532ADB778212BBD493BD1EB4 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,7 +337,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 618EB498E3DE77A80B17FF70 /* Pods-ProgressiveOverloading.debug.xcconfig */;
+			baseConfigurationReference = E974DB8AF07019BEEF41DE3C /* Pods-ProgressiveOverloading.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -374,7 +374,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5A1800C8BFDFA4D5B5CE79AD /* Pods-ProgressiveOverloading.release.xcconfig */;
+			baseConfigurationReference = A8D0B444C1C3088AF46AC539 /* Pods-ProgressiveOverloading.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
