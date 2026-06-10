@@ -4,7 +4,7 @@
     "icon": "./assets/images/icon.png",
     "name": "Progressive Overloading",
     "slug": "progressive-overloading",
-    "version": "1.0.1",
+    "version": "1.1.2",
     "userInterfaceStyle": "automatic",
     "description": "Track your strength training progress with progressive overloading. Log sets, monitor goals, and analyze your fitness journey.",
     "orientation": "portrait",
@@ -28,7 +28,7 @@
     "ios": {
       "jsEngine": "jsc",
       "bundleIdentifier": "com.progressiveoverloading.app",
-      "buildNumber": "2",
+      "buildNumber": "4",
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "infoPlist": {
